@@ -1,0 +1,431 @@
+#include "BoidSystem.h"
+#include "Game.h"
+#include "PolygonObstacleManager.h"
+#include "Behaviours.h"
+#include "BVH.h"
+
+#include <iostream>
+
+BoidSystem::BoidSystem(float max_dist)
+{
+    groups = std::make_shared<GroupManager>(entity2boid_data);
+
+    sf::Vector2f box_size = {Geometry::BOX[0], Geometry::BOX[1]};
+    const sf::Vector2i n_cells = {static_cast<int>(box_size.x / max_dist) + 1,
+                                  static_cast<int>(box_size.y / max_dist) + 1};
+
+    p_grid = std::make_unique<SearchGrid>(n_cells, sf::Vector2f{max_dist, max_dist});
+
+    for (int i = 0; i < 5000; ++i)
+    {
+        free_entities.insert(i);
+    }
+
+    force_multipliers[BoidSystem::Multiplier::ALIGN] = 1.0f;
+    force_multipliers[BoidSystem::Multiplier::SCATTER] = 1.0f;
+    force_multipliers[BoidSystem::Multiplier::AVOID] = 1.0f;
+    force_multipliers[BoidSystem::Multiplier::SEEK] = 1.0f;
+    force_multipliers[BoidSystem::Multiplier::VELOCITY] = 2.0;
+
+    for (auto &[multiplier_type, value] : force_multipliers)
+    {
+        force_ranges[multiplier_type] = 10.f;
+    }
+}
+
+void BoidSystem::avoidMeteors()
+{
+    auto avoid_multiplier = force_multipliers[Multiplier::AVOID];
+
+    int compvec_ind = 0;
+    for (int i = 0; i < boids.size(); ++i)
+    {
+        auto &boid = boids.at(i);
+        auto r = boid.r;
+        auto &v = boid.vel;
+        auto state = entity2boid_data.at(boid.entity_ind).state ;
+
+        auto nearest_meteors = polygons->getNearestMeteors(boid.r, boid.radius * 5.0f);
+        for (auto *meteor : nearest_meteors)
+        {
+            auto mvt = meteor->getMVTOfSphere(r, boid.radius);
+            if (norm2(mvt) > 0.0001f)
+            {
+                entity2boid_data.at(boid.entity_ind).health -= 1;
+                v -= 2.f * dot(mvt, v) * mvt;
+                break;
+            }
+            auto r_meteor = meteor->getPosition();
+            auto radius_meteor = meteor->radius;
+            auto dr_to_target = v / norm(v);
+            auto dr_to_meteor = (r_meteor - r) / norm(r - r_meteor);
+            sf::Vector2f dr_norm = {dr_to_target.y, -dr_to_target.x};
+
+            auto dist_to_meteor = dist(r, r_meteor);
+            if (dist_to_meteor < radius_meteor * 2.f)
+            {
+                const auto angle = angle_calculator.angleBetween(dr_to_meteor, dr_to_target);
+                //                bool is_above = sign(r_selected, cluster.center, move_targets_[selected]);
+                const float sign = 2 * (angle < 0) - 1;
+                if (std::abs(angle) < 70)
+                {
+                    auto avoid_force = 5.f * sign * dr_norm * radius_meteor / (dist_to_meteor + radius_meteor);
+                    truncate(avoid_force, 25.f);
+                    avoid_force = avoid_multiplier* avoid_force / norm(avoid_force) + 0.f*boid.vel;
+                    boid.acc += avoid_force;
+                }
+
+            }
+            if(state == MoveState::STANDING
+             && dist_to_meteor < radius_meteor*1.1f){
+                // boid.acc += 0.02f*(-dr_to_meteor/norm(dr_to_meteor));
+            }
+        }
+    }
+}
+
+void BoidSystem::applyForces(int boid_ind)
+{
+
+    const auto scatter_multiplier = force_multipliers[Multiplier::SCATTER];
+    const auto align_multiplier = force_multipliers[Multiplier::ALIGN];
+    const auto seek_multiplier = force_multipliers[Multiplier::SEEK];
+
+    sf::Vector2f repulsion_force(0, 0);
+    sf::Vector2f push_force(0, 0);
+    sf::Vector2f scatter_force(0, 0);
+    sf::Vector2f cohesion_force(0, 0);
+    float n_neighbours = 0;
+    float n_neighbours_group = 0;
+    sf::Vector2f dr_nearest_neighbours(0, 0);
+    sf::Vector2f average_neighbour_position(0, 0);
+
+    sf::Vector2f align_direction = {0, 0};
+    int align_neighbours_count = 0;
+
+    auto range_align = std::pow(force_ranges[Multiplier::ALIGN], 2);
+    auto range_scatter = std::pow(force_ranges[Multiplier::SCATTER], 2);
+
+
+    auto &boid = boids.at(boid_ind);
+    auto v = boid.vel;
+    if (boid.state == MoveState::STANDING)
+    {
+    }
+
+    for (auto ind_j : boid2neighbour_inds.at(boid_ind))
+    {
+        // if(ind_j == boid_ind){continue;}
+        const auto &neighbour_boid = boids.at(ind_j);
+        const auto dr = neighbour_boid.r - boid.r;
+        const auto dist2 = norm2(dr);
+
+        if (dist2 < range_align)
+        {
+            align_direction += neighbour_boid.vel;
+            align_neighbours_count++;
+        }
+
+        if (dist2 < range_scatter)
+        {
+            scatter_force -= scatter_multiplier*dr/dist2;
+            dr_nearest_neighbours += dr / dist2;
+            n_neighbours++;
+        }
+        if (dist2 < range_scatter * 2.f && neighbour_boid.group_ind == boid.group_ind && boid.group_ind != -1)
+        {
+            average_neighbour_position += dr;
+            n_neighbours_group++;
+        }
+    }
+
+    dr_nearest_neighbours /= n_neighbours;
+
+    if (n_neighbours > 0 && norm2(dr_nearest_neighbours) >= 0.00001f)
+    {
+        // scatter_force += -scatter_multiplier * dr_nearest_neighbours/norm(dr_nearest_neighbours) - v;
+    }
+
+    average_neighbour_position /= n_neighbours_group;
+    if (n_neighbours_group > 0)
+    {
+        cohesion_force = 2.f * average_neighbour_position - v;
+    }
+
+    sf::Vector2f align_force = {0, 0};
+    if (align_neighbours_count > 0 && norm2(align_direction) >= 0.001f)
+    {
+        align_force = align_multiplier * align_direction / norm(align_direction) - v;
+    }
+
+    auto dr_to_target = entity2boid_data.at(boid.entity_ind).target_position - boid.r;
+    sf::Vector2f seek_force = {0, 0};
+    if (norm(dr_to_target) > 3.f)
+    {
+        seek_force = seek_multiplier * max_vel * dr_to_target / norm(dr_to_target) - v;
+    }
+
+    boid.acc += (scatter_force + align_force + seek_force + 0.00001f*cohesion_force);
+    truncate(boid.acc, 0.5f);
+}
+
+void BoidSystem::update(float dt)
+{
+    std::chrono::high_resolution_clock clock;
+    auto t_start = clock.now();
+
+    // p_ns_->update(boids);
+    for (int boid_ind = 0; boid_ind < boids.size(); ++boid_ind)
+    {
+        auto &boid = boids[boid_ind];
+        auto entity_ind = boid.entity_ind;
+        entity2boid_data.at(entity_ind).r = boid.r;
+        entity2p_ai.at(entity_ind)->update();
+
+        boid.target_pos = entity2boid_data.at(entity_ind).target_position;
+
+        const auto old_grid_ind = boid2grid.at(boid_ind).grid_ind;
+        const auto curr_grid_ind = p_grid->coordToCell(boid.r);
+        if (curr_grid_ind != old_grid_ind)
+        {
+            removeFromGrid(boid_ind);
+            insertToGrid(curr_grid_ind, boid_ind);
+        }
+    }
+
+    auto delta_t = std::chrono::duration_cast<std::chrono::microseconds>(clock.now() - t_start);
+    std::cout << "moving grid took: " << delta_t.count() << " us\n";
+    t_start = clock.now();
+
+    //! fill neighbour list
+    for (int boid_ind = 0; boid_ind < boids.size(); ++boid_ind)
+    {
+        auto grid_ind = boid2grid.at(boid_ind).grid_ind;
+        const auto &boid = boids.at(boid_ind);
+
+        std::array<int, 9> nearest_cells;
+        int n_nearest_cells;
+        p_grid->calcNearestCells(grid_ind, nearest_cells, n_nearest_cells);
+        nearest_cells[n_nearest_cells] = grid_ind;
+        n_nearest_cells++;
+
+        for (int i = 0; i < n_nearest_cells; ++i)
+        {
+            const auto &neighbour_inds = grid2boid_inds.at(nearest_cells.at(i));
+            for (auto neighbour_ind : neighbour_inds)
+            {
+                const auto &neighbour_boid = boids.at(neighbour_ind);
+                if (dist2(boid.r, neighbour_boid.r) < 20.f * 20.f && neighbour_ind != boid_ind)
+                {
+                    boid2neighbour_inds.at(boid_ind).push_back(neighbour_ind);
+                }
+            }
+        }
+    }
+
+    delta_t = std::chrono::duration_cast<std::chrono::microseconds>(clock.now() - t_start);
+    std::cout << "finding_neighbours took: " << delta_t.count() << " us\n";
+
+    for (int boid_ind = 0; boid_ind < boids.size(); ++boid_ind)
+    {
+        applyForces(boid_ind);
+        boid2neighbour_inds.at(boid_ind).clear();
+    }
+
+    avoidMeteors();
+
+    for (auto &boid : boids)
+    {
+        if (entity2boid_data.at(boid.entity_ind).health <= 0)
+        {
+            to_destroy.push(boid.entity_ind);
+        }
+        boid.vel += boid.acc + entity2boid_data.at(boid.entity_ind).acc;
+        truncate(boid.vel, entity2boid_data.at(boid.entity_ind).max_vel);
+        boid.r += boid.vel * dt;
+        entity2boid_data.at(boid.entity_ind).r = boid.r;
+        entity2boid_data.at(boid.entity_ind).vel = boid.vel;
+
+        entity2boid_data.at(boid.entity_ind).acc *= 0.f;
+        boid.acc *= 0.f;
+    }
+}
+
+void BoidSystem::addBoid(sf::Vector2f at)
+{
+    auto ent_ind = *free_entities.begin();
+    auto new_boid_ind = boids.size();
+    entity2boid_data.at(ent_ind) = {at, at};
+    // auto ai = std::make_unique<FollowPlayerSomeDistance>(
+    //             ent_ind,
+    //             player,
+    //              &entity2boid_data.at(ent_ind));
+    auto ai = std::make_unique<FollowAndShootAI>(
+        ent_ind,
+        player,
+        &entity2boid_data.at(ent_ind),
+        p_bs);
+    entity2p_ai.at(ent_ind) = std::move(ai);
+
+    entity2boids.at(ent_ind) = new_boid_ind;
+    free_entities.erase(ent_ind);
+
+    Boid new_boid;
+    new_boid.entity_ind = ent_ind;
+    new_boid.r = at;
+    new_boid.target_pos = at;
+    boids.push_back(new_boid);
+
+    boid2neighbour_inds.resize(boids.size());
+    boid2grid.resize(boids.size());
+    insertToGrid(p_grid->coordToCell(at), new_boid_ind);
+}
+
+void BoidSystem::addBoid(sf::Vector2f at, std::unique_ptr<BoidAI> &&ai, int group_ind)
+{
+
+    auto ent_ind = *free_entities.begin();
+    if (group_ind != -1)
+    {
+        groups->addToGroup(ent_ind, group_ind);
+    }
+    auto new_boid_ind = boids.size();
+    entity2boid_data.at(ent_ind) = {at, at};
+    entity2boid_data.at(ent_ind).group_ind = group_ind;
+
+    entity2p_ai.at(ent_ind) = std::move(ai);
+
+    entity2boids.at(ent_ind) = new_boid_ind;
+    free_entities.erase(ent_ind);
+
+    Boid new_boid;
+    new_boid.entity_ind = ent_ind;
+    new_boid.r = at;
+    new_boid.target_pos = at;
+    new_boid.group_ind = group_ind;
+    boids.push_back(new_boid);
+
+    boid2neighbour_inds.resize(boids.size());
+    boid2grid.resize(boids.size());
+    insertToGrid(p_grid->coordToCell(at), new_boid_ind);
+}
+
+void BoidSystem::removeFromGrid(int boid_ind)
+{
+    auto grid_ind = boid2grid.at(boid_ind).grid_ind;
+    auto ind_in_grid = boid2grid.at(boid_ind).ind_in_grid;
+
+    auto &grid_data = grid2boid_inds.at(grid_ind);
+
+    auto moved_boid_ind = grid_data.back();
+    grid_data.at(ind_in_grid) = moved_boid_ind;
+    boid2grid.at(moved_boid_ind).ind_in_grid = ind_in_grid;
+    grid_data.pop_back();
+
+    grid_ind = 0;
+    for (auto &gd : grid2boid_inds)
+    {
+        int ind_in_grid = 0;
+        for (auto &boid : gd)
+        {
+            assert(boid2grid.at(boid).grid_ind == grid_ind);
+            assert(boid2grid.at(boid).ind_in_grid == ind_in_grid);
+            ind_in_grid++;
+        }
+        grid_ind++;
+    }
+}
+
+void BoidSystem::insertToGrid(int grid_ind, int boid_ind)
+{
+    auto &grid_data = grid2boid_inds.at(grid_ind);
+
+    boid2grid.at(boid_ind) = {grid_ind, static_cast<int>(grid_data.size())};
+
+    grid_data.push_back(boid_ind);
+
+    // assert(mappingsAreOK());
+}
+
+void BoidSystem::removeBoid(int entity_ind)
+{
+    const auto boid_ind = entity2boids.at(entity_ind);
+    entity2boids.at(boids.at(boid_ind).entity_ind) = -1;
+
+    removeFromGrid(boid_ind);
+
+    auto moved_boid_grid_ind = boid2grid.back().grid_ind;
+
+    if (boids.size() - 1 != boid_ind)
+    {
+        removeFromGrid(boids.size() - 1);
+        insertToGrid(moved_boid_grid_ind, boid_ind);
+    }
+
+    boids.at(boid_ind) = boids.back();
+    entity2boids.at(boids.back().entity_ind) = boid_ind;
+    boids.pop_back();
+    // boid2grid.at(boid_ind) = boid2grid.back(); //! I don't fucking know...
+    boid2grid.pop_back();
+
+    assert(mappingsAreOK());
+}
+
+void BoidSystem::removeBoids(const std::vector<int> &ent_inds)
+{
+    for (auto ind : ent_inds)
+    {
+        removeBoid(ind);
+        assert(free_entities.count(ind)==0);
+        free_entities.insert(ind);
+        // entity2boids.at(ind) = -1;
+    }
+}
+
+void BoidSystem::setBehaviourOf(int entity_ind, std::unique_ptr<BoidAI> behaviour)
+{
+    behaviour->data = &(entity2boid_data.at(entity_ind));
+    if (entity2p_ai.at(entity_ind).get())
+    {
+        entity2p_ai.at(entity_ind).release();
+    }
+    entity2p_ai.at(entity_ind) = std::move(behaviour);
+}
+
+void BoidSystem::addGroupOfBoids(int n_boids, sf::Vector2f center, float radius)
+{
+
+    int new_group_ind = groups->createGroup();
+    auto ent_ind = *free_entities.begin();
+    auto leader_ai = std::make_unique<LeaderAI>(
+        ent_ind,
+        player,
+        &entity2boid_data.at(ent_ind),
+        groups.get(),
+        this,
+        p_bs);
+
+    for (int i = 1; i < n_boids; ++i)
+    {
+        ent_ind = *free_entities.begin();
+        auto ai = std::make_unique<UnderlingAI>(
+            ent_ind,
+            player,
+            &entity2boid_data.at(ent_ind),
+            groups.get(),
+            this,
+            leader_ai.get());
+        float rand_angle = randf(0, 2.f * M_PI);
+        float rand_radius = randf(0, radius);
+        sf::Vector2f new_position = center;
+        new_position.x += rand_radius * std::cos(rand_angle);
+        new_position.y += rand_radius * std::sin(rand_angle);
+        auto *wtf = &entity2boid_data.at(ent_ind);
+        entity2boid_data.at(ent_ind).r = new_position;
+
+        addBoid(new_position, std::move(ai), new_group_ind);
+    }
+
+    addBoid(center, std::move(leader_ai), new_group_ind);
+    boids.back().radius *= 3.f;
+}
