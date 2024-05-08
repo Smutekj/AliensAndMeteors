@@ -206,6 +206,8 @@ public:
         }
     }
 
+    void spawnBoss(sf::Vector2f pos);
+
     std::vector<Boid> &getBoids()
     {
         return boids;

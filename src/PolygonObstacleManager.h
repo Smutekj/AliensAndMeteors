@@ -556,7 +556,7 @@ struct pair_hash
     };
     std::unordered_set<std::pair<int, int>, pair_hash> collided;
 
-  PolygonObstacleManager(int n_meteors = 10);
+  PolygonObstacleManager(int n_meteors = 50);
 
   void update(float dt);
   void update2(float dt)
@@ -612,7 +612,7 @@ struct pair_hash
     
   // }
 
-  void draw(sf::RenderWindow &window);
+  void draw(sf::RenderTarget &window);
 
   std::vector<Polygon *> getNearestMeteors(sf::Vector2f r, float radius);
 

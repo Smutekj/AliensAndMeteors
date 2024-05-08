@@ -86,8 +86,8 @@ int main()
 
     const auto N_CELLS = Geometry::N_CELLS;
     const auto BOX = Geometry::BOX;
-
-    sf::RenderWindow window(sf::VideoMode(800, 600), "My window"); // sf::Style::Fullscreen);
+    sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
+    sf::RenderWindow window(sf::VideoMode(800, 600, desktop.bitsPerPixel), "My window", sf::Style::Fullscreen); // sf::Style::Fullscreen);
     window.setFramerateLimit(60);
     window.setActive(true);
     ImGui::SFML::Init(window);
@@ -109,7 +109,7 @@ int main()
     //! create game world and some helper stuff
     Game game(n_cells, box_size, window);
     UI ui(window, game);
-    // generateRandomPositionsInCircles(0.02f, box_size, 1000, game);
+    generateRandomPositionsInCircles(0.02f, box_size, 0, game);
     // generateRandomGroups(box_size, 50, game);
 
 
@@ -124,6 +124,8 @@ int main()
     sf::Texture background_texture;
     background_texture.loadFromFile("../Resources/Starbasesnow.png");
     background.setTexture(&background_texture);
+    background_texture.setRepeated(true);
+    background_texture.setSmooth(true);
     
 
     sf::Clock clock;
@@ -131,13 +133,11 @@ int main()
 
     while (game.game_is_running)
     {
-
-        window.clear(sf::Color::White);
+        window.clear(sf::Color::Black);
         window.draw(background);
 
         game.parseInput(window);
         game.update(time_of_frame, window);
-
 
         ImGui::SFML::Update(window, deltaClock.restart());
         ui.draw(window);

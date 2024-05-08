@@ -1,5 +1,6 @@
 #pragma once
 
+#include <random>
 #include "../core.h"
 #include "../Geometry.h"
 // #include "../Game.h"
@@ -17,5 +18,8 @@ inline  sf::Vector2f randomPosInBox(sf::Vector2f ul_corner = {0,0},
     return {ul_corner.x + rand() / static_cast<float>(RAND_MAX) * box_size.x,
             ul_corner.y + rand() / static_cast<float>(RAND_MAX) * box_size.y };
 }
+
+
+
 
 

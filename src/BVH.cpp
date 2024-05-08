@@ -1,4 +1,5 @@
 #include "BVH.h"
+#include "PolygonObstacleManager.h"
 
 #include <stack>
 #include <queue>
@@ -508,3 +509,21 @@ int BoundingVolumeTree::calcMaxDepth() const
     assert(max_lvl == nodes.at(root_ind).height);
     return max_lvl;
 }
+
+    bool BoundingVolumeTree::intersectsLine(sf::Vector2f from, sf::Vector2f to, AABB rect)
+    {
+
+        auto dr = to - from;
+
+        sf::Vector2f normal = {dr.y, -dr.x};
+        normal /= norm(normal);
+
+        sf::Vector2f r1 = rect.r_min;
+        sf::Vector2f r2 = rect.r_min + sf::Vector2f{rect.r_max.x - rect.r_min.x, 0};
+        sf::Vector2f r3 = rect.r_max;
+        sf::Vector2f r4 = rect.r_min + sf::Vector2f{0, rect.r_max.y - rect.r_min.y};
+
+        auto proj = projectOnAxis(normal, {r1, r2, r3, r4});
+        auto proj2 = projectOnAxis(normal, {from});
+        return overlap1D(proj, proj2);
+    }

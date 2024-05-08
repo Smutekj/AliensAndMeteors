@@ -12,14 +12,18 @@
 
 #include <iostream>
 
-Game::Game(sf::Vector2i n_cells, sf::Vector2f box_size, sf::RenderWindow& window)
+Game::Game(sf::Vector2i n_cells, sf::Vector2f box_size, sf::RenderWindow &window)
+    : bloom()
 {
+    t.create(window.getSize().x, window.getSize().y);
+    t.setSmooth(true);
+
+    player_particles = std::make_unique<Particles>(player.pos, 100);
 
     const sf::Vector2f cell_size = {box_size.x / asFloat(n_cells).x, box_size.y / asFloat(n_cells).y};
 
-    
     bool player_is_inside_meteor = true;
-    while(player_is_inside_meteor)
+    while (player_is_inside_meteor)
     {
         player.pos = randomPosInBox();
 
@@ -34,13 +38,12 @@ Game::Game(sf::Vector2i n_cells, sf::Vector2f box_size, sf::RenderWindow& window
             }
         }
     }
-    player.pos = {box_size.x/2.f, box_size.y/2.f};
+    player.pos = {box_size.x / 2.f, box_size.y / 2.f};
     auto view = window.getView();
     view.setCenter(player.pos);
     window.setView(view);
-    
 
-    player_shape.setOrigin({player.radius/2.f, player.radius/2.f});
+    player_shape.setOrigin({player.radius / 2.f, player.radius / 2.f});
     player_shape.setPosition(player.pos);
     player_shape.setSize({4.f, 4.f});
     player_shape.setRotation(0);
@@ -54,8 +57,7 @@ Game::Game(sf::Vector2i n_cells, sf::Vector2f box_size, sf::RenderWindow& window
 
     bullet_world.p_boids = &boid_world;
     bullet_world.p_meteors = &poly_manager;
-
-
+    bullet_world.p_effects = &effects;
 }
 
 void Game::moveView(sf::RenderWindow &window)
@@ -80,8 +82,8 @@ void Game::moveView(sf::RenderWindow &window)
     auto threshold = view.getSize() / 2.f - view.getSize() / 3.f;
     auto dx = player.pos.x - view.getCenter().x;
     auto dy = player.pos.y - view.getCenter().y;
-    auto view_max = view.getCenter() + view.getSize()/2.f;
-    auto view_min = view.getCenter() - view.getSize()/2.f;
+    auto view_max = view.getCenter() + view.getSize() / 2.f;
+    auto view_min = view.getCenter() - view.getSize() / 2.f;
     if (dx > threshold.x && view_max.x < Geometry::BOX[0])
     {
         view.setCenter(view.getCenter() + sf::Vector2f{dx - threshold.x, 0});
@@ -90,7 +92,7 @@ void Game::moveView(sf::RenderWindow &window)
     {
         view.setCenter(view.getCenter() + sf::Vector2f{dx + threshold.x, 0});
     }
-    if (dy > threshold.y && view_min.y < Geometry::BOX[1])
+    if (dy > threshold.y && view_max.y < Geometry::BOX[1])
     {
         view.setCenter(view.getCenter() + sf::Vector2f{0, dy - threshold.y});
     }
@@ -119,6 +121,21 @@ void Game::parseEvents(sf::RenderWindow &window)
     {
         ImGui::SFML::ProcessEvent(event);
 
+        if (event.type == sf::Event::Closed)
+        {
+            game_is_running = false;
+        }
+
+        if (event.type == sf::Event::Resized)
+        {
+            // t.create(window.getSize().x, window.getSize().y);
+            // effects.onResize(window.getSize());
+            // bloom.onResize(window.getSize());
+            // auto view = window.getView();
+            // view.setCenter(player.pos);
+            // window.setView(view);
+        }
+
         if (event.type == sf::Event::KeyPressed)
         {
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
@@ -133,6 +150,7 @@ void Game::parseEvents(sf::RenderWindow &window)
                     onMeteorDestruction(i);
                 }
                 selected_meteors.clear();
+                selection.clear();
             }
         }
         if (event.type == sf::Event::KeyReleased)
@@ -146,8 +164,11 @@ void Game::parseEvents(sf::RenderWindow &window)
             {
                 addExplosion(mouse_position, 0);
             }
-            if(event.key.code == sf::Keyboard::Key::LShift){
-                bullet_world.createLaser(0, player.pos, angle2dir(player.angle));
+            if (event.key.code == sf::Keyboard::Key::LShift)
+            {
+                auto dir = angle2dir(player.angle);
+
+                bullet_world.createLaser(-1, player.pos, player.pos + dir * 200.f);
             }
         }
         if (event.type == sf::Event::MouseButtonPressed)
@@ -160,7 +181,7 @@ void Game::parseEvents(sf::RenderWindow &window)
 
                 // if (nearest_neigbhours.empty())
                 // {
-                addEnemy(mouse_position);
+                boid_world.spawnBoss(mouse_position);
                 // }
             }
 
@@ -288,15 +309,8 @@ void Game::update(const float dt, sf::RenderWindow &window)
         return;
     }
 
-    for (auto &[i, effect] : effects)
-    {
-        effect->update();
-        effect->draw(window);
-        if (effect->isDone())
-        {
-            effects.erase(i);
-        }
-    }
+    effects.update();
+    player_particles->update(dt);
 
     player.pos.x += player.speed * std::cos(player.angle * M_PI / 180.) * dt;
     player.pos.y += player.speed * std::sin(player.angle * M_PI / 180.) * dt;
@@ -311,7 +325,10 @@ void Game::update(const float dt, sf::RenderWindow &window)
 
     while (!boid_world.to_destroy.empty())
     {
-        boid_world.removeBoid(boid_world.to_destroy.front());
+        auto entity_ind = boid_world.to_destroy.front();
+
+        effects.createExplosion(boid_world.entity2boid_data.at(entity_ind).r, 5.f);
+        boid_world.removeBoid(entity_ind);
         boid_world.to_destroy.pop();
     }
 
@@ -361,34 +378,61 @@ void Game::update(const float dt, sf::RenderWindow &window)
     auto meteors = poly_manager.getNearestMeteors(player.pos, player.radius);
     for (auto *meteor : meteors)
     {
-        auto mvt = meteor->getMVTOfSphere(player.pos, player.radius/2.f);
+        auto mvt = meteor->getMVTOfSphere(player.pos, player.radius / 2.f);
         if (norm2(mvt) > 0.0001f)
         {
             player.health = 0;
         }
     }
     // if (player.health == 0)
-    // {   
+    // {
     //     endGame(EndGameType::DIED);
     // }
 
-    // if(meteor_spawner_time-- < 0){
-    //     meteor_spawner_time = rand()%100 + 100;
-    //     poly_manager.addRandomMeteorAt(randPo)
-    // }
+    if (boss_spawner_timer-- < 0)
+    {
+        boss_spawner_timer = 600;
+        boid_world.spawnBoss(player.pos + angle2dir(rand() % 180) * randf(20, 30));
+        boid_world.spawnBoss(player.pos + angle2dir(rand() % 180) * randf(20, 30));
+    }
 
-    
-    
+    if (normal_spawner_timer-- < 0)
+    {
+        normal_spawner_timer = 30;
+        boid_world.addBoid(player.pos + angle2dir(rand() % 180) * randf(5, 10));
+    }
+    if (group_spawner_timer-- < 0)
+    {
+        group_spawner_timer = 300;
+        // boid_world.addGroupOfBoids( 10, player.pos + angle2dir(rand()%180)*randf(5, 10), 5);
+    }
 }
 
 void Game::draw(sf::RenderWindow &window)
 {
 
-    window.draw(player_shape);
-    window.draw(boid_vertices);
-    window.draw(bullet_vertices);
-    poly_manager.draw(window);
-    bullet_world.draw(window);
+    t.setView(window.getView());
+    t.clear(sf::Color::Black);
+
+    t.draw(player_shape);
+    t.draw(boid_vertices);
+    t.draw(bullet_vertices);
+
+    player_particles->draw(t);
+    effects.draw(t);
+    poly_manager.draw(t);
+    bullet_world.draw(t);
+    t.display();
+
+    sf::RectangleShape r;
+    r.setSize({t.getSize().x, t.getSize().y});
+    r.setTexture(&t.getTexture());
+
+    bloom.doTheThing(t, window);
+    // auto old_view = window.getView();
+    // window.setView(window.getDefaultView());
+    // window.draw(r);
+    // window.setView(old_view);
 }
 
 void Game::addEnemy(sf::Vector2f at)

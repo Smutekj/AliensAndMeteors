@@ -41,10 +41,4 @@ private:
 };
 
 
-class PostEffectManager{
-
-    ObjectPool<std::unique_ptr<PostEffect>, 1000> effects;
-
-};
-
 

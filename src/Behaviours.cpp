@@ -53,8 +53,8 @@ void UnderlingAI::update()
             p_leader->spotted_player = true;
         }
 
-        auto dist2_to_leader = dist2(data->r, p_leader->data->r);
-        if(dist2_to_leader > cluster_size*cluster_size){
-            data->target_position = p_leader->data->r;
-        }
+        // auto dist2_to_leader = dist2(data->r, p_leader->data->r);
+        // if(dist2_to_leader > cluster_size*cluster_size){
+        //     data->target_position = p_leader->data->r;
+        // }
     }

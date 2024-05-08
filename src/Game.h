@@ -15,6 +15,7 @@
 #include "core.h"
 #include "SoundModule.h"
 #include "Selection.h"
+#include "Particles.h"
 
 class UI;
 
@@ -37,8 +38,19 @@ class Game
   BulletSystem bullet_world;
   PolygonObstacleManager poly_manager;
 
-  std::map<int, std::unique_ptr<ExplosionEffect>> effects;
+  // std::map<int, std::unique_ptr<ExplosionEffect>> effects;
 
+  EffectsManager effects;
+
+  int boss_spawner_timer = 0;
+  int normal_spawner_timer = 0;
+  int group_spawner_timer = 0;
+
+  std::unique_ptr<Particles> player_particles;
+
+  
+  sf::RenderTexture t;
+  
   friend UI;
 
   enum class EndGameType{
@@ -47,10 +59,12 @@ class Game
   };
 
   int meteor_spawner_time = 0;
+  Bloom bloom;
 
 public:
 
 
+  std::vector<sf::Vector2f> inters_test;
   sf::Vector2f click_position = {0, 0};
 
   bool game_is_running = true;
@@ -66,14 +80,9 @@ public:
 
   }
 
-  void addExplosion(sf::Vector2f at, int type)
+  void addExplosion(sf::Vector2f at, float radius, int type = 0)
   {
-    int effect_ind = 0;
-    if (!effects.empty())
-    {
-      effect_ind = effects.rbegin()->first + 1;
-    }
-    effects[effect_ind] = std::make_unique<ExplosionEffect>(at, 20.f);
+      effects.createExplosion(at, radius);
   }
 
 

@@ -322,6 +322,26 @@ inline void truncate(sf::Vector2f &vec, float max_value)
     }
 }
 
+inline sf::Vector2f getIntersection(sf::Vector2f r1s, sf::Vector2f r1e, sf::Vector2f r2s, sf::Vector2f r2e)
+{
+
+    auto dr12 = r1s - r2s;
+    auto t1 = r1e - r1s;
+    auto l1 = norm(t1);
+    t1 /= norm(t1);
+    auto t2 = r2e - r2s;
+    auto l2 = norm(t2);
+    t2 /= norm(t2);
+    sf::Vector2f n1 = {t1.y, -t1.x};
+    sf::Vector2f n2 = {t2.y, -t2.x};
+    auto alpha1 = dot(-dr12, n2) / dot(n2, t1);
+    auto alpha2 = dot(dr12, n1) / dot(n1, t2);
+    if (alpha1 >= 0 && alpha1 <= l1 && alpha2 >= 0 && alpha2 <= l2)
+    {
+        return r1s + alpha1 * t1;
+    }
+    return {-1, -1};
+}
 
 
 enum class MoveState {

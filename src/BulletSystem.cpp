@@ -7,11 +7,12 @@ void BulletSystem::update()
     auto &boids = p_boids->getBoids();
 
     std::vector<int> to_destroy_lasers;
-    for(auto laser_ind : lasers.active_inds){
-        auto& laser = lasers.at(laser_ind);
+    int l_ind = 0;
+    for(auto& laser : lasers.data){
+        // auto& laser = lasers.at(laser_ind);
         laser.time++;
         
-        if(lasers.at(laser_ind).time > 60){
+        if(laser.time > 60){
             Polygon laser_poly(4);
             laser_poly.points.at(0) = {-0.5, -0.5};
             laser_poly.points.at(1) = {0.5, -0.5};
@@ -27,20 +28,18 @@ void BulletSystem::update()
             for (auto &boid : boids)
             {
                 auto mvt = laser_poly.getMVTOfSphere(boid.r, boid.radius);
-                if(norm2(mvt) > 0.001f){
+                if(norm2(mvt) > 0.001f && boid.entity_ind != laser.shooter_ind){
                     p_boids->entity2boid_data.at(boid.entity_ind).health -= 5;
                 }
             }
-            to_destroy_lasers.push_back(laser_ind);
+            to_destroy_lasers.push_back(lasers.vec2entity_ind.at(l_ind));
         }
-        
+        l_ind++;
     }
     for(auto ind : to_destroy_lasers){
-        lasers.remove(ind);
+        lasers.removeEnt(ind);
     }
-
-
-
+    to_destroy_lasers.clear();
 
     std::vector<int> filled_cells;
     int boid_ind = 0;
@@ -67,7 +66,7 @@ void BulletSystem::update()
             continue;
         }
 
-        if (bullet.lifetime > 60) //! we check for collisions only after some time
+        if (bullet.lifetime > 20) //! we check for collisions only after some time
         {
             auto colliding_entity = findCollidingBoid(bullet_ind);
             if (colliding_entity != -1)

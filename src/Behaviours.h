@@ -185,6 +185,68 @@ public:
     }
 };
 
+class BossAI : public BoidAI
+{
+
+    int cool_down = 100;
+    int frames_since_shot_laser = 0;
+    int frames_since_shot_bullet = 0;
+    float vision_radius = 60.f;
+    BulletSystem *p_bs;
+    bool player_spotted = false;
+    bool following_player = true;
+    bool shooting_laser = true;
+    int laser_timer = 0;
+    float orig_max_vel;
+public:
+    BossAI(int entity_ind, Player *player, EntityData *data, BulletSystem *p_bs)
+        : BoidAI(entity_ind, player, data), p_bs(p_bs)
+    {
+        orig_max_vel = data->max_vel;
+    }
+
+    virtual ~BossAI() = default;
+
+    virtual void update()
+    {
+        if(dist(player->pos, data->r) > vision_radius){
+            data->target_position = player->pos + angle2dir(rand()%180)*randf(0,3);
+            following_player = true;
+        }
+
+        frames_since_shot_laser++;
+        if (frames_since_shot_laser > cool_down && !following_player)
+        {
+            frames_since_shot_laser = 0;
+            // p_bs->spawnBulletNoSeek(entity_ind, data->r, player->pos);
+            auto predicted_pos = player->pos + angle2dir(player->angle) * player->speed*0.5f;
+            p_bs->createLaser(entity_ind, data->r, predicted_pos - data->r, 200.f  );
+            shooting_laser = true;    
+
+        }
+        frames_since_shot_bullet++;
+        if (frames_since_shot_bullet > cool_down && !following_player && !shooting_laser)
+        {
+            frames_since_shot_bullet = 0;
+            p_bs->spawnBulletNoSeek(entity_ind, data->r, player->pos);
+            // auto predicted_pos = player->pos + angle2dir(player->angle) * player->speed*0.5f;
+        }
+        if(shooting_laser){
+            laser_timer++;
+            data->max_vel = 0.f;
+            if(laser_timer == 120){
+                laser_timer = 0;
+                shooting_laser = false;  
+                data->max_vel = orig_max_vel;
+            }
+        }
+
+        if(dist(player->pos, data->r) < vision_radius){
+            following_player = false;
+        }
+    }
+};
+
 class FollowPlayerIfVIsible : public BoidAI
 {
 
@@ -297,7 +359,6 @@ public:
     }
 };
 
-
 class ChasePlayer : public BoidAI
 {
 
@@ -332,7 +393,6 @@ public:
         }
     }
 };
-
 
 class PatrolAI : public BoidAI
 {
@@ -468,8 +528,8 @@ class IdleAI : public BoidAI
     float t = 0.f;
 
 public:
-    IdleAI(int entity_ind, Player *player, EntityData* data, float radius = 0.f,
-         float omega_x = 1.f, float omega_y = 2.f)
+    IdleAI(int entity_ind, Player *player, EntityData *data, float radius = 0.f,
+           float omega_x = 1.f, float omega_y = 2.f)
         : x_max(radius), y_max(radius), omega_1(omega_x), omega_2(omega_y), BoidAI(entity_ind, player, data)
     {
         center_point = data->r;
@@ -480,7 +540,7 @@ public:
     virtual void update() override
     {
 
-        t += 1.f/60.f;
+        t += 1.f / 60.f;
 
         data->acc.x += x_max * omega_1 * omega_1 * std::sin(omega_1 * t);
         data->acc.y += y_max * omega_2 * omega_2 * std::sin(omega_2 * t + phase_shift / 180.f * M_PI);

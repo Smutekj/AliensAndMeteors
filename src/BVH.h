@@ -3,6 +3,7 @@
 #include "core.h"
 #include <set>
 #include <unordered_map>
+#include <queue>
 
 bool inline intersects(const AABB &r1, const AABB &r2)
 {
@@ -26,6 +27,13 @@ struct BVHNode
     }
 };
 
+struct RayCastData
+{
+    int entity_ind;
+    sf::Vector2f hit_point;
+    sf::Vector2f hit_normal;
+};
+
 class BoundingVolumeTree
 {
     std::vector<BVHNode> nodes;
@@ -38,7 +46,6 @@ public:
     const BVHNode &getNode(int node_index) const;
 
     void addRect(AABB rect, int object_index);
-
 
     void removeObject(int object_index);
 
@@ -55,7 +62,40 @@ public:
         }
     }
 
+    std::vector<int> rayCast(sf::Vector2f from, sf::Vector2f dir, float length)
+    {
+
+        sf::Vector2f to = from + dir * length;
+        std::vector<int> intersections;
+
+        std::queue<int> to_visit;
+        to_visit.push(root_ind);
+        while (!to_visit.empty())
+        {
+
+            int current_ind = to_visit.front();
+            to_visit.pop();
+            auto &current = nodes.at(current_ind);
+
+            if (intersectsLine(from, to, current.rect))
+            {
+                if (!current.isLeaf())
+                {
+                    to_visit.push(current.child_index_1);
+                    to_visit.push(current.child_index_2);
+                }
+                else
+                {
+                    intersections.push_back(current.object_index);
+                }
+            }
+        }
+
+        return intersections;
+    }
+
 private:
+    bool intersectsLine(sf::Vector2f from, sf::Vector2f to, AABB rect);
     bool isLeaf(int node_index) const;
     int balance(int index);
     void removeLeaf(int leaf_index);

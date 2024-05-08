@@ -350,7 +350,9 @@ void BoidSystem::insertToGrid(int grid_ind, int boid_ind)
 void BoidSystem::removeBoid(int entity_ind)
 {
     const auto boid_ind = entity2boids.at(entity_ind);
+    if(boid_ind == -1){return;}
     entity2boids.at(boids.at(boid_ind).entity_ind) = -1;
+    // entity2p_ai.at(boids.at(boid_ind).entity_ind).reset();
 
     removeFromGrid(boid_ind);
 
@@ -385,10 +387,10 @@ void BoidSystem::removeBoids(const std::vector<int> &ent_inds)
 void BoidSystem::setBehaviourOf(int entity_ind, std::unique_ptr<BoidAI> behaviour)
 {
     behaviour->data = &(entity2boid_data.at(entity_ind));
-    if (entity2p_ai.at(entity_ind).get())
-    {
-        entity2p_ai.at(entity_ind).release();
-    }
+    // if (entity2p_ai.at(entity_ind).get())
+    // {
+    //     entity2p_ai.at(entity_ind).reset();
+    // }
     entity2p_ai.at(entity_ind) = std::move(behaviour);
 }
 
@@ -429,3 +431,10 @@ void BoidSystem::addGroupOfBoids(int n_boids, sf::Vector2f center, float radius)
     addBoid(center, std::move(leader_ai), new_group_ind);
     boids.back().radius *= 3.f;
 }
+
+void BoidSystem::spawnBoss(sf::Vector2f pos){
+        auto new_entity_ind = *free_entities.begin();
+        auto ai = std::make_unique<BossAI>(new_entity_ind, player, 
+                        &entity2boid_data.at(new_entity_ind), p_bs);
+        addBoid(pos, std::move(ai), -1);
+    }

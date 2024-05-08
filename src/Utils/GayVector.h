@@ -29,9 +29,12 @@ struct ObjectPool
     entity2ind.fill(-1);
   }
 
-  int addObject(const DataType &obj)
+  int addObject(DataType& obj)
   {
+    // static_assert(std::is_base_of<DataType, Type>::value);
+    
     auto new_entity_ind = *free_inds.begin();
+    assert(new_entity_ind < MAX_OBJECTS);
     free_inds.erase(free_inds.begin());
 
     objects.at(new_entity_ind) = obj;
@@ -40,14 +43,46 @@ struct ObjectPool
     active_inds.push_back(new_entity_ind);
     return new_entity_ind;
   }
+    int addObject(DataType&& obj)
+  {
+    // static_assert(std::is_base_of<DataType, Type>::value);
+    
+    auto new_entity_ind = *free_inds.begin();
+    assert(new_entity_ind < MAX_OBJECTS);
+    free_inds.erase(free_inds.begin());
+
+    objects.at(new_entity_ind) = std::move(obj);
+
+    entity2ind.at(new_entity_ind) = active_inds.size();
+    active_inds.push_back(new_entity_ind);
+    return new_entity_ind;
+  }
+
+//   int addObject(DataType &&obj)
+//   {
+//     auto new_entity_ind = *free_inds.begin();
+//     free_inds.erase(free_inds.begin());
+
+//     objects.at(new_entity_ind) = std::move(obj);
+
+//     entity2ind.at(new_entity_ind) = active_inds.size();
+//     active_inds.push_back(new_entity_ind);
+//     return new_entity_ind;
+//   }
 
   void remove(int entity_ind)
   {
-    // if(entity2ind.at(entity_ind) != -1){
-    //     return;
-    // }
+    if(entity2ind.at(entity_ind) == -1){
+        return;
+    }
     free_inds.insert(entity_ind);
-    active_inds.erase(std::find(active_inds.begin(), active_inds.end(), entity2ind.at(entity_ind)));
+    // auto it = std::find(active_inds.begin(), active_inds.end(), entity2ind.at(entity_ind));
+    // assert(it != active_inds.end());
+    // active_inds.erase(it);
+    auto vec_ind = entity2ind.at(entity_ind);
+    active_inds.at(vec_ind) = active_inds.back();
+    entity2ind.at(active_inds.back()) = vec_ind;
+    active_inds.pop_back();
     entity2ind.at(entity_ind) = -1;
   }
 
@@ -57,6 +92,7 @@ struct ObjectPool
     return objects.at(entity_ind);
   }
 };
+
 
 
 template <typename Type, int MAX_ENTITIES>
@@ -142,6 +178,94 @@ void GayVector2<DataType, MAX_ENTITIES>::remove(int vec_ind)
     if(entity_ind < first_free_ind){first_free_ind = entity_ind;}
 }
 
+template <typename Type>
+struct VectorMap{
+    std::vector<int> entity2data_ind;
+    std::vector<int> data2entity_ind;
+    std::set<int> free_inds;
+    std::vector<Type> data;
+    int n_active = 0; 
+    int n_max_entities = 0;
+
+    public:
+
+        VectorMap(int n_max_entities) 
+        :
+         n_max_entities(n_max_entities),
+        entity2data_ind(n_max_entities, -1),
+        data2entity_ind(n_max_entities, -1),
+        data(n_max_entities)
+        {
+            for(int i = 0; i < n_max_entities; ++i){
+                free_inds.insert(i);
+            }
+        } 
+
+        void removeByDataInd(int data_ind){
+            assert(n_active > 0);
+            auto entity_ind = data2entity_ind.at(data_ind);
+            free_inds.insert(entity_ind);
+    
+            assert(data_ind != -1);
+
+            entity2data_ind[entity_ind] = -1;
+            entity2data_ind.at(data2entity_ind.at(n_active-1)) = data_ind;
+
+            data[data_ind] = data[n_active-1]; 
+            data2entity_ind[n_active-1] = -1;
+
+            n_active--;
+        }
+
+        void removeByEntityInd(int entity_ind){
+            assert(free_inds.count(entity_ind) == 0);
+            assert(n_active > 0);
+
+            free_inds.insert(entity_ind);
+            
+            auto data_ind = entity2data_ind[entity_ind];
+            assert(data_ind != -1);
+
+            entity2data_ind[entity_ind] = -1;
+            entity2data_ind.at(data2entity_ind.at(n_active-1)) = data_ind;
+
+            data[data_ind] = data[n_active-1]; 
+            data2entity_ind[n_active-1] = -1;
+
+            n_active--;
+        }
+        void insert(Type datum){
+            if(free_inds.empty()){
+                return;
+            }
+            int new_ind = *free_inds.begin();
+            free_inds.erase(free_inds.begin());
+            
+            data.at(n_active) = datum;
+            data2entity_ind.at(n_active) = new_ind;
+            entity2data_ind.at(new_ind) = n_active;
+            
+
+            n_active++;
+
+        }
+        size_t size(){
+            return n_active;
+        }
+        Type& getEntity(int index){
+            assert(index >= 0 && index <= n_max_entities);
+            return data.at(entity2data_ind.at(index));
+        }
+
+        void clear(){
+            for(int i = 0; i < n_max_entities; ++i){
+                free_inds.insert(i);
+                entity2data_ind[i] = -1;
+                data2entity_ind = -1;
+            }
+            n_active = 0;
+        }
+};
 
 
 template <typename Type, int MAX_ENTITIES>

@@ -98,7 +98,7 @@ void PolygonObstacleManager::addMeteor(Polygon &new_meteor)
     wtf.setPosition(new_meteor.getPosition());
     wtf.setRotation(new_meteor.getRotation());
     wtf.setScale(new_meteor.getScale());
-    wtf.setFillColor(sf::Color(rand() % 256, rand() % 256, 0, 128));
+    wtf.setFillColor(sf::Color(rand() % 256, 255, 0, 255));
 
     auto new_entity_ind2 = drawables.addObject(wtf);
     assert(new_entity_ind == new_entity_ind2);
@@ -184,7 +184,7 @@ void PolygonObstacleManager::update(float dt)
               << "\n";
 }
 
-void PolygonObstacleManager::draw(sf::RenderWindow &window)
+void PolygonObstacleManager::draw(sf::RenderTarget &window)
 {
     auto tic = std::chrono::high_resolution_clock::now();
     for (auto i : meteors.active_inds)
