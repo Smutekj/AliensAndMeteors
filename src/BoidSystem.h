@@ -28,37 +28,9 @@ struct Boid
     sf::Vector2f target_pos;
     int group_ind = -1;
     int entity_ind = -1;
+
 };
 
-struct Task
-{
-    EntityData *data;
-    virtual bool isFinished();
-};
-
-struct MoveToPointTask : Task
-{
-    float radius = 3.f;
-    sf::Vector2f point;
-    MoveToPointTask(sf::Vector2f move_target, float radius)
-        : point(move_target), radius(radius) {}
-    bool isFinished()
-    {
-        return dist2(data->r, point) < radius * radius;
-    }
-};
-
-struct ShootTask : Task
-{
-
-    int cool_down = 60;
-    int frames_since_shot = 0;
-    bool isFinished()
-    {
-        frames_since_shot++;
-        return frames_since_shot >= cool_down;
-    }
-};
 
 struct GridInds
 {
@@ -91,13 +63,13 @@ class BoidSystem
     std::vector<GridInds> boid2grid;
     std::vector<std::vector<int>> boid2neighbour_inds;
 
-    std::unique_ptr<SearchGrid> p_grid;
+    ObjectPool<Boid> m_boids;
 
-    std::array<std::vector<int>, N_GRID_X * N_GRID_Y> grid2boid_inds;
+    std::unique_ptr<SearchGrid> p_grid;
+    std::array<std::vector<int>, N_GRID_X* N_GRID_Y> grid2boid_inds;
+    std::array<std::vector<int>, N_GRID_X* N_GRID_Y> grid2boids;
 
     const float max_vel = 25.f;
-
-    
 
 public:
     std::queue<int> to_destroy;
@@ -140,12 +112,9 @@ public:
     void insertToGrid(int grid_ind, int boid_ind);
 
     void removeBoid(int boid_ind);
-    void removeBoids(const std::vector<int> &boid_ind);
-
+    void removeBoids(const std::vector<int>& boid_ind);
     void addBoid(sf::Vector2f at, std::unique_ptr<BoidAI> &&ai, int group_ind = -1);
-
     void setBehaviourOf(int entity_ind, std::unique_ptr<BoidAI> behaviour);
-
     void addGroupOfBoids(int n_boids, sf::Vector2f center, float radius);
 
     std::vector<int> getBoidsIn(const sf::FloatRect &rect)
@@ -161,6 +130,48 @@ public:
             boid_ind++;
         }
         return selection;
+    }
+
+    std::vector<int> getBoidsIn(AABB& rect)
+    {
+        std::vector<int> selection;
+        int boid_ind = 0;
+        
+
+        int min_x = rect.r_min.x / p_grid->cell_size_.x;
+        int max_x = rect.r_max.x / p_grid->cell_size_.x;
+        int min_y = rect.r_min.y / p_grid->cell_size_.y;
+        int max_y = rect.r_max.y / p_grid->cell_size_.y;
+
+
+        for (int ix = min_x; ix <= max_x; ++ix) 
+        {
+            for (int iy = min_y; iy <= max_y; ++iy) 
+            {
+                auto grid_ind = iy * p_grid->n_cells_.x + ix;
+                if (grid_ind < 0 || grid_ind >= N_GRID_X * N_GRID_Y) {
+                    continue;
+                }
+                for (auto boid_ind : grid2boid_inds.at(grid_ind)) {
+                    selection.push_back(boids.at(boid_ind).entity_ind);
+                }
+            }
+        }
+        auto fuck_me = gridIsOk();
+        return selection;
+    }
+
+    bool gridIsOk()const {
+        std::set<int> set;
+        for (int grid_ind = 0; grid_ind < N_GRID_X * N_GRID_Y; ++grid_ind) {
+            for (auto boid_ind : grid2boid_inds.at(grid_ind)) {
+                if(set.count(boid_ind) > 0) {
+                    return false;
+                }
+                set.insert(boid_ind);
+            }
+        }
+        return true;
     }
 
     bool collidesWith(sf::Vector2f r, const Polygon &polygon)
@@ -247,4 +258,6 @@ private:
 
         return true;
     }
+
+    void fillNeighbourList();
 };

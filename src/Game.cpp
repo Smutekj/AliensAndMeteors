@@ -170,6 +170,12 @@ void Game::parseEvents(sf::RenderWindow &window)
 
                 bullet_world.createLaser(-1, player.pos, player.pos + dir * 200.f);
             }
+            if (event.key.code == sf::Keyboard::Key::B)
+            {
+                auto dir = angle2dir(player.angle);
+
+                bullet_world.createBomb(-1, player.pos, 150.f*angle2dir(player.angle));
+            }
         }
         if (event.type == sf::Event::MouseButtonPressed)
         {
@@ -392,8 +398,8 @@ void Game::update(const float dt, sf::RenderWindow &window)
     if (boss_spawner_timer-- < 0)
     {
         boss_spawner_timer = 600;
-        boid_world.spawnBoss(player.pos + angle2dir(rand() % 180) * randf(20, 30));
-        boid_world.spawnBoss(player.pos + angle2dir(rand() % 180) * randf(20, 30));
+        //boid_world.spawnBoss(player.pos + angle2dir(rand() % 180) * randf(20, 30));
+        //boid_world.spawnBoss(player.pos + angle2dir(rand() % 180) * randf(20, 30));
     }
 
     if (normal_spawner_timer-- < 0)
@@ -411,6 +417,8 @@ void Game::update(const float dt, sf::RenderWindow &window)
 void Game::draw(sf::RenderWindow &window)
 {
 
+
+
     t.setView(window.getView());
     t.clear(sf::Color::Black);
 
@@ -423,10 +431,6 @@ void Game::draw(sf::RenderWindow &window)
     poly_manager.draw(t);
     bullet_world.draw(t);
     t.display();
-
-    sf::RectangleShape r;
-    r.setSize({t.getSize().x, t.getSize().y});
-    r.setTexture(&t.getTexture());
 
     bloom.doTheThing(t, window);
     // auto old_view = window.getView();

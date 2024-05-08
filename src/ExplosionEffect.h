@@ -4,6 +4,8 @@
 #include "ResourceIdentifiers.h"
 #include "Utils/GayVector.h"
 #include <iostream>
+#include <unordered_map>
+#include <filesystem>
 
 class AnimatedSprite
 {
@@ -185,11 +187,13 @@ public:
         // verts[3] = sf::Vertex{{input.getSize().x/2, 0}, sf::Color::Transparent, {1, 0}};
         // verts[2] = sf::Vertex{{input.getSize().x/2, input.getSize().y/2}, sf::Color::Transparent, {1, 1}};
         // verts[1] = sf::Vertex{{0, input.getSize().y/2}, sf::Color::Transparent, {0, 1}};
-        
+        sf::Vector2f rect_size;
+        rect_size.x = ds[0].getSize().x;
+        rect_size.y = ds[0].getSize().y;
         verts[0] = sf::Vertex{{0, 0}, sf::Color::Transparent, {0, 0}};
-        verts[3] = sf::Vertex{{ds[0].getSize().x, 0}, sf::Color::Transparent, {1, 0}};
-        verts[2] = sf::Vertex{{ds[0].getSize().x, ds[0].getSize().y}, sf::Color::Transparent, {1, 1}};
-        verts[1] = sf::Vertex{{0, ds[0].getSize().y}, sf::Color::Transparent, {0, 1}};
+        verts[3] = sf::Vertex{{rect_size.x, 0}, sf::Color::Transparent, {1, 0}};
+        verts[2] = sf::Vertex{{rect_size.x, rect_size.y}, sf::Color::Transparent, {1, 1}};
+        verts[1] = sf::Vertex{{0, rect_size.y}, sf::Color::Transparent, {0, 1}};
 
 
         sf::RenderStates states;
@@ -207,10 +211,12 @@ public:
         // verts[2] = sf::Vertex{{input.getSize().x, input.getSize().y}, sf::Color::Transparent, {1, 1}};
         // verts[1] = sf::Vertex{{0, input.getSize().y}, sf::Color::Transparent, {0, 1}};
 
+        rect_size.x = rts[0].getSize().x;
+        rect_size.y = rts[0].getSize().y;
         verts[0] = sf::Vertex{{0, 0}, sf::Color::Transparent, {0, 0}};
-        verts[3] = sf::Vertex{{rts[0].getSize().x, 0}, sf::Color::Transparent, {1, 0}};
-        verts[2] = sf::Vertex{{rts[0].getSize().x, rts[0].getSize().y}, sf::Color::Transparent, {1, 1}};
-        verts[1] = sf::Vertex{{0, rts[0].getSize().y}, sf::Color::Transparent, {0, 1}};
+        verts[3] = sf::Vertex{{rect_size.x, 0}, sf::Color::Transparent, {1, 0}};
+        verts[2] = sf::Vertex{{rect_size.x, rect_size.y}, sf::Color::Transparent, {1, 1}};
+        verts[1] = sf::Vertex{{0, rect_size.y}, sf::Color::Transparent, {0, 1}};
 
 
         // rts[1].draw(verts, states);
@@ -240,13 +246,13 @@ public:
 
         add.setUniform("image1", rts[0].getTexture());
         add.setUniform("image2", input.getTexture());
-        // output.draw(verts, &add);
-        // return;
-        //! WTF!?????
+
+        rect_size.x = input.getSize().x;
+        rect_size.y = input.getSize().y;
         verts[0] = sf::Vertex{{0, 0}, sf::Color::Transparent, {0, 0}};
-        verts[3] = sf::Vertex{{input.getSize().x, 0}, sf::Color::Transparent, {1, 0}};
-        verts[2] = sf::Vertex{{input.getSize().x, input.getSize().y}, sf::Color::Transparent, {1, 1}};
-        verts[1] = sf::Vertex{{0, input.getSize().y}, sf::Color::Transparent, {0, 1}};
+        verts[3] = sf::Vertex{{rect_size.x, 0}, sf::Color::Transparent, {1, 0}};
+        verts[2] = sf::Vertex{{rect_size.x, rect_size.y}, sf::Color::Transparent, {1, 1}};
+        verts[1] = sf::Vertex{{0, rect_size.y}, sf::Color::Transparent, {0, 1}};
 
         rts[1].display();
         states.shader = &add;
@@ -284,7 +290,8 @@ public:
     LaserEffect(sf::Vector2f center, float length, float width, float angle, sf::Texture *texture = nullptr)
         : r_center(center), length(length), width(width), max_width(2 * width)
     {
-        vert_pass.loadFromFile("../Resources/basic.vert", "../Resources/discreteVert.frag");
+        std::filesystem::path path("../Resources/basic.vert");
+        vert_pass.loadFromFile(path.generic_string(), "../Resources/discreteVert.frag");
         horiz_pass.loadFromFile("../Resources/basic.vert", "../Resources/discreteHoriz.frag");
         color_switch.loadFromFile("../Resources/basic.vert", "../Resources/brigthness.frag");
 
@@ -296,39 +303,7 @@ public:
         texture_rect.setOrigin({0, 1./2.f});
         texture_rect.setPosition(center);
         texture_rect.setFillColor(sf::Color{255, 255, 255, 225});
-
         texture_rect.setRotation(angle);
-        laser_rect.setSize({rts[0].getSize().x * 8. / 9., rts[0].getSize().y * 8. / 9.});
-        laser_rect.setPosition({rts[0].getSize().x / 18., rts[0].getSize().y / 18.});
-        laser_rect.setFillColor(sf::Color::Green);
-
-        rts[0].clear(sf::Color::Black);
-        rts[0].draw(laser_rect);
-        rts[0].display();
-        rts[1].clear(sf::Color::Transparent);
-
-        laser_rect.setSize({rts[0].getSize().x, rts[0].getSize().y});
-        laser_rect.setPosition({0, 0});
-
-        // for (int i = 0; i < 10; ++i)
-        // {
-
-        //     vert_pass.setUniform("image", rts[0].getTexture());
-        //     // rts[(i+1)%2].clear(sf::Color::Transparent);
-        //     laser_rect.setTexture(&rts[0].getTexture());
-        //     rts[1].draw(laser_rect, &vert_pass);
-
-        //     horiz_pass.setUniform("image", rts[1].getTexture());
-        //     laser_rect.setTexture(&rts[1].getTexture());
-        //     rts[0].draw(laser_rect, &horiz_pass);
-        // }
-
-        // color_switch.setUniform("image", rts[0].getTexture());
-        // laser_rect.setTexture(&rts[0].getTexture());
-        // rts[1].draw(laser_rect, &color_switch);
-        // // rts[1].clear(sf::Color::White);
-
-        // texture_rect.setTexture(&rts[1].getTexture());
     }
 
     virtual ~LaserEffect() {}
@@ -396,10 +371,10 @@ public:
         auto new_effect = std::make_unique<ExplosionEffect2>(at, radius, textures.get(Textures::ID::Explosion));
         effects2.addObject(std::move(new_effect));
         // effects[first_free_ind] =std::make_unique<ExplosionEffect2>(at, radius, textures.get(Textures::ID::Explosion));
-        while (effects.count(first_free_ind) != 0)
-        {
-            first_free_ind++;
-        }
+        // while (effects.count(first_free_ind) != 0)
+        // {
+        //     first_free_ind++;
+        // }
     }
 
     void createLaser(sf::Vector2f at, float length, float width, float angle)

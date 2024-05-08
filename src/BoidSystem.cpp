@@ -6,7 +6,7 @@
 
 #include <iostream>
 
-BoidSystem::BoidSystem(float max_dist)
+BoidSystem::BoidSystem(float max_dist) 
 {
     groups = std::make_shared<GroupManager>(entity2boid_data);
 
@@ -174,6 +174,7 @@ void BoidSystem::update(float dt)
     std::chrono::high_resolution_clock clock;
     auto t_start = clock.now();
 
+
     // p_ns_->update(boids);
     for (int boid_ind = 0; boid_ind < boids.size(); ++boid_ind)
     {
@@ -198,30 +199,7 @@ void BoidSystem::update(float dt)
     t_start = clock.now();
 
     //! fill neighbour list
-    for (int boid_ind = 0; boid_ind < boids.size(); ++boid_ind)
-    {
-        auto grid_ind = boid2grid.at(boid_ind).grid_ind;
-        const auto &boid = boids.at(boid_ind);
-
-        std::array<int, 9> nearest_cells;
-        int n_nearest_cells;
-        p_grid->calcNearestCells(grid_ind, nearest_cells, n_nearest_cells);
-        nearest_cells[n_nearest_cells] = grid_ind;
-        n_nearest_cells++;
-
-        for (int i = 0; i < n_nearest_cells; ++i)
-        {
-            const auto &neighbour_inds = grid2boid_inds.at(nearest_cells.at(i));
-            for (auto neighbour_ind : neighbour_inds)
-            {
-                const auto &neighbour_boid = boids.at(neighbour_ind);
-                if (dist2(boid.r, neighbour_boid.r) < 20.f * 20.f && neighbour_ind != boid_ind)
-                {
-                    boid2neighbour_inds.at(boid_ind).push_back(neighbour_ind);
-                }
-            }
-        }
-    }
+    fillNeighbourList();
 
     delta_t = std::chrono::duration_cast<std::chrono::microseconds>(clock.now() - t_start);
     std::cout << "finding_neighbours took: " << delta_t.count() << " us\n";
@@ -438,3 +416,31 @@ void BoidSystem::spawnBoss(sf::Vector2f pos){
                         &entity2boid_data.at(new_entity_ind), p_bs);
         addBoid(pos, std::move(ai), -1);
     }
+
+
+void BoidSystem::fillNeighbourList() {
+    for (int boid_ind = 0; boid_ind < boids.size(); ++boid_ind)
+    {
+        auto grid_ind = boid2grid.at(boid_ind).grid_ind;
+        const auto& boid = boids.at(boid_ind);
+
+        std::array<int, 9> nearest_cells;
+        int n_nearest_cells;
+        p_grid->calcNearestCells(grid_ind, nearest_cells, n_nearest_cells);
+        nearest_cells[n_nearest_cells] = grid_ind;
+        n_nearest_cells++;
+
+        for (int i = 0; i < n_nearest_cells; ++i)
+        {
+            const auto& neighbour_inds = grid2boid_inds.at(nearest_cells.at(i));
+            for (auto neighbour_ind : neighbour_inds)
+            {
+                const auto& neighbour_boid = boids.at(neighbour_ind);
+                if (dist2(boid.r, neighbour_boid.r) < 20.f * 20.f && neighbour_ind != boid_ind)
+                {
+                    boid2neighbour_inds.at(boid_ind).push_back(neighbour_ind);
+                }
+            }
+        }
+    }
+}

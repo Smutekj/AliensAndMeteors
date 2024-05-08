@@ -182,7 +182,8 @@ int BoundingVolumeTree::findBestSibling(const AABB &new_rect)
 
     std::vector<std::pair<int, float>> to_visit;
     std::priority_queue pq(to_visit.begin(), to_visit.end(), [](const auto &p1, const auto &p2)
-                           { return p1.second < p2.second; });
+                           { return p1.second < p2.second; }
+                           );
 
     pq.push({root_ind, 0});
     float best_cost = insertion_cost;

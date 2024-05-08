@@ -38,6 +38,17 @@ struct Laser
     int shooter_ind = -1;
 };
 
+struct Bomb {
+
+    sf::Vector2f pos;
+    sf::Vector2f vel;
+    float slowing_factor = 0.1f;
+    float radius = 2.f;
+    float explosion_radius = 10.f;
+    int timer = 0;
+    int explosion_time = 120;
+};
+
 constexpr float MAX_AGENT_SIZE = 5.f;
 constexpr int N_BULLET_GRID_X = Geometry::BOX[0] / MAX_AGENT_SIZE + 1;
 constexpr int N_BULLET_GRID_Y = Geometry::BOX[1] / MAX_AGENT_SIZE + 1;
@@ -58,6 +69,7 @@ struct BulletSystem
     std::unique_ptr<SearchGrid> p_bullet_grid;
 
     GayVector2<Laser, 100> lasers;
+    GayVector2<Bomb, 100> bombs;
 
     BulletSystem()
     {
@@ -71,7 +83,7 @@ struct BulletSystem
 
     void integrateAndSteer(int bullet_ind);
 
-    void update();
+    void update(float dt = 0.016f);
     void spawnBullet(int shooter_ind, sf::Vector2f at, sf::Vector2f vel, Player *player = nullptr)
     {
         Bullet new_bullet;
@@ -99,6 +111,18 @@ struct BulletSystem
         new_bullet.pos = at;
 
         bullets.insert(new_bullet);
+    }
+
+    void createBomb(int shooter_ind, sf::Vector2f at, sf::Vector2f vel)
+    {
+        
+        Bomb new_bomb;
+        new_bomb.pos = at;
+        new_bomb.vel = vel;
+        
+
+        bombs.insert(new_bomb);
+
     }
 
     void createLaser(int shooter_ind, sf::Vector2f at, sf::Vector2f dir, float length)
@@ -130,6 +154,14 @@ struct BulletSystem
     void draw(sf::RenderTarget &window)
     {
 
+        sf::CircleShape c;
+        c.setFillColor(sf::Color::Green);
+        for (const auto& bomb : bombs.data) {
+            c.setPosition(bomb.pos);
+            c.setRadius(bomb.radius);
+            window.draw(c);
+        }
+
         // sf::RectangleShape laser_shape;
 
         // for(auto& laser: lasers.data){
@@ -146,6 +178,9 @@ struct BulletSystem
     void collideWithMeteors(int bullet_ind);
 
 private:
+
+    void explodeBomb(sf::Vector2f center, float radius);
+
     sf::Vector2f findClosestIntesection(sf::Vector2f at, sf::Vector2f dir, float length){
         sf::Vector2f closest_intersection = at + dir * length;
         float min_dist = 200.f;
@@ -180,5 +215,7 @@ private:
         return closest_intersection;
         
     }
+
+
 
 };

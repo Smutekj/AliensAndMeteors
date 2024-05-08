@@ -2,9 +2,61 @@
 #include "PolygonObstacleManager.h"
 #include "BoidSystem.h"
 
-void BulletSystem::update()
+void BulletSystem::explodeBomb(sf::Vector2f center, float radius) {
+
+    AABB bounding_rect(center - sf::Vector2f{ radius, radius }, center + sf::Vector2f{ radius, radius });
+    p_meteors->collision_tree.findIntersectingLeaves(bounding_rect);
+
+    auto intersecting_boids = p_boids->getBoidsIn(bounding_rect);
+    for (auto ent_ind : intersecting_boids) {
+        auto& boid = p_boids->entity2boid_data.at(ent_ind);
+        if (dist(boid.r, center) < radius) {
+            boid.health -= 5;
+        }
+    }
+
+    auto meteor_inds = p_meteors->getNearestMeteorInds(bounding_rect.r_min, bounding_rect.r_max);
+    for (auto meteor_ind: meteor_inds) {
+        auto& meteor = p_meteors->meteors.at(meteor_ind);
+        auto mvt = meteor.getMVTOfSphere(center, radius);
+        if (norm2(mvt) > 0.001f ) {
+            p_meteors->destroyMeteor(meteor_ind);
+        }
+    }
+
+}
+
+void BulletSystem::update(float dt)
 {
     auto &boids = p_boids->getBoids();
+
+    std::vector<int> to_destroy_bombs;
+    int bomb_ind = 0;
+    for (auto& bomb : bombs.data) {
+         
+        bomb.pos += bomb.vel * dt;
+        auto v_dir = bomb.vel / norm(bomb.vel);
+        bomb.vel -= bomb.vel* bomb.slowing_factor;
+
+        auto meteors = p_meteors->getNearestMeteors(bomb.pos, bomb.radius);
+        for (auto* meteor : meteors) {
+            auto mvt = meteor->getMVTOfSphere(bomb.pos, bomb.radius);
+            float vel_in_mvt_dir = dot(bomb.vel, mvt);
+            if (norm2(mvt) > 0.001f && vel_in_mvt_dir < 0.f) {
+                bomb.vel -= 2.f * vel_in_mvt_dir * mvt;
+            }
+        }
+        if (bomb.timer++ > bomb.explosion_time) {
+            to_destroy_bombs.push_back(bombs.vec2entity_ind.at(bomb_ind));
+            explodeBomb(bomb.pos, bomb.explosion_radius);
+        }
+        bomb_ind++;
+    }
+    
+    for (auto ind : to_destroy_bombs) {
+        bombs.removeEnt(ind);
+    }
+
 
     std::vector<int> to_destroy_lasers;
     int l_ind = 0;
@@ -176,7 +228,7 @@ void BulletSystem::integrateAndSteer(int bullet_ind)
         auto angle = 180.f / M_PI * std::atan2(dr_to_target.y, dr_to_target.x);
         auto d_angle = std::min(std::abs(angle - bullet.orientation), 360 - std::abs(angle - bullet.orientation));
 
-        sf::Vector2f dir = {std::cos(angle * M_PI / 180.f), std::sin(angle * M_PI / 180.f)};
+        sf::Vector2f dir = {std::cosf(angle * M_PI / 180.f), std::sinf(angle * M_PI / 180.f)};
 
         if (d_angle < 5.f)
         {

@@ -11,6 +11,7 @@
 #include <limits>
 #include <iostream>
 #include <memory>
+#include <algorithm>
 
 struct CollisionData
 {
@@ -18,6 +19,8 @@ struct CollisionData
   float minimum_translation = -1;
   bool belongs_to_a = true;
 };
+
+
 
 int inline furthestVertex(sf::Vector2f separation_axis, const std::vector<sf::Vector2f> &points)
 {
@@ -389,7 +392,7 @@ Polygon inline generateRandomConvexPolygon(int n)
 
   for (int i = 1; i < n - 1; i++)
   {
-    double x = xPool.at(i);
+    auto x = xPool.at(i);
 
     if (rand() % 2)
     {
@@ -410,7 +413,7 @@ Polygon inline generateRandomConvexPolygon(int n)
 
   for (int i = 1; i < n - 1; i++)
   {
-    double y = yPool.at(i);
+    auto y = yPool.at(i);
 
     if (rand() % 2)
     {
@@ -427,8 +430,11 @@ Polygon inline generateRandomConvexPolygon(int n)
   yVec.push_back(maxY - lastLeft);
   yVec.push_back(lastRight - maxY);
 
+    std::random_device rd;
+    std::mt19937 g(rd());
+
   // Randomly pair up the X- and Y-components
-  std::random_shuffle(yVec.begin(), yVec.end());
+  std::shuffle(yVec.begin(), yVec.end(), g);
 
   // Combine the paired up components into vectors
   std::vector<sf::Vector2f> vec;
@@ -443,9 +449,9 @@ Polygon inline generateRandomConvexPolygon(int n)
             { return std::atan2(p1.y, p1.x) < std::atan2(p2.y, p2.x); });
 
   // Lay them end-to-end
-  double x = 0, y = 0;
-  double minPolygonX = 0;
-  double minPolygonY = 0;
+  float x = 0, y = 0;
+  float minPolygonX = 0;
+  float minPolygonY = 0;
   std::vector<sf::Vector2f> points;
 
   for (int i = 0; i < n; i++)
@@ -460,8 +466,8 @@ Polygon inline generateRandomConvexPolygon(int n)
   }
 
   // Move the polygon to the original min and max coordinates
-  double xShift = minX - minPolygonX;
-  double yShift = minY - minPolygonY;
+  auto xShift = minX - minPolygonX;
+  auto yShift = minY - minPolygonY;
 
   for (int i = 0; i < n; i++)
   {
@@ -626,16 +632,54 @@ struct pair_hash
   void destroyMeteor(int entity_ind);
 };
 
-struct CollisionHandler
-{
-
-  PolygonObstacleManager *p_cs;
-
-  void update()
-  {
-    auto& broad_collisions = p_cs->collisions2;
-    for(auto [e1, e2] : broad_collisions){
-      
-    }
-  }
-};
+//struct CollisionHandler
+//{
+//
+//  PolygonObstacleManager *p_cs;
+//
+//  void update()
+//  {
+//    auto& broad_collisions = p_cs->collisions2;
+//    for(auto [e1, e2] : broad_collisions){
+//      
+//    }
+//  }
+//};
+//
+//class CollisionShape {
+//private:
+//    virtual AABB getBoundingBox() = 0;
+//};
+//
+//class CircleShape : public CollisionShape {
+//
+//    sf::Vector2f r_center;
+//    float radius;
+//
+//public:
+//    CircleShape(sf::Vector2f center, float radius);
+//
+//};
+//
+//class RigidBodyPhysicsSystem {
+//
+//    VectorMap<RigidBody> bodies;
+//    
+//
+//public:
+//    void add() {
+//
+//    }
+//
+//
+//};
+//
+//class RigidBody {
+//    std::shared_ptr<CollisionShape> shape;
+//
+//
+//};
+//
+//class SpaceObject : RigidBody{
+//    bool is_static;
+//};

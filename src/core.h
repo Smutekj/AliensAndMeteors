@@ -190,7 +190,6 @@ inline float calcTrianglesDistance(VectorType v11, VectorType v12, VectorType v1
 }
 
 inline sf::Vector2f asFloat(const sf::Vector2i& r) { return static_cast<sf::Vector2f>(r); }
-inline sf::Vector2f asFloat(const sf::Vector2<u_int16_t>& r) { return static_cast<sf::Vector2f>(r); }
 //
 // inline sf::Vector2f asFloat(const Vertex& r){
 //    return static_cast<sf::Vector2f> (r);

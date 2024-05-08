@@ -8,21 +8,12 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 # ========== cpp and header files ==========
 
-# TODO: Create a Pathfinding Library which will include triangulation and pathfinding
 set(objs Particles.cpp ExplosionEffect.cpp UI.cpp ShaderManager.cpp BVH.cpp Selection.cpp  PolygonObstacleManager.h Polygon.h )
 set(hdrs Particles.h ExplosionEffect.h UI.h ShaderManager.h BVH.h core.h Selection.h PolygonObstacleManager.cpp Polygon.cpp)
 
 ###### GAME ###### 
 set(game_objs BehaviourBase.h Behaviours.h Player.h BulletSystem.h BoidSystem.cpp Game.cpp SoundModule.cpp )
 set(game_hdrs Behaviours.cpp Player.cpp BulletSystem.cpp BoidSystem.h Game.h  SoundModule.h )
-
-###### GUI ###### 
-# set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../imgui-docking/)
-# set(gui_hdrs  imgui.h backends/imgui_impl_glfw.h backends/imgui_impl_opengl3.h )
-# set(gui_objs imgui.cpp backends/imgui_impl_glfw.cpp backends/imgui_impl_opengl3.cpp imgui_demo.cpp imgui_draw.cpp imgui_tables.cpp imgui_widgets.cpp) 
-# list(TRANSFORM gui_hdrs PREPEND ${IMGUI_DIR} )
-# list(TRANSFORM gui_objs PREPEND ${IMGUI_DIR} )
-
 
 set(utils_objs  Grid.h GayVector.h  RandomTools.h ) 
 set(utils_hdrs Grid.cpp GayVector.cpp  ) 
@@ -36,16 +27,8 @@ ${objs} ${game_objs} ${gui_objs} ${hdrs} ${game_hdrs} ${gui_hdrs}   )
 #### THIS IS FOR GOOGLE TEST
 # enable_testing()
 
-# add_executable(
-#         test_all
-#         Tests/main.cpp
-#          ${utils_hdrs} ${utils_objs}
-#         ${objs} ${game_objs} ${gui_objs} ${hdrs} ${game_hdrs} ${gui_hdrs}   )
-# include_directories( ${OPENGL_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS} ${FREETYPE_INCLUDE_DIRS} lib ${IMGUI_DIR} ${IMGUI_DIR}/backends )
-
 target_link_libraries(Boids PRIVATE PRIVATE sfml-graphics sfml-window sfml-system ImGui-SFML::ImGui-SFML)
-# target_link_libraries(test_all PRIVATE  ${GLEW_LIBRARIES} glfw OpenMP::OpenMP_CXX ${FREETYPE_LIBRARIES} 
-                        # GTest::gtest_main)
+
 
 if(WIN32)
 if (BUILD_SHARED_LIBS)

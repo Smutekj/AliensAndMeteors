@@ -28,14 +28,17 @@ namespace Collisions
 
     class CollisionSystem
     {
-
-        std::vector<std::unique_ptr<Collidable>> collidables_;
-
-
-        std::vector<std::variant<Circle, ConvexShape>> wtfs;
-
+        std::unordered_map<int, std::variant<Circle, ConvexShape>> collidables_;
 
         BoundingVolumeTree collision_tree;
+
+        CollisionFinder finder_;
+
+    public:
+        void update()
+        {
+
+        }
 
         void addCollidable(Collidable* new_shape, int entity_ind){
 
@@ -45,16 +48,29 @@ namespace Collisions
 
         void remove(int entity_ind){
             collision_tree.removeObject(entity_ind);
+            collidables_
         }
 
-        std::vector<std::pair<int, int>> findCollisionPairs(){
+        std::vector<std::pair<int, int>> findCollisionPairs()
+        {
 
-            // std::visit
+            std::vector<std::pair<int, int>> collision_pairs;
 
-            for(auto& collidable : collidables_){
+
+            for(auto& [entity_ind1, collidable] : collidables_)
+            {
                 auto potential_collisions = collision_tree.findIntersectingLeaves(collidable->bounding_rect);
-                
+                for (auto entity_ind2 : potential_collisions) 
+                {
+                    auto are_colliding = std::visit(finder_,
+                        collidables_.at(entity_ind1), collidables_.at(entity_ind2));
+                    if (are_colliding)
+                    {
+                        collision_pairs.push_back(entity_ind1, entity_ind2);
+                    }
+                }
             }
+            return collision_pairs;
 
         }
 
@@ -65,6 +81,12 @@ namespace Collisions
 }
 
 
+class CollisionHandler {
+
+public:
+
+
+};
 
 
 struct CollisionFinder
@@ -216,4 +238,7 @@ struct CollisionFinder
         // return this->(p2, s1);
         std::cout << "rect and: sphere\n";
     }
+
+
 };
+
