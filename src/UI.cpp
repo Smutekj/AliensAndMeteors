@@ -97,7 +97,7 @@ PhysicsWindow::PhysicsWindow(BoidSystem &ps) :
 {
  for (auto &[multiplier_type, value] : force_multipliers)
     {
-        mulitplier2slider_min_max[multiplier_type] = {0.0f, 5.f};
+        mulitplier2slider_min_max[multiplier_type] = {0.0f, 100.f};
     }
 
     
@@ -111,7 +111,6 @@ void PhysicsWindow::draw()
 {
 
     ImGui::Begin(name.c_str());
-    ImGui::SetWindowPos({300, 300});
     
     if(ImGui::BeginListBox("Force Multipliers"))
     {

@@ -8,8 +8,10 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 # ========== cpp and header files ==========
 
-set(objs Particles.cpp ExplosionEffect.cpp UI.cpp ShaderManager.cpp BVH.cpp Selection.cpp  PolygonObstacleManager.h Polygon.h )
-set(hdrs Particles.h ExplosionEffect.h UI.h ShaderManager.h BVH.h core.h Selection.h PolygonObstacleManager.cpp Polygon.cpp)
+set(objs StateStack.cpp State.cpp PauseState.cpp MenuState.cpp GameState.cpp Application.cpp Particles.cpp
+ ExplosionEffect.cpp UI.cpp ShaderManager.cpp BVH.cpp Selection.cpp  PolygonObstacleManager.h Polygon.h )
+set(hdrs StateStack.h State.h PauseState.h MenuState.h GameState.h Application.h Particles.h ExplosionEffect.h
+ UI.h ShaderManager.h BVH.h core.h Selection.h PolygonObstacleManager.cpp Polygon.cpp)
 
 ###### GAME ###### 
 set(game_objs BehaviourBase.h Behaviours.h Player.h BulletSystem.h BoidSystem.cpp Game.cpp SoundModule.cpp )

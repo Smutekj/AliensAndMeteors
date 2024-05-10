@@ -47,6 +47,8 @@ struct Polygon : sf::Transformable
   float inertia = 1;
   float radius;
 
+
+
   Polygon(int n_points = 3, sf::Vector2f at = {0, 0}, float radius = 10.f);
 
   AABB getBoundingRect() const
@@ -62,46 +64,11 @@ struct Polygon : sf::Transformable
   void rotate(float by);
   void update(float dt);
 
-  sf::Vector2f getMVTOfSphere(sf::Vector2f center, float radius)
-  {
-
-    const auto &points_world = getPointsInWorld();
-
-    int next = 1;
-    const auto n_points1 = points.size();
-
-    float min_overlap = std::numeric_limits<float>::max();
-    sf::Vector2f min_axis;
-    for (int curr = 0; curr < n_points1; ++curr)
-    {
-      auto t1 = points_world.at(next) - points_world[curr]; //! line perpendicular to current polygon edge
-      sf::Vector2f n1 = {t1.y, -t1.x};
-      n1 /= norm(n1);
-      auto proj1 = projectOnAxis(n1, points_world);
-      float proj_sphere = dot(n1, center);
-      Projection1D proj2(proj_sphere - radius, proj_sphere + radius);
-
-      if (!overlap1D(proj1, proj2))
-      {
-        return {0, 0};
-      }
-      else
-      {
-        auto overlap = calcOverlap(proj1, proj2);
-        if (overlap < min_overlap)
-        {
-          min_overlap = overlap;
-          min_axis = n1;
-        }
-      }
-      next++;
-      if (next == n_points1)
-      {
-        next = 0;
-      }
-    }
-    return min_axis;
+  bool isCircle()const{
+    return points.size() < 3;
   }
+
+  sf::Vector2f getMVTOfSphere(sf::Vector2f center, float radius);
 
   void makeShapeFromPolygon(sf::ConvexShape &shape)
   {
@@ -123,3 +90,75 @@ struct Polygon : sf::Transformable
     window.draw(shape);
   }
 };
+
+// struct Shape{
+
+// };
+
+// struct CircleShape{
+//   sf::Vector2f r_center;
+//   float radius;  
+// };
+
+// struct RigidBody{
+//   float angle_vel;
+//   sf::Vector2f vel;
+//   float mass;
+//   float inertia;
+// };
+
+
+
+// struct Meteor : sf::Transformable, RigidBody, Collidable
+// {
+//   std::vector<sf::Vector2f> points;
+
+//   Meteor(int n_points = 3, sf::Vector2f at = {0, 0}, float radius = 10.f);
+
+//   AABB getBoundingRect() const
+//   {
+//     auto r = getPosition();
+//     return {r - 2.5f*getScale(), r + 2.5f*getScale()};
+//   }
+
+//   sf::Vector2f getCenter();
+
+//   std::vector<sf::Vector2f> getPointsInWorld() const;
+//   void move(sf::Vector2f by);
+//   void rotate(float by);
+//   void update(float dt);
+
+// };
+
+// struct PowerUp : Collidable, RigidBody,  CircleShape{
+
+
+//   void update(float dt){
+    
+//   }
+// };
+
+
+// struct RigidBodySystem{
+
+//   typedef std::pair<int, std::unique_ptr<RigidBody>> EntityAndData;
+
+//   ObjectPool<EntityAndData, 5000> bodies;
+
+//   void onEntityCreation(int entity_ind, RigidBody rb){
+//     bodies.a
+//   }
+
+//   void onEntityDestruction(int entity_ind){
+//     bodies.remove(entity_ind);
+//   }
+
+//   void onCollision(int entity1, int entity2, const CollisionData& c_data){
+//     auto& rb1 = bodies.at(entity1);
+//     auto& rb2 = bodies.at(entity2);
+
+
+    
+//   }
+
+// };

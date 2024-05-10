@@ -10,8 +10,13 @@ void BulletSystem::explodeBomb(sf::Vector2f center, float radius) {
     auto intersecting_boids = p_boids->getBoidsIn(bounding_rect);
     for (auto ent_ind : intersecting_boids) {
         auto& boid = p_boids->entity2boid_data.at(ent_ind);
-        if (dist(boid.r, center) < radius) {
-            boid.health -= 5;
+        auto center_dist = dist(boid.r, center);
+        if ( center_dist < radius) {
+            auto dmg = (5.f - 0.f)*(1.f-center_dist/radius) + 0.f;
+            boid.health -= dmg;
+            sf::Vector2f impulse = 35.f*(boid.r - center)/center_dist;
+            p_boids->addBoidImpulse(ent_ind, impulse);
+            p_effects->createExplosion(center, radius, Textures::ID::Explosion2, 120);
         }
     }
 
@@ -134,7 +139,7 @@ void BulletSystem::update(float dt)
         if (bullet.player)
         {
             bullet.target = bullet.player->pos;
-            if (dist(bullet.target, bullet.pos) < bullet.radius)
+            if (dist(bullet.target, bullet.pos) < bullet.radius + bullet.player->radius)
             {
                 to_remove.push_back(bullet_ind);
                 continue;
@@ -142,6 +147,13 @@ void BulletSystem::update(float dt)
         }else{
             bullet.target = bullet.pos + 5.f*bullet.vel;
         }
+        if (dist(bullet.pos, player.pos) < bullet.radius + player.radius)
+        {
+                player.health--;
+                to_remove.push_back(bullet_ind);
+                continue;
+        }
+        
         
 
         // integrateAndSteer(bullet_ind);
@@ -228,7 +240,7 @@ void BulletSystem::integrateAndSteer(int bullet_ind)
         auto angle = 180.f / M_PI * std::atan2(dr_to_target.y, dr_to_target.x);
         auto d_angle = std::min(std::abs(angle - bullet.orientation), 360 - std::abs(angle - bullet.orientation));
 
-        sf::Vector2f dir = {std::cosf(angle * M_PI / 180.f), std::sinf(angle * M_PI / 180.f)};
+        auto dir = angle2dir(angle);
 
         if (d_angle < 5.f)
         {

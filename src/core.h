@@ -180,6 +180,10 @@ inline sf::Vector2f angle2dir(float angle){
     return dir;
 }
 
+inline float dir2angle(const sf::Vector2f& dir){
+    return std::atan2(dir.y, dir.x)*180.f/M_PIf;
+}
+
 
 template <typename VectorType>
 inline float calcTrianglesDistance(VectorType v11, VectorType v12, VectorType v13, VectorType v21, VectorType v22,

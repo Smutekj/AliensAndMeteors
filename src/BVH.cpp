@@ -528,3 +528,47 @@ int BoundingVolumeTree::calcMaxDepth() const
         auto proj2 = projectOnAxis(normal, {from});
         return overlap1D(proj, proj2);
     }
+
+
+    std::vector<int> BoundingVolumeTree::rayCast(sf::Vector2f from, sf::Vector2f dir, float length)
+    {
+
+        sf::Vector2f to = from + dir * length;
+        std::vector<int> intersections;
+
+        std::queue<int> to_visit;
+        to_visit.push(root_ind);
+        while (!to_visit.empty())
+        {
+
+            int current_ind = to_visit.front();
+            to_visit.pop();
+            auto &current = nodes.at(current_ind);
+
+            if (intersectsLine(from, to, current.rect))
+            {
+                if (!current.isLeaf())
+                {
+                    to_visit.push(current.child_index_1);
+                    to_visit.push(current.child_index_2);
+                }
+                else
+                {
+                    intersections.push_back(current.object_index);
+                }
+            }
+        }
+
+        return intersections;
+    }
+
+
+    void BoundingVolumeTree::clear()
+    {
+        object2node_indices.clear();
+        for (int i = 0; i < nodes.size(); ++i)
+        {
+            free_indices.insert(i);
+        }
+        root_ind = -1;
+    }

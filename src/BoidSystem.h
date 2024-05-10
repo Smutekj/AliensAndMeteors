@@ -23,14 +23,12 @@ struct Boid
 
     MoveState state = MoveState::STANDING;
 
-    float radius = 1.f;
+    float radius = 5.f;
     float orientation = 0.f;
     sf::Vector2f target_pos;
     int group_ind = -1;
     int entity_ind = -1;
-
 };
-
 
 struct GridInds
 {
@@ -66,10 +64,10 @@ class BoidSystem
     ObjectPool<Boid> m_boids;
 
     std::unique_ptr<SearchGrid> p_grid;
-    std::array<std::vector<int>, N_GRID_X* N_GRID_Y> grid2boid_inds;
-    std::array<std::vector<int>, N_GRID_X* N_GRID_Y> grid2boids;
+    std::vector<std::vector<int>> grid2boid_inds;
 
     const float max_vel = 25.f;
+    const float max_impulse_vel = 40.f;
 
 public:
     std::queue<int> to_destroy;
@@ -79,6 +77,7 @@ public:
 
     std::set<int> free_entities;
     std::array<int, 5000> entity2boids;
+    std::array<sf::Vector2f, 5000> entity2impulses;
 
     std::array<EntityData, 5000> entity2boid_data;
 
@@ -111,8 +110,18 @@ public:
 
     void insertToGrid(int grid_ind, int boid_ind);
 
+    void setBoidVel(int entity_ind, const sf::Vector2f &new_vel)
+    {
+        boids.at(entity2boids.at(entity_ind)).vel = new_vel;
+    }
+
+    void addBoidImpulse(int entity_ind, const sf::Vector2f &impulse)
+    {
+        entity2impulses.at(entity_ind) += impulse;
+    }
+
     void removeBoid(int boid_ind);
-    void removeBoids(const std::vector<int>& boid_ind);
+    void removeBoids(const std::vector<int> &boid_ind);
     void addBoid(sf::Vector2f at, std::unique_ptr<BoidAI> &&ai, int group_ind = -1);
     void setBehaviourOf(int entity_ind, std::unique_ptr<BoidAI> behaviour);
     void addGroupOfBoids(int n_boids, sf::Vector2f center, float radius);
@@ -132,40 +141,46 @@ public:
         return selection;
     }
 
-    std::vector<int> getBoidsIn(AABB& rect)
+    std::vector<int> getBoidsIn(AABB &rect)
     {
         std::vector<int> selection;
         int boid_ind = 0;
-        
 
         int min_x = rect.r_min.x / p_grid->cell_size_.x;
         int max_x = rect.r_max.x / p_grid->cell_size_.x;
         int min_y = rect.r_min.y / p_grid->cell_size_.y;
         int max_y = rect.r_max.y / p_grid->cell_size_.y;
 
-
-        for (int ix = min_x; ix <= max_x; ++ix) 
+        auto n_total_cells = p_grid->getNCells();
+        for (int ix = min_x; ix <= max_x; ++ix)
         {
-            for (int iy = min_y; iy <= max_y; ++iy) 
+            for (int iy = min_y; iy <= max_y; ++iy)
             {
                 auto grid_ind = iy * p_grid->n_cells_.x + ix;
-                if (grid_ind < 0 || grid_ind >= N_GRID_X * N_GRID_Y) {
+                if (grid_ind < 0 || grid_ind >= n_total_cells)
+                {
                     continue;
                 }
-                for (auto boid_ind : grid2boid_inds.at(grid_ind)) {
+                for (auto boid_ind : grid2boid_inds.at(grid_ind))
+                {
                     selection.push_back(boids.at(boid_ind).entity_ind);
                 }
             }
         }
-        auto fuck_me = gridIsOk();
+        assert(gridIsOk());
         return selection;
     }
 
-    bool gridIsOk()const {
+    bool gridIsOk() const
+    {
         std::set<int> set;
-        for (int grid_ind = 0; grid_ind < N_GRID_X * N_GRID_Y; ++grid_ind) {
-            for (auto boid_ind : grid2boid_inds.at(grid_ind)) {
-                if(set.count(boid_ind) > 0) {
+        auto n_total_cells = p_grid->getNCells();
+        for (int grid_ind = 0; grid_ind < n_total_cells; ++grid_ind)
+        {
+            for (auto boid_ind : grid2boid_inds.at(grid_ind))
+            {
+                if (set.count(boid_ind) > 0)
+                {
                     return false;
                 }
                 set.insert(boid_ind);
@@ -209,7 +224,10 @@ public:
         for (auto entity_ind : inds)
         {
             auto ind = entity2boids.at(entity_ind);
-            if(ind == -1){continue;}
+            if (ind == -1)
+            {
+                continue;
+            }
             boids.at(ind).target_pos = new_target;
             auto dr_to_target = boids.at(ind).target_pos - boids.at(ind).r;
             // boids.at(ind).vel = 0.01f*dr_to_target/norm(dr_to_target);
@@ -224,20 +242,28 @@ public:
         return boids;
     }
 
-    // std::variant<DestroyEnemy, SpawnEnemyMessage>;
+    void draw(sf::RenderTarget &target)
+    {
+        sf::VertexArray boid_vertices;
+        boid_vertices.setPrimitiveType(sf::Quads);
+        boid_vertices.resize(4 * boids.size());
+        sf::Color color = sf::Color::Green;
 
-    //     void acceptMessages(std::queue<std::unique_ptr<BoidMessage>>& messages){
-    //          basicPackA;
-    // std::variant<LightItem, HeavyItem> basicPackB;
+        for (int boid_ind = 0; boid_ind < boids.size(); ++boid_ind)
+        {
+            const auto &boid = boids[boid_ind];
 
-    // std::visit(overload{
-    //     [](LightItem&, LightItem& ) { cout << "2 light items\n"; },
-    //     [](LightItem&, HeavyItem& ) { cout << "light & heavy items\n"; },
-    //     [](HeavyItem&, LightItem& ) { cout << "heavy & light items\n"; },
-    //     [](HeavyItem&, HeavyItem& ) { cout << "2 heavy items\n"; },
-    // }, basicPackA, basicPackB);
+            sf::Transform a;
+            a.rotate(boid.orientation);
+            a.scale({boid.radius, boid.radius});
 
-    //     }
+            boid_vertices[boid_ind * 4 + 0] = {boid.r + a.transformPoint({-0.5, -0.5}), color};
+            boid_vertices[boid_ind * 4 + 1] = {boid.r + a.transformPoint({0.5, -0.5}), color};
+            boid_vertices[boid_ind * 4 + 2] = {boid.r + a.transformPoint({0.5, 0.5}), color};
+            boid_vertices[boid_ind * 4 + 3] = {boid.r + a.transformPoint({-0.5, 0.5}), color};
+        }
+        target.draw(boid_vertices);
+    }
 
 private:
     bool mappingsAreOK()

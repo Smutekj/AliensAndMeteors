@@ -6,7 +6,7 @@
 
 #include <iostream>
 
-BoidSystem::BoidSystem(float max_dist) 
+BoidSystem::BoidSystem(float max_dist)
 {
     groups = std::make_shared<GroupManager>(entity2boid_data);
 
@@ -15,6 +15,7 @@ BoidSystem::BoidSystem(float max_dist)
                                   static_cast<int>(box_size.y / max_dist) + 1};
 
     p_grid = std::make_unique<SearchGrid>(n_cells, sf::Vector2f{max_dist, max_dist});
+    grid2boid_inds.resize(n_cells.x * n_cells.y);
 
     for (int i = 0; i < 5000; ++i)
     {
@@ -43,9 +44,10 @@ void BoidSystem::avoidMeteors()
         auto &boid = boids.at(i);
         auto r = boid.r;
         auto &v = boid.vel;
-        auto state = entity2boid_data.at(boid.entity_ind).state ;
+        auto state = entity2boid_data.at(boid.entity_ind).state;
 
         auto nearest_meteors = polygons->getNearestMeteors(boid.r, boid.radius * 5.0f);
+        // auto wtf = polygons->collision_tree.rayCast(boid.r, boid.target_pos)
         for (auto *meteor : nearest_meteors)
         {
             auto mvt = meteor->getMVTOfSphere(r, boid.radius);
@@ -57,28 +59,28 @@ void BoidSystem::avoidMeteors()
             }
             auto r_meteor = meteor->getPosition();
             auto radius_meteor = meteor->radius;
-            auto dr_to_target = v / norm(v);
+            auto dr_to_target =  v / norm(v);
+            // dr_to_target/=norm(dr_to_target);
             auto dr_to_meteor = (r_meteor - r) / norm(r - r_meteor);
-            sf::Vector2f dr_norm = {dr_to_target.y, -dr_to_target.x};
+            auto dv_rel = v - meteor->vel;
+            // sf::Vector2f dr_norm = {dr_to_target.y, -dr_to_target.x};
+            sf::Vector2f dr_norm = {dr_to_meteor.y, -dr_to_meteor.x};
+            dr_norm /= norm(dr_norm);
 
             auto dist_to_meteor = dist(r, r_meteor);
             if (dist_to_meteor < radius_meteor * 2.f)
             {
                 const auto angle = angle_calculator.angleBetween(dr_to_meteor, dr_to_target);
-                //                bool is_above = sign(r_selected, cluster.center, move_targets_[selected]);
+                const auto angle_b = std::asin(radius_meteor / dist_to_meteor) * 180.f / M_PIf;
                 const float sign = 2 * (angle < 0) - 1;
-                if (std::abs(angle) < 70)
+
+                if (std::abs(angle) < 110)
                 {
                     auto avoid_force = 5.f * sign * dr_norm * radius_meteor / (dist_to_meteor + radius_meteor);
+                    avoid_force = avoid_multiplier* avoid_force ;
                     truncate(avoid_force, 25.f);
-                    avoid_force = avoid_multiplier* avoid_force / norm(avoid_force) + 0.f*boid.vel;
                     boid.acc += avoid_force;
                 }
-
-            }
-            if(state == MoveState::STANDING
-             && dist_to_meteor < radius_meteor*1.1f){
-                // boid.acc += 0.02f*(-dr_to_meteor/norm(dr_to_meteor));
             }
         }
     }
@@ -106,7 +108,6 @@ void BoidSystem::applyForces(int boid_ind)
     auto range_align = std::pow(force_ranges[Multiplier::ALIGN], 2);
     auto range_scatter = std::pow(force_ranges[Multiplier::SCATTER], 2);
 
-
     auto &boid = boids.at(boid_ind);
     auto v = boid.vel;
     if (boid.state == MoveState::STANDING)
@@ -128,7 +129,7 @@ void BoidSystem::applyForces(int boid_ind)
 
         if (dist2 < range_scatter)
         {
-            scatter_force -= scatter_multiplier*dr/dist2;
+            scatter_force -= scatter_multiplier * dr / dist2;
             dr_nearest_neighbours += dr / dist2;
             n_neighbours++;
         }
@@ -165,7 +166,7 @@ void BoidSystem::applyForces(int boid_ind)
         seek_force = seek_multiplier * max_vel * dr_to_target / norm(dr_to_target) - v;
     }
 
-    boid.acc += (scatter_force + align_force + seek_force + 0.00001f*cohesion_force);
+    boid.acc += (scatter_force + align_force + seek_force + 0.00001f * cohesion_force);
     truncate(boid.acc, 0.5f);
 }
 
@@ -173,7 +174,6 @@ void BoidSystem::update(float dt)
 {
     std::chrono::high_resolution_clock clock;
     auto t_start = clock.now();
-
 
     // p_ns_->update(boids);
     for (int boid_ind = 0; boid_ind < boids.size(); ++boid_ind)
@@ -220,6 +220,17 @@ void BoidSystem::update(float dt)
         }
         boid.vel += boid.acc + entity2boid_data.at(boid.entity_ind).acc;
         truncate(boid.vel, entity2boid_data.at(boid.entity_ind).max_vel);
+        truncate(entity2impulses.at(boid.entity_ind), max_impulse_vel);
+
+        if (norm2(boid.vel) > 0.00001f)
+        {
+            auto desired_orient = dir2angle(boid.vel);
+            boid.orientation = dir2angle(boid.vel);
+        }
+
+        boid.vel += entity2impulses.at(boid.entity_ind);
+
+        entity2impulses.at(boid.entity_ind) *= 0.f;
         boid.r += boid.vel * dt;
         entity2boid_data.at(boid.entity_ind).r = boid.r;
         entity2boid_data.at(boid.entity_ind).vel = boid.vel;
@@ -328,7 +339,10 @@ void BoidSystem::insertToGrid(int grid_ind, int boid_ind)
 void BoidSystem::removeBoid(int entity_ind)
 {
     const auto boid_ind = entity2boids.at(entity_ind);
-    if(boid_ind == -1){return;}
+    if (boid_ind == -1)
+    {
+        return;
+    }
     entity2boids.at(boids.at(boid_ind).entity_ind) = -1;
     // entity2p_ai.at(boids.at(boid_ind).entity_ind).reset();
 
@@ -356,7 +370,7 @@ void BoidSystem::removeBoids(const std::vector<int> &ent_inds)
     for (auto ind : ent_inds)
     {
         removeBoid(ind);
-        assert(free_entities.count(ind)==0);
+        assert(free_entities.count(ind) == 0);
         free_entities.insert(ind);
         // entity2boids.at(ind) = -1;
     }
@@ -397,9 +411,7 @@ void BoidSystem::addGroupOfBoids(int n_boids, sf::Vector2f center, float radius)
             leader_ai.get());
         float rand_angle = randf(0, 2.f * M_PI);
         float rand_radius = randf(0, radius);
-        sf::Vector2f new_position = center;
-        new_position.x += rand_radius * std::cos(rand_angle);
-        new_position.y += rand_radius * std::sin(rand_angle);
+        sf::Vector2f new_position = center + angle2dir(rand_angle) * rand_radius;
         auto *wtf = &entity2boid_data.at(ent_ind);
         entity2boid_data.at(ent_ind).r = new_position;
 
@@ -410,19 +422,20 @@ void BoidSystem::addGroupOfBoids(int n_boids, sf::Vector2f center, float radius)
     boids.back().radius *= 3.f;
 }
 
-void BoidSystem::spawnBoss(sf::Vector2f pos){
-        auto new_entity_ind = *free_entities.begin();
-        auto ai = std::make_unique<BossAI>(new_entity_ind, player, 
-                        &entity2boid_data.at(new_entity_ind), p_bs);
-        addBoid(pos, std::move(ai), -1);
-    }
+void BoidSystem::spawnBoss(sf::Vector2f pos)
+{
+    auto new_entity_ind = *free_entities.begin();
+    auto ai = std::make_unique<BossAI>(new_entity_ind, player,
+                                       &entity2boid_data.at(new_entity_ind), p_bs);
+    addBoid(pos, std::move(ai), -1);
+}
 
-
-void BoidSystem::fillNeighbourList() {
+void BoidSystem::fillNeighbourList()
+{
     for (int boid_ind = 0; boid_ind < boids.size(); ++boid_ind)
     {
         auto grid_ind = boid2grid.at(boid_ind).grid_ind;
-        const auto& boid = boids.at(boid_ind);
+        const auto &boid = boids.at(boid_ind);
 
         std::array<int, 9> nearest_cells;
         int n_nearest_cells;
@@ -432,10 +445,10 @@ void BoidSystem::fillNeighbourList() {
 
         for (int i = 0; i < n_nearest_cells; ++i)
         {
-            const auto& neighbour_inds = grid2boid_inds.at(nearest_cells.at(i));
+            const auto &neighbour_inds = grid2boid_inds.at(nearest_cells.at(i));
             for (auto neighbour_ind : neighbour_inds)
             {
-                const auto& neighbour_boid = boids.at(neighbour_ind);
+                const auto &neighbour_boid = boids.at(neighbour_ind);
                 if (dist2(boid.r, neighbour_boid.r) < 20.f * 20.f && neighbour_ind != boid_ind)
                 {
                     boid2neighbour_inds.at(boid_ind).push_back(neighbour_ind);

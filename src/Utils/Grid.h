@@ -29,6 +29,8 @@ class Grid {
     [[nodiscard]] sf::Vector2i cellCoords(sf::Vector2f r_coord) const;
     [[nodiscard]] sf::Vector2i cellCoords(sf::Vector2i r_coord) const;
     [[nodiscard]] sf::Vector2i cellCoords(size_t cell_index) const;
+
+    size_t getNCells()const;
 };
 
 //! \class represents grids that are used for searching for nearest neighbours

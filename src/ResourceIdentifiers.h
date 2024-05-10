@@ -14,13 +14,12 @@ namespace Textures
 {
 	enum ID
 	{
-		Entities,
-		Jungle,
-		TitleScreen,
-		Buttons,
 		Explosion,
+		Explosion2,
+		Bomb,
 		Particle,
-		FinishLine,
+		PlayerShip,
+		BackGround,
 	};
 }
 

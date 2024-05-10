@@ -140,3 +140,7 @@ void SearchGrid::calcNearestCells2(const size_t cell_ind, std::array<int, 9>& ne
     assert(n_nearest_cells != 0); //! this would be silly
 }
 
+
+size_t Grid::getNCells() const{
+    return n_cells_.x*n_cells_.y;
+}

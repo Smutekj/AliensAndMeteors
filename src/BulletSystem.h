@@ -34,7 +34,7 @@ struct Laser
     float angle = 0;
     float length = 500.f;
     int time = 0;
-    float width = 2.f;
+    float width = 1.f;
     int shooter_ind = -1;
 };
 
@@ -44,7 +44,7 @@ struct Bomb {
     sf::Vector2f vel;
     float slowing_factor = 0.1f;
     float radius = 2.f;
-    float explosion_radius = 10.f;
+    float explosion_radius = 25.f;
     int timer = 0;
     int explosion_time = 120;
 };
@@ -71,8 +71,19 @@ struct BulletSystem
     GayVector2<Laser, 100> lasers;
     GayVector2<Bomb, 100> bombs;
 
-    BulletSystem()
+    ResourceHolder<sf::Texture, Textures::ID> bomb_textures; 
+    std::unique_ptr<AnimatedSpriteEffect> bomb_sprite;
+
+    Player& player;
+
+    BulletSystem(Player& player) : player(player)
     {
+        
+        bomb_textures.load(Textures::ID::Bomb, "../Resources/bomb.png");
+        bomb_sprite = std::make_unique<AnimatedSpriteEffect>(
+            bomb_textures.get(Textures::ID::Bomb), sf::Vector2f{0,0}, sf::Vector2f{0,0}, 7, 2
+            );
+
         sf::Vector2f box_size = {Geometry::BOX[0], Geometry::BOX[1]};
         const sf::Vector2i n_cells = {N_BULLET_GRID_X, N_BULLET_GRID_Y};
 
@@ -151,28 +162,42 @@ struct BulletSystem
    
     }
 
+
     void draw(sf::RenderTarget &window)
     {
 
-        sf::CircleShape c;
-        c.setFillColor(sf::Color::Green);
+        bomb_sprite->setTexture(bomb_textures.get(Textures::ID::Bomb));
         for (const auto& bomb : bombs.data) {
-            c.setPosition(bomb.pos);
-            c.setRadius(bomb.radius);
-            window.draw(c);
+
+            bomb_sprite->setLifeTime(bomb.explosion_time);
+            bomb_sprite->setTime(bomb.timer);    
+            bomb_sprite->setPosition(bomb.pos);
+            float scale_factor = bomb.radius / bomb_sprite->getTextureRect().width;
+            bomb_sprite->setScale({scale_factor, scale_factor});
+            window.draw(*bomb_sprite);
         }
 
-        // sf::RectangleShape laser_shape;
 
-        // for(auto& laser: lasers.data){
-        //     // auto& laser = lasers.at(laser_ind);
-        //     laser_shape.setSize({laser.length, laser.width});
-        //     laser_shape.setOrigin({0, laser.width/2.f});
-        //     laser_shape.setPosition(laser.start_position);
-        //     laser_shape.setRotation(laser.angle);
-        //     laser_shape.setFillColor(sf::Color::Yellow);
-        //     window.draw(laser_shape);
-        // }
+        sf::VertexArray bullet_vertices;
+        bullet_vertices.setPrimitiveType(sf::Quads);
+        bullet_vertices.resize(4 * bullets.size());
+        sf::Color color = sf::Color::Red;
+
+        for (int boid_ind = 0; boid_ind < bullets.size(); ++boid_ind)
+        {
+            const auto &bullet = bullets.data[boid_ind];
+
+            sf::Transform a;
+            a.rotate(bullet.orientation);
+
+            bullet_vertices[boid_ind * 4 + 0] = {bullet.pos + a.transformPoint({-0.5, -0.5}), color};
+            bullet_vertices[boid_ind * 4 + 1] = {bullet.pos + a.transformPoint({0.5, -0.5}), color};
+            bullet_vertices[boid_ind * 4 + 2] = {bullet.pos + a.transformPoint({0.5, 0.5}), color};
+            bullet_vertices[boid_ind * 4 + 3] = {bullet.pos + a.transformPoint({-0.5, 0.5}), color};
+        }
+
+        window.draw(bullet_vertices);
+
     }
 
     void collideWithMeteors(int bullet_ind);

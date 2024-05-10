@@ -18,9 +18,8 @@ struct CollisionData
   sf::Vector2f separation_axis;
   float minimum_translation = -1;
   bool belongs_to_a = true;
+  sf::Vector2f contact_point;
 };
-
-
 
 int inline furthestVertex(sf::Vector2f separation_axis, const std::vector<sf::Vector2f> &points)
 {
@@ -44,6 +43,147 @@ struct CollisionFeature
   sf::Vector2f best_vertex;
   Edgef edge;
 };
+
+CollisionData inline calcCollisionDataCircleCircle(sf::Vector2f center1, float radius1, sf::Vector2f center2, float radius2)
+{
+
+  CollisionData collision_result;
+
+  auto d = dist(center1, center2);
+  if (d < radius1 + radius2)
+  {
+    collision_result.separation_axis = center1 - center2;
+    collision_result.separation_axis /= d;
+    collision_result.minimum_translation = d - (radius1 + radius2);
+  }
+
+  return collision_result;
+}
+
+CollisionData inline calcCollisionDataPolygonCircle(const std::vector<sf::Vector2f> &points,
+                                                    sf::Vector2f center, float radius)
+{
+  CollisionData collision_result;
+
+  int next = 1;
+  const auto n_points1 = points.size();
+
+  float min_overlap = std::numeric_limits<float>::max();
+  sf::Vector2f min_axis;
+  for (int curr = 0; curr < n_points1; ++curr)
+  {
+    auto t1 = points.at(next) - points[curr]; //! line perpendicular to current polygon edge
+    sf::Vector2f n1 = {t1.y, -t1.x};
+    n1 /= norm(n1);
+    auto proj1 = projectOnAxis(n1, points);
+    float proj_sphere = dot(n1, center);
+    Projection1D proj2(proj_sphere - radius, proj_sphere + radius);
+
+    if (!overlap1D(proj1, proj2))
+    {
+      collision_result.minimum_translation = -1;
+      return collision_result;
+    }
+    else
+    {
+      auto overlap = calcOverlap(proj1, proj2);
+      if (overlap < min_overlap)
+      {
+        min_overlap = overlap;
+        min_axis = n1;
+      }
+    }
+    next++;
+    if (next == n_points1)
+    {
+      next = 0;
+    }
+  }
+  collision_result.minimum_translation = min_overlap;
+  collision_result.separation_axis = min_axis;
+  return collision_result;
+}
+
+CollisionData inline calcCollisionDataPolyPoly(const std::vector<sf::Vector2f> &points1,
+                                               const std::vector<sf::Vector2f> &points2)
+{
+  CollisionData collision_result;
+
+  int next = 1;
+  const auto n_points1 = points1.size();
+  const auto n_points2 = points2.size();
+
+  Edgef contact_edge;
+
+  float min_overlap = std::numeric_limits<float>::max();
+  sf::Vector2f &min_axis = collision_result.separation_axis;
+  for (int curr = 0; curr < n_points1; ++curr)
+  {
+
+    auto t1 = points1[next] - points1[curr]; //! line perpendicular to current polygon edge
+    sf::Vector2f n1 = {t1.y, -t1.x};
+    n1 /= norm(n1);
+    auto proj1 = projectOnAxis(n1, points1);
+    auto proj2 = projectOnAxis(n1, points2);
+
+    if (!overlap1D(proj1, proj2))
+    {
+      collision_result.minimum_translation = -1;
+      return collision_result;
+    }
+    else
+    {
+      auto overlap = calcOverlap(proj1, proj2);
+      if (overlap < min_overlap)
+      {
+        min_overlap = overlap;
+        min_axis = n1;
+      }
+    }
+
+    next++;
+    if (next == n_points1)
+    {
+      next = 0;
+    }
+  }
+  next = 1;
+  for (int curr = 0; curr < n_points2; ++curr)
+  {
+
+    auto t1 = points2[next] - points2[curr]; //! line perpendicular to current polygon edge
+    sf::Vector2f n1 = {t1.y, -t1.x};
+    n1 /= norm(n1);
+    auto proj1 = projectOnAxis(n1, points1);
+    auto proj2 = projectOnAxis(n1, points2);
+
+    if (!overlap1D(proj1, proj2))
+    {
+      collision_result.minimum_translation = -1;
+      return collision_result;
+    }
+    else
+    {
+      auto overlap = calcOverlap(proj1, proj2);
+      if (overlap < min_overlap)
+      {
+        min_overlap = overlap;
+        min_axis = n1;
+        collision_result.belongs_to_a = false;
+      }
+    }
+
+    next++;
+    if (next == n_points2)
+    {
+      next = 0;
+    }
+  }
+
+  collision_result.minimum_translation = min_overlap;
+
+  return collision_result;
+}
 
 CollisionData inline calcCollisionData(const std::vector<sf::Vector2f> &points1,
                                        const std::vector<sf::Vector2f> &points2)
@@ -125,7 +265,7 @@ CollisionData inline calcCollisionData(const std::vector<sf::Vector2f> &points1,
   return collision_result;
 }
 
-CollisionFeature inline obtainFeatures(const sf::Vector2f axis, std::vector<sf::Vector2f> &points)
+CollisionFeature inline obtainFeatures(const sf::Vector2f axis, const std::vector<sf::Vector2f> &points)
 {
 
   const auto n_points = points.size();
@@ -257,93 +397,75 @@ std::pair<std::vector<sf::Vector2f>, bool> inline clipEdges(CollisionFeature &re
   return {cp, flip};
 }
 
-void inline collidePolygons(Polygon &pa, Polygon &pb)
+void inline collide(Polygon &pa, Polygon &pb)
 {
 
-  auto points_a = pa.getPointsInWorld();
-  auto points_b = pb.getPointsInWorld();
-  auto c_data = calcCollisionData(points_a, points_b);
+  const auto &points_a = pa.getPointsInWorld();
+  const auto &points_b = pb.getPointsInWorld();
+
+  sf::Vector2f contact_point;
+  CollisionData c_data;
+
+  if (pa.isCircle() && pb.isCircle())
+  {
+    c_data = calcCollisionDataCircleCircle(pa.getCenter(), pa.radius, pb.getCenter(), pb.radius);
+  }
+  else if (pa.isCircle() && !pb.isCircle())
+  {
+    c_data = calcCollisionDataPolygonCircle(points_b, pa.getCenter(), pa.radius);
+  }
+  else if (!pa.isCircle() && pb.isCircle())
+  {
+    c_data = calcCollisionDataPolygonCircle(points_a, pb.getCenter(), pb.radius);
+  }
+  else
+  {
+    c_data = calcCollisionDataPolyPoly(points_a, points_b);
+  }
+
   if (c_data.minimum_translation < 0) //! no intersection
   {
     return;
   }
-  sf::Vector2f com_a = {0, 0};
-  for (auto &point : points_a)
-  {
-    com_a += point;
-  }
-  com_a /= (float)pa.points.size();
 
-  sf::Vector2f com_b = {0, 0};
-  for (auto &point : points_b)
-  {
-    com_b += point;
-  }
-  com_b /= (float)pb.points.size();
+  auto center_a = pa.getCenter();
+  auto center_b = pb.getCenter();
+  auto are_flipped = dot((center_a - center_b), c_data.separation_axis) > 0;
 
-  c_data.belongs_to_a = dot((com_b - com_a), c_data.separation_axis) > 0;
-  if (!c_data.belongs_to_a)
+  if (are_flipped)
   {
     c_data.separation_axis *= -1.f;
   }
 
-  auto col_feats1 = obtainFeatures(c_data.separation_axis, points_a);
-  auto col_feats2 = obtainFeatures(-c_data.separation_axis, points_b);
+  if (!pa.isCircle() && !pb.isCircle())
+  {
+    auto col_feats1 = obtainFeatures(c_data.separation_axis, points_a);
+    auto col_feats2 = obtainFeatures(-c_data.separation_axis, points_b);
 
-  auto [clipped_edge, flipped] = clipEdges(col_feats1, col_feats2, c_data.separation_axis);
-  if (clipped_edge.size() == 0)
-  {
-    return;
-  }
-
-  sf::Vector2f cont_point = {0, 0};
-  for (auto ce : clipped_edge)
-  {
-    cont_point += ce;
-  }
-  if (clipped_edge.size() == 0)
-  {
-    cont_point = (com_a + com_b) / 2.f;
-  }
-  else
-  {
-    cont_point /= (float)clipped_edge.size();
+    auto [clipped_edge, flipped] = clipEdges(col_feats1, col_feats2, c_data.separation_axis);
+    if (clipped_edge.size() == 0)
+    {
+      return;
+    }
+    for (auto ce : clipped_edge)
+    {
+      c_data.contact_point += ce;
+    }
+    c_data.contact_point /= (float)clipped_edge.size();
   }
 
   auto n = c_data.separation_axis;
-  //
   pa.move(-c_data.separation_axis * c_data.minimum_translation * 1.05f);
-  //
-  if (c_data.belongs_to_a)
-  {
-    // pb.move(c_data.separation_axis * c_data.minimum_translation * 1.05f);
-  }
-  else
-  {
-    // pa.move(c_data.separation_axis * c_data.minimum_translation * 1.05f);
-  }
+  auto cont_point = c_data.contact_point;
+
   auto v_rel = pa.vel - pb.vel;
   auto v_reln = dot(v_rel, n);
-
-  if (v_reln > 0)
-  {
-    // pa.move(-c_data.separation_axis * c_data.minimum_translation * 1.05f);
-  }
-  else
-  {
-    // pa.move(c_data.separation_axis * c_data.minimum_translation * 1.05f);
-  }
-
-  points_a = pa.getPointsInWorld();
-  points_b = pb.getPointsInWorld();
-  c_data = calcCollisionData(points_a, points_b);
-  // assert(c_data.minimum_translation < 0);
 
   float e = 1;
   float u_ab = 1. / pa.mass + 1. / pb.mass;
 
-  auto r_cont_coma = cont_point - com_a;
-  auto r_cont_comb = cont_point - com_b;
+  auto r_cont_coma = cont_point - center_a;
+  auto r_cont_comb = cont_point - center_b;
 
   sf::Vector2f r_cont_coma_perp = {r_cont_coma.y, -r_cont_coma.x};
   sf::Vector2f r_cont_comb_perp = {r_cont_comb.y, -r_cont_comb.x};
@@ -357,266 +479,34 @@ void inline collidePolygons(Polygon &pa, Polygon &pb)
 
   pa.angle_vel += ran * j_factor / pa.inertia;
   pb.angle_vel -= rbn * j_factor / pb.inertia;
-  // // float j_factor = -(1 + e) * v_reln / (u_ab);
   pa.vel += j_factor / pa.mass * n;
   pb.vel -= j_factor / pb.mass * n;
 }
-
-Polygon inline generateRandomConvexPolygon(int n)
-{
-  // Generate two lists of random X and Y coordinates
-  std::vector<float> xPool(0);
-  std::vector<float> yPool(0);
-
-  for (int i = 0; i < n; i++)
-  {
-    xPool.push_back(randf(-1, 1));
-    yPool.push_back(randf(-1, 1));
-  }
-
-  // Sort them
-  std::sort(xPool.begin(), xPool.end());
-  std::sort(yPool.begin(), yPool.end());
-
-  // Isolate the extreme points
-  auto minX = xPool.at(0);
-  auto maxX = xPool.at(n - 1);
-  auto minY = yPool.at(0);
-  auto maxY = yPool.at(n - 1);
-
-  // Divide the interior points into two chains & Extract the vector components
-  std::vector<float> xVec(0);
-  std::vector<float> yVec(0);
-
-  float lastTop = minX, lastBot = minX;
-
-  for (int i = 1; i < n - 1; i++)
-  {
-    auto x = xPool.at(i);
-
-    if (rand() % 2)
-    {
-      xVec.push_back(x - lastTop);
-      lastTop = x;
-    }
-    else
-    {
-      xVec.push_back(lastBot - x);
-      lastBot = x;
-    }
-  }
-
-  xVec.push_back(maxX - lastTop);
-  xVec.push_back(lastBot - maxX);
-
-  float lastLeft = minY, lastRight = minY;
-
-  for (int i = 1; i < n - 1; i++)
-  {
-    auto y = yPool.at(i);
-
-    if (rand() % 2)
-    {
-      yVec.push_back(y - lastLeft);
-      lastLeft = y;
-    }
-    else
-    {
-      yVec.push_back(lastRight - y);
-      lastRight = y;
-    }
-  }
-
-  yVec.push_back(maxY - lastLeft);
-  yVec.push_back(lastRight - maxY);
-
-    std::random_device rd;
-    std::mt19937 g(rd());
-
-  // Randomly pair up the X- and Y-components
-  std::shuffle(yVec.begin(), yVec.end(), g);
-
-  // Combine the paired up components into vectors
-  std::vector<sf::Vector2f> vec;
-
-  for (int i = 0; i < n; i++)
-  {
-    vec.emplace_back(xVec.at(i), yVec.at(i));
-  }
-
-  // Sort the vectors by angle
-  std::sort(vec.begin(), vec.end(), [](const auto &p1, const auto &p2)
-            { return std::atan2(p1.y, p1.x) < std::atan2(p2.y, p2.x); });
-
-  // Lay them end-to-end
-  float x = 0, y = 0;
-  float minPolygonX = 0;
-  float minPolygonY = 0;
-  std::vector<sf::Vector2f> points;
-
-  for (int i = 0; i < n; i++)
-  {
-    points.push_back({x, y});
-
-    x += vec.at(i).x;
-    y += vec.at(i).y;
-
-    minPolygonX = std::min(minPolygonX, x);
-    minPolygonY = std::min(minPolygonY, y);
-  }
-
-  // Move the polygon to the original min and max coordinates
-  auto xShift = minX - minPolygonX;
-  auto yShift = minY - minPolygonY;
-
-  for (int i = 0; i < n; i++)
-  {
-    auto p = points.at(i);
-    points.at(i) += sf::Vector2f{xShift, yShift};
-  }
-  Polygon p;
-  p.points = points;
-
-  return p;
-}
-
-struct Collidable
-{
-  AABB bounding_rect;
-  int entity_ind;
-
-  virtual void update(float dt) = 0;
-};
-
-struct Meteor : public Collidable
-{
-  Polygon shape;
-
-  Meteor(int entity_ind, sf::Vector2f at, float radius, std::vector<sf::Vector2f> &points)
-  {
-    shape.points = points;
-    shape.setPosition(at);
-    shape.radius = radius;
-    shape.setScale({radius, radius});
-  }
-
-  void update(float dt)
-  {
-    shape.update(dt);
-
-    bounding_rect = shape.getBoundingRect(); //! this could be done once in couple of frames if we set max vel
-  }
-};
-
-// struct Coin : public Collidable{
-
-//   void update(float dt){
-//     shape.update(dt);
-
-//     bounding_rect = shape.getBoundingRect(); //! this could be done once in couple of frames if we set max vel
-//   }
-// };
-
-
-struct EnviromentEntity {
-    Polygon shape;
-    enum class Type{
-      METEOR,
-      COIN,
-      FUEL,
-      SPEED,
-      STATION,
-      TELEPORT,
-    };
-    Type type;
-    int entity_ind;
-    bool is_static = false;
-};
 
 constexpr int N_MAX_METEORS = 5000;
 
 struct PolygonObstacleManager
 {
 
-  typedef std::shared_ptr<EnviromentEntity> EntityPtr;
-
-  ObjectPool<std::shared_ptr<EnviromentEntity>, 5000> actors;
-
-  ObjectPool<std::unique_ptr<Collidable>, 10000> collidables;
-
   BoundingVolumeTree collision_tree;
-
   ObjectPool<Polygon, N_MAX_METEORS> meteors;
 
   ObjectPool<sf::ConvexShape, N_MAX_METEORS> drawables;
 
   std::vector<std::pair<int, int>> collisions;
-  std::vector<std::pair<EntityPtr, EntityPtr>> collisions2;
 
-struct pair_hash
+  struct pair_hash
+  {
+    inline std::size_t operator()(const std::pair<int, int> &v) const
     {
-        inline std::size_t operator()(const std::pair<int, int> &v) const
-        {
-            return v.first * 31 + v.second;
-        }
-    };
-    std::unordered_set<std::pair<int, int>, pair_hash> collided;
+      return v.first * 31 + v.second;
+    }
+  };
+  std::unordered_set<std::pair<int, int>, pair_hash> collided;
 
-  PolygonObstacleManager(int n_meteors = 50);
+  PolygonObstacleManager(int n_meteors = 200);
 
   void update(float dt);
-  void update2(float dt)
-  {
-    for (auto entity_ind : actors.active_inds)
-    {
-      auto &c1 = actors.at(entity_ind);
-      if(!c1->is_static){
-        c1->shape.update(dt);
-      }
-
-      auto possible_colliders = collision_tree.findIntersectingLeaves(c1->shape.getBoundingRect());
-      for (auto entity_ind_2 : possible_colliders)
-      {
-        if (entity_ind == entity_ind_2)
-        {
-          continue;
-        }
-
-         std::pair<int, int> collision_inds = {std::min(entity_ind_2, entity_ind), std::max(entity_ind_2, entity_ind)};
-         auto& c2 = actors.at(entity_ind_2);
-            if (collided.count(collision_inds) == 0)
-            {
-                // collideEntities(*c1, *c2);
-                collidePolygons(c1->shape, c2->shape);
-                collided.insert(collision_inds);
-            }
-
-        collisions.push_back({entity_ind, entity_ind_2});
-      }
-    }
-
-    for(auto& [e1, e2] : collided){
-      
-    }
-
-    collided.clear();
-  }
-
-  // void collideEntities(EnviromentEntity& e1, EnviromentEntity& e2){
-  //   if(e1.type == EnviromentEntity::Type::METEOR){
-  //     switch(e2.type){
-  //       case EnviromentEntity::Type::METEOR:
-  //         break;
-  //       case EnviromentEntity::Type::COIN:
-  //         break;
-  //       case EnviromentEntity::Type:::
-  //         break;
-  //       case EnviromentEntity::Type::METEOR:
-  //         break;
-  //     }
-  //   }
-    
-  // }
 
   void draw(sf::RenderTarget &window);
 
@@ -624,62 +514,33 @@ struct pair_hash
 
   std::vector<int> getNearestMeteorInds(sf::Vector2f lower_left, sf::Vector2f upper_right);
 
-  Polygon createRandomMeteor();
+  // void collideWithPlayer(Player &player)
+  // {
+
+  //   auto player_vel = player.speed * angle2dir(player.angle);
+  //   auto meteors = getNearestMeteors(player.pos, player.radius);
+  //   for (auto *meteor : meteors)
+  //   {
+  //     auto mvt = meteor->getMVTOfSphere(player.pos, player.radius);
+  //     auto vel_mvt_dir = dot(mvt, player_vel);
+  //     if (norm(mvt) > 0.01f && vel_mvt_dir < 0)
+  //     {
+  //       player_vel -= 2.f * vel_mvt_dir * mvt;
+  //       player.angle = std::atan2(player_vel.y, player_vel.x) * 180.f / M_PIf;
+  //       player.health -= 1;
+  //     }
+  //   }
+  // }
+
   void addRandomMeteorAt(sf::Vector2f position);
 
   void addMeteor(Polygon &new_meteor);
 
   void destroyMeteor(int entity_ind);
-};
 
-//struct CollisionHandler
-//{
-//
-//  PolygonObstacleManager *p_cs;
-//
-//  void update()
-//  {
-//    auto& broad_collisions = p_cs->collisions2;
-//    for(auto [e1, e2] : broad_collisions){
-//      
-//    }
-//  }
-//};
-//
-//class CollisionShape {
-//private:
-//    virtual AABB getBoundingBox() = 0;
-//};
-//
-//class CircleShape : public CollisionShape {
-//
-//    sf::Vector2f r_center;
-//    float radius;
-//
-//public:
-//    CircleShape(sf::Vector2f center, float radius);
-//
-//};
-//
-//class RigidBodyPhysicsSystem {
-//
-//    VectorMap<RigidBody> bodies;
-//    
-//
-//public:
-//    void add() {
-//
-//    }
-//
-//
-//};
-//
-//class RigidBody {
-//    std::shared_ptr<CollisionShape> shape;
-//
-//
-//};
-//
-//class SpaceObject : RigidBody{
-//    bool is_static;
-//};
+private:
+  Polygon createRandomMeteor();
+  Polygon generateRandomConvexPolygon(int n_edges) const;
+  void bounceFromWall(Polygon &meteor);
+  void inline collidePolygons(Polygon &pa, Polygon &pb);
+};
