@@ -28,6 +28,8 @@ struct RayCastData
     sf::Vector2f hit_normal;
 };
 
+
+// template <class AABBType = AABB>
 class BoundingVolumeTree
 {
 
@@ -47,9 +49,15 @@ public:
     
     void clear();
     
+    const AABB& getObjectRect(int object_ind) const
+    {
+        return nodes.at(object2node_indices.at(object_ind)).rect;
+    }
+
     std::vector<int> rayCast(sf::Vector2f from, sf::Vector2f dir, float length);
 
 private:
+    int maxBalanceFactor()const;
     bool intersectsLine(sf::Vector2f from, sf::Vector2f to, AABB rect);
     bool isLeaf(int node_index) const;
     int balance(int index);
@@ -68,3 +76,5 @@ bool inline intersects(const AABB &r1, const AABB &r2)
     bool intersects_y = r1.r_min.y <= r2.r_max.y && r1.r_max.y >= r2.r_min.y;
     return intersects_x && intersects_y;
 }
+
+

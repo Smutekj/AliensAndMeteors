@@ -504,7 +504,7 @@ struct PolygonObstacleManager
   };
   std::unordered_set<std::pair<int, int>, pair_hash> collided;
 
-  PolygonObstacleManager(int n_meteors = 200);
+  PolygonObstacleManager(int n_meteors = 5000);
 
   void update(float dt);
 

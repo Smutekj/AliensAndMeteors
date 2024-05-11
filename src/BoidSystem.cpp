@@ -25,7 +25,7 @@ BoidSystem::BoidSystem(float max_dist)
     force_multipliers[BoidSystem::Multiplier::ALIGN] = 1.0f;
     force_multipliers[BoidSystem::Multiplier::SCATTER] = 1.0f;
     force_multipliers[BoidSystem::Multiplier::AVOID] = 1.0f;
-    force_multipliers[BoidSystem::Multiplier::SEEK] = 1.0f;
+    force_multipliers[BoidSystem::Multiplier::SEEK] = 5.0f;
     force_multipliers[BoidSystem::Multiplier::VELOCITY] = 2.0;
 
     for (auto &[multiplier_type, value] : force_multipliers)

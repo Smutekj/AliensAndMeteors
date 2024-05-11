@@ -384,6 +384,17 @@ struct AABB
     {
     }
 
+
+    AABB& inflate(float scale)
+    {
+        auto dr = (r_max - r_min);
+        auto new_dr = dr*scale;
+        auto overlap_dr = (new_dr - dr)/2.f;
+        r_min = r_min - overlap_dr;
+        r_max = r_max + overlap_dr;
+        return *this;
+    }
+
     bool isIn(const sf::Vector2f &r) const
     {
         const auto &dr = r - r_min;

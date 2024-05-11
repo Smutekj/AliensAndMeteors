@@ -2,190 +2,190 @@
 
 PolygonObstacleManager::PolygonObstacleManager(int n_meteors)
 {
-    for (int i = 0; i < n_meteors; ++i)
-    {
-        auto meteor = createRandomMeteor();
-        
-        // auto polygon = generateRandomConvexPolygon(12 + rand() % 3);
-        // auto radius = randf(20, 40);
-        // polygon.radius = radius;
-        // polygon.setScale({radius, radius});
-        // polygon.setPosition(randomPosInBox());
-        // polygon.vel = {randf(-1, 1), randf(-1, 1)};
-        // polygon.angle_vel = randf(-0.001, 0.001);
-        // polygon.mass = radius * radius;
-        // polygon.inertia = std::pow(polygon.radius, 2) * polygon.mass;
-
-        addMeteor(meteor);
-    }
+  for (int i = 0; i < n_meteors; ++i)
+  {
+    auto meteor = createRandomMeteor();
+    addMeteor(meteor);
+  }
 }
 
 std::vector<Polygon *> PolygonObstacleManager::getNearestMeteors(sf::Vector2f r, float radius)
 {
-    std::vector<Polygon *> nearest_meteors;
-    auto entity_inds = collision_tree.findIntersectingLeaves({r - sf::Vector2f{radius, radius},
-                                                              r + sf::Vector2f{radius, radius}});
+  std::vector<Polygon *> nearest_meteors;
+  auto entity_inds = collision_tree.findIntersectingLeaves({r - sf::Vector2f{radius, radius},
+                                                            r + sf::Vector2f{radius, radius}});
 
-    for (auto ind : entity_inds)
-    {
-        nearest_meteors.push_back(&meteors.at(ind));
-    }
-    return nearest_meteors;
+  for (auto ind : entity_inds)
+  {
+    nearest_meteors.push_back(&meteors.at(ind));
+  }
+  return nearest_meteors;
 }
 
 std::vector<int> PolygonObstacleManager::getNearestMeteorInds(sf::Vector2f lower_left, sf::Vector2f upper_right)
 {
-    sf::Vector2f ll = lower_left;
-    sf::Vector2f ur = upper_right;
+  sf::Vector2f ll = lower_left;
+  sf::Vector2f ur = upper_right;
 
-    ll.x = std::min(lower_left.x, upper_right.x);
-    ll.y = std::min(lower_left.y, upper_right.y);
+  ll.x = std::min(lower_left.x, upper_right.x);
+  ll.y = std::min(lower_left.y, upper_right.y);
 
-    ur.x = std::max(lower_left.x, upper_right.x);
-    ur.y = std::max(lower_left.y, upper_right.y);
+  ur.x = std::max(lower_left.x, upper_right.x);
+  ur.y = std::max(lower_left.y, upper_right.y);
 
-    std::vector<Polygon *> nearest_meteors;
-    auto entity_inds = collision_tree.findIntersectingLeaves({ll, ur});
+  std::vector<Polygon *> nearest_meteors;
+  auto entity_inds = collision_tree.findIntersectingLeaves({ll, ur});
 
-    return entity_inds;
+  return entity_inds;
 }
 
 Polygon PolygonObstacleManager::createRandomMeteor()
 {
-    auto polygon = generateRandomConvexPolygon(12 + rand() % 3);
-    auto radius = randf(5, 20);
-    polygon.radius = radius;
-    polygon.setScale({radius, radius});
-    polygon.setPosition(randomPosInBox());
-    polygon.vel = {randf(-6, 6), randf(-6, 6)};
-    polygon.angle_vel = randf(-0.02, 0.02);
-    polygon.mass = radius * radius;
-    polygon.inertia = std::pow(polygon.radius, 2) * polygon.mass;
-    return std::move(polygon);
+  auto polygon = generateRandomConvexPolygon(12 + rand() % 3);
+  auto radius = randf(5, 20);
+  polygon.radius = radius;
+  polygon.setScale({radius, radius});
+  polygon.setPosition(randomPosInBox());
+  polygon.vel = {randf(-6, 6), randf(-6, 6)};
+  polygon.angle_vel = randf(-0.02, 0.02);
+  polygon.mass = radius * radius;
+  polygon.inertia = std::pow(polygon.radius, 2) * polygon.mass;
+  return std::move(polygon);
 }
 
 void PolygonObstacleManager::addRandomMeteorAt(sf::Vector2f position)
 {
-    auto new_meteor = createRandomMeteor();
-    addMeteor(new_meteor);
+  auto new_meteor = createRandomMeteor();
+  addMeteor(new_meteor);
 }
 
 void PolygonObstacleManager::addMeteor(Polygon &new_meteor)
 {
-    auto new_entity_ind = meteors.addObject(new_meteor);
-    collision_tree.addRect(new_meteor.getBoundingRect(), new_entity_ind);
+  auto new_entity_ind = meteors.addObject(new_meteor);
+  collision_tree.addRect(new_meteor.getBoundingRect().inflate(1.5f), new_entity_ind);
 
-    sf::ConvexShape wtf(new_meteor.points.size());
+  sf::ConvexShape wtf(new_meteor.points.size());
 
-    for (int i = 0; i < new_meteor.points.size(); ++i)
-    {
-        wtf.setPoint(i, new_meteor.points.at(i));
-    }
+  for (int i = 0; i < new_meteor.points.size(); ++i)
+  {
+    wtf.setPoint(i, new_meteor.points.at(i));
+  }
 
-    wtf.setPosition(new_meteor.getPosition());
-    wtf.setRotation(new_meteor.getRotation());
-    wtf.setScale(new_meteor.getScale());
-    wtf.setFillColor(sf::Color(rand() % 256, 255, 0, 255));
+  wtf.setPosition(new_meteor.getPosition());
+  wtf.setRotation(new_meteor.getRotation());
+  wtf.setScale(new_meteor.getScale());
+  wtf.setFillColor(sf::Color(rand() % 256, 255, 0, 255));
 
-    auto new_entity_ind2 = drawables.addObject(wtf);
-    assert(new_entity_ind == new_entity_ind2);
+  auto new_entity_ind2 = drawables.addObject(wtf);
+  assert(new_entity_ind == new_entity_ind2);
 }
 
 void PolygonObstacleManager::destroyMeteor(int entity_ind)
 {
-    meteors.remove(entity_ind);
-    drawables.remove(entity_ind);
-    collision_tree.removeObject(entity_ind);
+  meteors.remove(entity_ind);
+  drawables.remove(entity_ind);
+  collision_tree.removeObject(entity_ind);
 }
 
-void PolygonObstacleManager::bounceFromWall(Polygon& meteor){
-    if (meteor.getPosition().x < 0)
-        {
-            meteor.vel.x = std::abs(meteor.vel.x);
-        }
-        if (meteor.getPosition().y < 0)
-        {
-            meteor.vel.y = std::abs(meteor.vel.y);
-        }
-        if (meteor.getPosition().x >= Geometry::BOX[0])
-        {
-            meteor.vel.x = -std::abs(meteor.vel.x);
-        }
-        if (meteor.getPosition().y >= Geometry::BOX[1])
-        {
-            meteor.vel.y = -std::abs(meteor.vel.y);
-        }
+void PolygonObstacleManager::bounceFromWall(Polygon &meteor)
+{
+  if (meteor.getPosition().x < 0)
+  {
+    meteor.vel.x = std::abs(meteor.vel.x);
+  }
+  if (meteor.getPosition().y < 0)
+  {
+    meteor.vel.y = std::abs(meteor.vel.y);
+  }
+  if (meteor.getPosition().x >= Geometry::BOX[0])
+  {
+    meteor.vel.x = -std::abs(meteor.vel.x);
+  }
+  if (meteor.getPosition().y >= Geometry::BOX[1])
+  {
+    meteor.vel.y = -std::abs(meteor.vel.y);
+  }
 }
 
 void PolygonObstacleManager::update(float dt)
 {
+  for (auto k : meteors.active_inds)
+  {
+    auto &meteor = meteors.at(k);
+    meteor.update(dt);
+    bounceFromWall(meteor);
+    truncate(meteor.vel, 5.0f);
 
+    drawables.at(k).setPosition(meteor.getPosition());
+    drawables.at(k).setRotation(meteor.getRotation());
+    drawables.at(k).setScale(meteor.getScale());
 
+    auto fitting_rect = meteor.getBoundingRect();
+    auto big_bounding_rect = collision_tree.getObjectRect(k);
 
-    for (auto k : meteors.active_inds)
+    //! if object moved in a way that rect in the collision tree does not fully contain it
+    if (makeUnion(fitting_rect, big_bounding_rect).volume() > big_bounding_rect.volume())
     {
-        auto &meteor = meteors.at(k);
-        meteor.update(dt);
-        bounceFromWall(meteor);
-        truncate(meteor.vel, 5.0f);
-
-        drawables.at(k).setPosition(meteor.getPosition());
-        drawables.at(k).setRotation(meteor.getRotation());
-        drawables.at(k).setScale(meteor.getScale());
+      collision_tree.removeObject(k);
+      collision_tree.addRect(fitting_rect.inflate(1.2f), k);
     }
+  }
 
-    struct pair_hash
+  struct pair_hash
+  {
+    inline std::size_t operator()(const std::pair<int, int> &v) const
     {
-        inline std::size_t operator()(const std::pair<int, int> &v) const
+      return v.first * 31 + v.second;
+    }
+  };
+  std::unordered_set<std::pair<int, int>, pair_hash> collided;
+
+  // collision_tree.clear();
+
+  // for (auto i : meteors.active_inds)
+  // {
+  //   collision_tree.addRect(meteors.at(i).getBoundingRect(), i);
+  // }
+
+  auto tic = std::chrono::high_resolution_clock::now();
+  for (auto i : meteors.active_inds)
+  {
+
+    auto nearest_inds = collision_tree.findIntersectingLeaves(meteors.at(i).getBoundingRect());
+    for (int meteor_ind : nearest_inds)
+    {
+      if (i == meteor_ind)
+      {
+        continue;
+      }
+      std::pair<int, int> collision_inds = {std::min(i, meteor_ind), std::max(i, meteor_ind)};
+      if (collided.count(collision_inds) == 0)
+      {
+        if (intersects(meteors.at(meteor_ind).getBoundingRect(), meteors.at(i).getBoundingRect()))
         {
-            return v.first * 31 + v.second;
+          collidePolygons(meteors.at(meteor_ind), meteors.at(i));
         }
-    };
-    std::unordered_set<std::pair<int, int>, pair_hash> collided;
+        collided.insert(collision_inds);
 
-    collision_tree.clear();
-
-    for (auto i : meteors.active_inds)
-    {
-        collision_tree.addRect(meteors.at(i).getBoundingRect(), i);
+      }
     }
-
-    auto tic = std::chrono::high_resolution_clock::now();
-    for (auto i : meteors.active_inds)
-    {
-
-        auto nearest_inds = collision_tree.findIntersectingLeaves(meteors.at(i).getBoundingRect());
-        for (int meteor_ind : nearest_inds)
-        {
-            if (i == meteor_ind)
-            {
-                continue;
-            }
-            std::pair<int, int> collision_inds = {std::min(i, meteor_ind), std::max(i, meteor_ind)};
-            if (collided.count(collision_inds) == 0)
-            {
-                collidePolygons(meteors.at(meteor_ind), meteors.at(i));
-                collided.insert(collision_inds);
-            }
-        }
-    }
-    auto delta_time = std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::high_resolution_clock::now() - tic);
-    std::cout << "collisions took: " << delta_time.count() << " ms"
-              << "\n";
+  }
+  auto delta_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::high_resolution_clock::now() - tic);
+  std::cout << "collisions took: " << delta_time.count() << " ms"
+            << "\n";
 }
 
 void PolygonObstacleManager::draw(sf::RenderTarget &window)
 {
-    for (auto i : meteors.active_inds)
-    {
-        window.draw(drawables.at(i));
-    }
-
+  for (auto i : meteors.active_inds)
+  {
+    window.draw(drawables.at(i));
+  }
 }
 
-
-Polygon PolygonObstacleManager::generateRandomConvexPolygon(int n) const{
+Polygon PolygonObstacleManager::generateRandomConvexPolygon(int n) const
+{
 
   // Generate two lists of random X and Y coordinates
   std::vector<float> xPool(0);
@@ -253,8 +253,8 @@ Polygon PolygonObstacleManager::generateRandomConvexPolygon(int n) const{
   yVec.push_back(maxY - lastLeft);
   yVec.push_back(lastRight - maxY);
 
-    std::random_device rd;
-    std::mt19937 g(rd());
+  std::random_device rd;
+  std::mt19937 g(rd());
 
   // Randomly pair up the X- and Y-components
   std::shuffle(yVec.begin(), yVec.end(), g);
@@ -302,8 +302,6 @@ Polygon PolygonObstacleManager::generateRandomConvexPolygon(int n) const{
 
   return p;
 }
-
-
 
 void PolygonObstacleManager::collidePolygons(Polygon &pa, Polygon &pb)
 {

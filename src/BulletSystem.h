@@ -10,7 +10,19 @@
 #include "PolygonObstacleManager.h"
 #include "ExplosionEffect.h"
 
-struct Bullet
+struct ProjectileEntity{
+
+
+    sf::Vector2f pos;
+    sf::Vector2f vel = {0,0};
+    float orientation = 0.f;
+    int damage = 1;
+
+    int lifetime = 0;
+    int max_lifetime = 60;
+};
+
+struct Bullet 
 {
 
     sf::Vector2f pos;

@@ -20,7 +20,7 @@ void BoundingVolumeTree::addRect(AABB rect, int object_index)
         }
         nodes.resize(2 * nodes.size() + 1);
     }
-    
+
     int new_parent = *free_indices.begin();
     free_indices.erase(free_indices.begin());
 
@@ -31,8 +31,10 @@ void BoundingVolumeTree::addRect(AABB rect, int object_index)
         nodes[new_parent] = {rect, -1, -1, -1, object_index};
         return;
     }
-    assert(!containsCycle());   
+
+    assert(!containsCycle());
     assert(isConsistent());
+
     int new_leaf = *free_indices.begin();
     free_indices.erase(free_indices.begin());
     assert(object2node_indices.count(object_index) == 0);
@@ -41,7 +43,7 @@ void BoundingVolumeTree::addRect(AABB rect, int object_index)
     // nodes.push_back(new_node);
 
     //! find best sibling
-    int best_index = findBestSiblingGreedy(rect);
+    int best_index = findBestSibling(rect);
 
     int old_parent = nodes.at(best_index).parent_index;
     nodes.at(new_parent).height = nodes.at(best_index).height + 1;
@@ -76,6 +78,7 @@ void BoundingVolumeTree::addRect(AABB rect, int object_index)
     int current_index = nodes.at(new_leaf).parent_index;
     while (current_index != -1)
     {
+        //! for some reason balancning makes collision detection slower :(
         // current_index = balance(current_index);
 
         auto &current_node = nodes.at(current_index);
@@ -99,7 +102,7 @@ void BoundingVolumeTree::removeObject(int object_index)
     object2node_indices.erase(object_index);
     assert(!containsCycle());
     assert(isConsistent());
-
+    // std::cout << "max balance is: " << calcMaxDepth() << "\n";
 }
 
 void BoundingVolumeTree::removeLeaf(int leaf_index)
@@ -113,7 +116,7 @@ void BoundingVolumeTree::removeLeaf(int leaf_index)
     }
 
     const auto &removed_leaf_node = nodes.at(leaf_index);
-    const auto &removed_internal_index = removed_leaf_node.parent_index;
+    const auto removed_internal_index = removed_leaf_node.parent_index;
     const auto &removed_internal_node = nodes.at(removed_internal_index);
 
     bool is_left = true;
@@ -152,12 +155,22 @@ void BoundingVolumeTree::removeLeaf(int leaf_index)
 
     free_indices.insert(leaf_index);
     free_indices.insert(removed_internal_index);
+    nodes.at(leaf_index).child_index_1 = -1;
+    nodes.at(leaf_index).child_index_2 = -1;
+    nodes.at(leaf_index).parent_index = -1;
+    nodes.at(leaf_index).height = 0;
+    if (removed_internal_index != -1)
+    {
+        nodes.at(removed_internal_index).child_index_1 = -1;
+        nodes.at(removed_internal_index).child_index_2 = -1;
+        nodes.at(removed_internal_index).parent_index = -1; //! refit volumes for ancenstors
+        nodes.at(removed_internal_index).height = 0;
+    }
 
-    //! refit volumes for ancenstors
     int current_index = sibling_node.parent_index;
     while (current_index != -1)
     {
-        // current_index = balance(current_index);
+        current_index = balance(current_index);
 
         auto &current_node = nodes.at(current_index);
         const auto &child_1 = nodes.at(current_node.child_index_1);
@@ -182,8 +195,7 @@ int BoundingVolumeTree::findBestSibling(const AABB &new_rect)
 
     std::vector<std::pair<int, float>> to_visit;
     std::priority_queue pq(to_visit.begin(), to_visit.end(), [](const auto &p1, const auto &p2)
-                           { return p1.second < p2.second; }
-                           );
+                           { return p1.second < p2.second; });
 
     pq.push({root_ind, 0});
     float best_cost = insertion_cost;
@@ -318,19 +330,22 @@ bool BoundingVolumeTree::isConsistent() const
     std::vector<bool> visited(nodes.size(), false);
     std::stack<int> to_visit;
     to_visit.push(root_ind);
-    
-    for(auto& [entity_ind, node_ind]  : object2node_indices){
-        if(nodes.at(node_ind).child_index_1 != -1){
-            return node_ind  != nodes.at(nodes.at(node_ind).child_index_1).parent_index;
+
+    for (auto &[entity_ind, node_ind] : object2node_indices)
+    {
+        if (nodes.at(node_ind).child_index_1 != -1)
+        {
+            return node_ind != nodes.at(nodes.at(node_ind).child_index_1).parent_index;
         }
-        if(nodes.at(node_ind).child_index_2 != -1){
-            return node_ind  != nodes.at(nodes.at(node_ind).child_index_2).parent_index;
+        if (nodes.at(node_ind).child_index_2 != -1)
+        {
+            return node_ind != nodes.at(nodes.at(node_ind).child_index_2).parent_index;
         }
 
-
-        if(nodes.at(node_ind).parent_index == -1 && root_ind != node_ind){
+        if (nodes.at(node_ind).parent_index == -1 && root_ind != node_ind)
+        {
             return false;
-        } 
+        }
     }
 
     return true;
@@ -352,15 +367,17 @@ int BoundingVolumeTree::balance(int index_a)
     auto &node_c = nodes.at(index_c);
     auto &node_b = nodes.at(index_b);
 
+    auto root_node_height = nodes.at(root_ind).height;
     auto height_diff = node_c.height - node_b.height;
     if (height_diff > 1) //! C needs to go up
     {
         moveNodeUp(index_c);
+        return index_c;
     }
     if (height_diff < -1)
     {
-        // moveNodeUp(index_b);
-        // return index_b;
+        moveNodeUp(index_b);
+        return index_b;
     }
     return index_a;
 }
@@ -407,7 +424,7 @@ void BoundingVolumeTree::moveNodeUp(int going_up_index)
         root_ind = going_up_index;
     }
 
-    if (node_c1.height > node_c2.height) //! rotate first child up
+    if (node_c1.height > node_c2.height) //! c2 becomes child of a
     {
         node_c.child_index_2 = index_c1;
         node_c2.parent_index = index_a;
@@ -425,7 +442,7 @@ void BoundingVolumeTree::moveNodeUp(int going_up_index)
         node_a.rect = makeUnion(node_b.rect, node_c2.rect);
         node_c.rect = makeUnion(node_a.rect, node_c1.rect);
     }
-    else
+    else //! c1 becomes child of a
     {
         node_c.child_index_2 = index_c2;
         node_c1.parent_index = index_a;
@@ -446,10 +463,15 @@ void BoundingVolumeTree::moveNodeUp(int going_up_index)
     }
 }
 
+
+
 std::vector<int> BoundingVolumeTree::findIntersectingLeaves(AABB rect)
 {
     std::vector<int> intersecting_leaves;
-    if(root_ind == -1){return {};}
+    if (root_ind == -1)
+    {
+        return {};
+    }
     std::stack<int> to_visit;
     auto &current_node = nodes.at(root_ind);
     to_visit.push(root_ind);
@@ -481,7 +503,6 @@ std::vector<int> BoundingVolumeTree::findIntersectingLeaves(AABB rect)
     return intersecting_leaves;
 }
 
-
 int BoundingVolumeTree::calcMaxDepth() const
 {
     std::queue<std::pair<int, int>> to_visit;
@@ -511,64 +532,84 @@ int BoundingVolumeTree::calcMaxDepth() const
     return max_lvl;
 }
 
-    bool BoundingVolumeTree::intersectsLine(sf::Vector2f from, sf::Vector2f to, AABB rect)
+bool BoundingVolumeTree::intersectsLine(sf::Vector2f from, sf::Vector2f to, AABB rect)
+{
+
+    auto dr = to - from;
+
+    sf::Vector2f normal = {dr.y, -dr.x};
+    normal /= norm(normal);
+
+    sf::Vector2f r1 = rect.r_min;
+    sf::Vector2f r2 = rect.r_min + sf::Vector2f{rect.r_max.x - rect.r_min.x, 0};
+    sf::Vector2f r3 = rect.r_max;
+    sf::Vector2f r4 = rect.r_min + sf::Vector2f{0, rect.r_max.y - rect.r_min.y};
+
+    auto proj = projectOnAxis(normal, {r1, r2, r3, r4});
+    auto proj2 = projectOnAxis(normal, {from});
+    return overlap1D(proj, proj2);
+}
+
+std::vector<int> BoundingVolumeTree::rayCast(sf::Vector2f from, sf::Vector2f dir, float length)
+{
+
+    sf::Vector2f to = from + dir * length;
+    std::vector<int> intersections;
+
+    std::queue<int> to_visit;
+    to_visit.push(root_ind);
+    while (!to_visit.empty())
     {
 
-        auto dr = to - from;
+        int current_ind = to_visit.front();
+        to_visit.pop();
+        auto &current = nodes.at(current_ind);
 
-        sf::Vector2f normal = {dr.y, -dr.x};
-        normal /= norm(normal);
-
-        sf::Vector2f r1 = rect.r_min;
-        sf::Vector2f r2 = rect.r_min + sf::Vector2f{rect.r_max.x - rect.r_min.x, 0};
-        sf::Vector2f r3 = rect.r_max;
-        sf::Vector2f r4 = rect.r_min + sf::Vector2f{0, rect.r_max.y - rect.r_min.y};
-
-        auto proj = projectOnAxis(normal, {r1, r2, r3, r4});
-        auto proj2 = projectOnAxis(normal, {from});
-        return overlap1D(proj, proj2);
-    }
-
-
-    std::vector<int> BoundingVolumeTree::rayCast(sf::Vector2f from, sf::Vector2f dir, float length)
-    {
-
-        sf::Vector2f to = from + dir * length;
-        std::vector<int> intersections;
-
-        std::queue<int> to_visit;
-        to_visit.push(root_ind);
-        while (!to_visit.empty())
+        if (intersectsLine(from, to, current.rect))
         {
-
-            int current_ind = to_visit.front();
-            to_visit.pop();
-            auto &current = nodes.at(current_ind);
-
-            if (intersectsLine(from, to, current.rect))
+            if (!current.isLeaf())
             {
-                if (!current.isLeaf())
-                {
-                    to_visit.push(current.child_index_1);
-                    to_visit.push(current.child_index_2);
-                }
-                else
-                {
-                    intersections.push_back(current.object_index);
-                }
+                to_visit.push(current.child_index_1);
+                to_visit.push(current.child_index_2);
+            }
+            else
+            {
+                intersections.push_back(current.object_index);
             }
         }
-
-        return intersections;
     }
 
+    return intersections;
+}
 
-    void BoundingVolumeTree::clear()
+void BoundingVolumeTree::clear()
+{
+    object2node_indices.clear();
+    for (int i = 0; i < nodes.size(); ++i)
     {
-        object2node_indices.clear();
-        for (int i = 0; i < nodes.size(); ++i)
+        free_indices.insert(i);
+    }
+    root_ind = -1;
+}
+
+    int BoundingVolumeTree::maxBalanceFactor()const
+    {
+        int max_balance = 0;
+        std::queue<int> to_visit;
+
+        to_visit.push(root_ind);
+        while(!to_visit.empty())
         {
-            free_indices.insert(i);
+            auto& node = nodes.at(to_visit.front());
+            to_visit.pop();
+            if(!node.isLeaf())
+            {
+                auto h1 = nodes.at(node.child_index_1).height;
+                auto h2 = nodes.at(node.child_index_2).height; 
+                max_balance = std::max(max_balance, std::abs(h1 - h2));
+                to_visit.push(node.child_index_1);
+                to_visit.push(node.child_index_2);
+            }
         }
-        root_ind = -1;
+        return max_balance;
     }
