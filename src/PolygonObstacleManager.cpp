@@ -376,3 +376,38 @@ void PolygonObstacleManager::collidePolygons(Polygon &pa, Polygon &pb)
   pa.vel += j_factor / pa.mass * n;
   pb.vel -= j_factor / pb.mass * n;
 }
+
+sf::Vector2f PolygonObstacleManager::findClosestIntesection(sf::Vector2f at, sf::Vector2f dir, float length)
+  {
+    sf::Vector2f closest_intersection = at + dir * length;
+    float min_dist = 200.f;
+    auto inters = collision_tree.rayCast(at, dir, length);
+    for (auto ent_idn : inters)
+    {
+      auto points = meteors.at(ent_idn).getPointsInWorld();
+      int next = 1;
+
+      for (int i = 0; i < points.size(); ++i)
+      {
+        sf::Vector2f r1 = points.at(i);
+        sf::Vector2f r2 = points.at(next);
+
+        auto intersection = getIntersection(r1, r2, at, at + dir * length);
+        if (intersection.x > 0 & intersection.y > 0)
+        {
+          auto new_dist = dist(intersection, at);
+          if (new_dist < min_dist)
+          {
+            closest_intersection = intersection;
+            min_dist = new_dist;
+          }
+        }
+        next++;
+        if (next == points.size())
+        {
+          next = 0;
+        }
+      }
+    }
+    return closest_intersection;
+  }

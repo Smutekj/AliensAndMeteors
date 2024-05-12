@@ -76,7 +76,7 @@
       n1 /= norm(n1);
       auto proj1 = projectOnAxis(n1, points_world);
       float proj_sphere = dot(n1, center);
-      Projection1D proj2(proj_sphere - radius, proj_sphere + radius);
+      Projection1D proj2({proj_sphere - radius, proj_sphere + radius});
 
       if (!overlap1D(proj1, proj2))
       {

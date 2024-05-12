@@ -261,7 +261,7 @@ struct VectorMap{
             for(int i = 0; i < n_max_entities; ++i){
                 free_inds.insert(i);
                 entity2data_ind[i] = -1;
-                data2entity_ind = -1;
+                data2entity_ind[i] = -1;
             }
             n_active = 0;
         }

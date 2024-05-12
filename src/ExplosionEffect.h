@@ -322,10 +322,10 @@ public:
         sf::Vector2f rect_size;
         rect_size.x = ds[0].getSize().x;
         rect_size.y = ds[0].getSize().y;
-        verts[0] = sf::Vertex{{0, 0}, sf::Color::Transparent, {0, 0}};
-        verts[3] = sf::Vertex{{rect_size.x, 0}, sf::Color::Transparent, {1, 0}};
-        verts[2] = sf::Vertex{{rect_size.x, rect_size.y}, sf::Color::Transparent, {1, 1}};
-        verts[1] = sf::Vertex{{0, rect_size.y}, sf::Color::Transparent, {0, 1}};
+        verts[0] = sf::Vertex{{0, 0}, sf::Color::Transparent, {0, 1}};
+        verts[1] = sf::Vertex{{rect_size.x, 0}, sf::Color::Transparent, {1, 1}};
+        verts[2] = sf::Vertex{{rect_size.x, rect_size.y}, sf::Color::Transparent, {1, 0}};
+        verts[3] = sf::Vertex{{0, rect_size.y}, sf::Color::Transparent, {0, 0}};
 
         sf::RenderStates states;
 
@@ -337,17 +337,18 @@ public:
         full_pass.setUniform("image", ds[0].getTexture());
         states.shader = &full_pass;
         // states.blendMode = sf
-        // verts[0] = sf::Vertex{{0, 0}, sf::Color::Transparent, {0, 0}};
-        // verts[3] = sf::Vertex{{input.getSize().x, 0}, sf::Color::Transparent, {1, 0}};
-        // verts[2] = sf::Vertex{{input.getSize().x, input.getSize().y}, sf::Color::Transparent, {1, 1}};
-        // verts[1] = sf::Vertex{{0, input.getSize().y}, sf::Color::Transparent, {0, 1}};
+        verts[0] = sf::Vertex{{0, 0}, sf::Color::Transparent, {0, 1}};
+        verts[1] = sf::Vertex{{rect_size.x, 0}, sf::Color::Transparent, {1, 1}};
+        verts[2] = sf::Vertex{{rect_size.x, rect_size.y}, sf::Color::Transparent, {1, 0}};
+        verts[3] = sf::Vertex{{0, rect_size.y}, sf::Color::Transparent, {0, 0}};
 
         rect_size.x = rts[0].getSize().x;
         rect_size.y = rts[0].getSize().y;
-        verts[0] = sf::Vertex{{0, 0}, sf::Color::Transparent, {0, 0}};
-        verts[3] = sf::Vertex{{rect_size.x, 0}, sf::Color::Transparent, {1, 0}};
-        verts[2] = sf::Vertex{{rect_size.x, rect_size.y}, sf::Color::Transparent, {1, 1}};
-        verts[1] = sf::Vertex{{0, rect_size.y}, sf::Color::Transparent, {0, 1}};
+        verts[0] = sf::Vertex{{0, 0}, sf::Color::Transparent, {0, 1}};
+        verts[1] = sf::Vertex{{rect_size.x, 0}, sf::Color::Transparent, {1, 1}};
+        verts[2] = sf::Vertex{{rect_size.x, rect_size.y}, sf::Color::Transparent, {1, 0}};
+        verts[3] = sf::Vertex{{0, rect_size.y}, sf::Color::Transparent, {0, 0}};
+
 
         // rts[1].draw(verts, states);
         // rts[1].display();
@@ -379,10 +380,11 @@ public:
 
         rect_size.x = input.getSize().x;
         rect_size.y = input.getSize().y;
-        verts[0] = sf::Vertex{{0, 0}, sf::Color::Transparent, {0, 0}};
-        verts[3] = sf::Vertex{{rect_size.x, 0}, sf::Color::Transparent, {1, 0}};
-        verts[2] = sf::Vertex{{rect_size.x, rect_size.y}, sf::Color::Transparent, {1, 1}};
-        verts[1] = sf::Vertex{{0, rect_size.y}, sf::Color::Transparent, {0, 1}};
+        verts[0] = sf::Vertex{{0, 0}, sf::Color::Transparent, {0, 1}};
+        verts[1] = sf::Vertex{{rect_size.x, 0}, sf::Color::Transparent, {1, 1}};
+        verts[2] = sf::Vertex{{rect_size.x, rect_size.y}, sf::Color::Transparent, {1, 0}};
+        verts[3] = sf::Vertex{{0, rect_size.y}, sf::Color::Transparent, {0, 0}};
+
 
         rts[1].display();
         states.shader = &add;

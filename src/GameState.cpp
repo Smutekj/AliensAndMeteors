@@ -47,8 +47,8 @@ void GameState::draw()
 
     background.setSize({Geometry::BOX[0], Geometry::BOX[1]});
     background.setTexture(&background_texture);
-    background.setTextureRect({0, 0, 2 * background_texture.getSize().x, 2 * background_texture.getSize().y});
+    background.setTextureRect({0, 0, 2 * (int)background_texture.getSize().x, 2 * (int)background_texture.getSize().y});
     window.draw(background);
 
-    mp_game->draw(*m_context.window);
+    mp_game->draw(window);
 }

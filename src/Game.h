@@ -144,6 +144,7 @@ class Game
   TextureHolder textures;
 
   sf::RenderTexture t;
+  sf::RenderTexture light_texture;
 
   friend UI;
 
@@ -155,6 +156,7 @@ class Game
 
   int meteor_spawner_time = 0;
   Bloom bloom;
+  Ligthning lights;
 
   sf::RenderWindow& m_window;
 

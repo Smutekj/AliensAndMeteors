@@ -77,7 +77,7 @@ CollisionData inline calcCollisionDataPolygonCircle(const std::vector<sf::Vector
     n1 /= norm(n1);
     auto proj1 = projectOnAxis(n1, points);
     float proj_sphere = dot(n1, center);
-    Projection1D proj2(proj_sphere - radius, proj_sphere + radius);
+    Projection1D proj2({proj_sphere - radius, proj_sphere + radius});
 
     if (!overlap1D(proj1, proj2))
     {
@@ -504,7 +504,7 @@ struct PolygonObstacleManager
   };
   std::unordered_set<std::pair<int, int>, pair_hash> collided;
 
-  PolygonObstacleManager(int n_meteors = 5000);
+  PolygonObstacleManager(int n_meteors = 100);
 
   void update(float dt);
 
@@ -531,6 +531,8 @@ struct PolygonObstacleManager
   //     }
   //   }
   // }
+
+  sf::Vector2f findClosestIntesection(sf::Vector2f at, sf::Vector2f dir, float length);
 
   void addRandomMeteorAt(sf::Vector2f position);
 

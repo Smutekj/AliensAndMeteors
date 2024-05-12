@@ -198,6 +198,7 @@ class BossAI : public BoidAI
     bool shooting_laser = true;
     int laser_timer = 0;
     float orig_max_vel;
+
 public:
     BossAI(int entity_ind, Player *player, EntityData *data, BulletSystem *p_bs)
         : BoidAI(entity_ind, player, data), p_bs(p_bs)
@@ -209,9 +210,14 @@ public:
 
     virtual void update()
     {
-        if(dist(player->pos, data->r) > vision_radius){
-            data->target_position = player->pos + angle2dir(rand()%180)*randf(0,3);
+        if (dist(player->pos, data->r) > vision_radius)
+        {
+            data->target_position = player->pos + angle2dir(rand() % 180) * randf(0, 3);
             following_player = true;
+        }
+        else
+        {
+            following_player = false;
         }
 
         frames_since_shot_laser++;
@@ -219,10 +225,9 @@ public:
         {
             frames_since_shot_laser = 0;
             // p_bs->spawnBulletNoSeek(entity_ind, data->r, player->pos);
-            auto predicted_pos = player->pos + angle2dir(player->angle) * player->speed*0.5f;
-            p_bs->createLaser(entity_ind, data->r, predicted_pos - data->r, 200.f  );
-            shooting_laser = true;    
-
+            auto predicted_pos = player->pos + angle2dir(player->angle) * player->speed * 0.5f;
+            p_bs->createLaser(entity_ind, data->r, predicted_pos - data->r, 200.f);
+            shooting_laser = true;
         }
         frames_since_shot_bullet++;
         if (frames_since_shot_bullet > cool_down && !following_player && !shooting_laser)
@@ -231,18 +236,95 @@ public:
             p_bs->spawnBulletNoSeek(entity_ind, data->r, player->pos);
             // auto predicted_pos = player->pos + angle2dir(player->angle) * player->speed*0.5f;
         }
-        if(shooting_laser){
+        if (shooting_laser)
+        {
             laser_timer++;
             data->max_vel = 0.f;
-            if(laser_timer == 120){
+            if (laser_timer == 120)
+            {
                 laser_timer = 0;
-                shooting_laser = false;  
+                shooting_laser = false;
                 data->max_vel = orig_max_vel;
             }
         }
+    }
+};
 
-        if(dist(player->pos, data->r) < vision_radius){
+class BomberAI : public BoidAI
+{
+
+    int cool_down = 100;
+    int frames_since_shot = 0;
+    float vision_radius = 60.f;
+    BulletSystem *p_bs;
+    bool player_spotted = false;
+    bool following_player = true;
+    bool shooting_laser = true;
+    int laser_timer = 0;
+    float orig_max_vel;
+
+    enum class State
+    {
+        FOLLOWING,
+        SHOOTING,
+        BOMBING,
+    };
+
+    State state;
+    State previous_state;
+
+public:
+    BomberAI(int entity_ind, Player *player, EntityData *data, BulletSystem *p_bs)
+        : BoidAI(entity_ind, player, data), p_bs(p_bs)
+    {
+        orig_max_vel = data->max_vel;
+    }
+
+    virtual ~BomberAI() = default;
+
+    virtual void update()
+    {
+        float dist2player = dist(player->pos, data->r);
+        if ( dist2player > vision_radius)
+        {
+            data->target_position = player->pos + angle2dir(rand() % 180) * randf(0, 3);
+            following_player = true;
+            previous_state = state;
+            state = State::FOLLOWING;
+        }
+        
+        if(dist2player < vision_radius && state == State::FOLLOWING)
+        {
             following_player = false;
+            if (rand() % 2 == 0)
+            {
+                state = State::BOMBING;
+            }
+            else
+            {
+                state = State::SHOOTING;
+            }
+        }
+
+        frames_since_shot++;
+        if (frames_since_shot > cool_down && state == State::BOMBING)
+        {
+            frames_since_shot = 0;
+            // p_bs->spawnBulletNoSeek(entity_ind, data->r, player->pos);
+            auto predicted_pos = player->pos + angle2dir(player->angle) * player->speed * 0.5f;
+            auto dir = (predicted_pos - data->r) / norm(predicted_pos - data->r);
+            p_bs->createBomb(entity_ind, data->r, 300.f * (dir));
+            data->target_position = data->r;
+            state = State::SHOOTING;
+        }
+
+        if (frames_since_shot > cool_down && state == State::SHOOTING)
+        {
+            auto dir = (player->pos - data->r) / norm(player->pos - data->r);
+            p_bs->spawnBullet(entity_ind, data->r, 30.f * (dir), player);
+
+            data->target_position = player->pos + angle2dir(rand() % 360) * randf(10, 20);
+            state = State::BOMBING;
         }
     }
 };

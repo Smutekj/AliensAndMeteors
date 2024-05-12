@@ -20,6 +20,12 @@ void BulletSystem::explodeBomb(sf::Vector2f center, float radius) {
         }
     }
 
+    auto dist_to_player = dist(player.pos, center);
+    if( dist_to_player < radius){
+        float dmg = (5.f - 0.f)*(1.f-dist_to_player/radius) + 0.f;
+        player.health -= dmg; 
+    }
+
     auto meteor_inds = p_meteors->getNearestMeteorInds(bounding_rect.r_min, bounding_rect.r_max);
     for (auto meteor_ind: meteor_inds) {
         auto& meteor = p_meteors->meteors.at(meteor_ind);

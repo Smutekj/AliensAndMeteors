@@ -425,7 +425,7 @@ void BoidSystem::addGroupOfBoids(int n_boids, sf::Vector2f center, float radius)
 void BoidSystem::spawnBoss(sf::Vector2f pos)
 {
     auto new_entity_ind = *free_entities.begin();
-    auto ai = std::make_unique<BossAI>(new_entity_ind, player,
+    auto ai = std::make_unique<BomberAI>(new_entity_ind, player,
                                        &entity2boid_data.at(new_entity_ind), p_bs);
     addBoid(pos, std::move(ai), -1);
 }

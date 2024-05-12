@@ -12,6 +12,6 @@ void main(void)
 	vec2 texCoords = gl_TexCoord[0].xy;
 	vec4 vertexColor = gl_Color;
 
-	gl_FragColor = 5.*texture2D( image1,  vec2(texCoords.x, 1-texCoords.y)) + texture2D( image2, vec2(texCoords.x, 1-texCoords.y));
+	gl_FragColor = 5.*texture2D( image1,  vec2(texCoords.x, texCoords.y)) + texture2D( image2, vec2(texCoords.x, texCoords.y));
 
 }

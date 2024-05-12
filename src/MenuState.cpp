@@ -68,9 +68,11 @@ void MenuState::draw()
   window.setView(window.getDefaultView());
 
   sf::RectangleShape background;
-  background.setSize({window.getSize().x, window.getSize().y});
+  sf::Vector2f size = {static_cast<float>(window.getSize().x), static_cast<float>(window.getSize().y)};
+  background.setSize(size);
 	background.setTexture(&background_texture);
-  background.setTextureRect({0,0,2*background_texture.getSize().x, 2*background_texture.getSize().y});  
+  sf::Vector2i rect_size = {static_cast<int>(2*window.getSize().x), static_cast<int>(2*window.getSize().y)};
+  background.setTextureRect({0,0,rect_size.x , rect_size.y});  
   window.draw(background);
 
 

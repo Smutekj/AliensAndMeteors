@@ -110,7 +110,7 @@ struct BulletSystem
     void spawnBullet(int shooter_ind, sf::Vector2f at, sf::Vector2f vel, Player *player = nullptr)
     {
         Bullet new_bullet;
-        if (shooter_ind = -1)
+        if (shooter_ind == -1)
         {
             new_bullet.lifetime = 10;
         }

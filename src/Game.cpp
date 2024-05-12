@@ -14,10 +14,12 @@
 #include <iostream>
 
 Game::Game(sf::RenderWindow &window)
-    : bullet_world(player), m_window(window)
+    : bullet_world(player), m_window(window), lights(poly_manager)
 {
     t.create(window.getSize().x, window.getSize().y);
+    light_texture.create(window.getSize().x, window.getSize().y);
     t.setSmooth(true);
+    light_texture.setSmooth(true);
 
     sf::Vector2f box_size = {static_cast<float>(Geometry::BOX[0]), static_cast<float>(Geometry::BOX[1])};
     sf::Vector2i n_cells = {Geometry::N_CELLS[0], Geometry::N_CELLS[1]};
@@ -47,7 +49,7 @@ Game::Game(sf::RenderWindow &window)
 
     auto view = window.getView();
     view.setCenter(player.pos);
-    view.setSize({50., 50. * window.getSize().y / window.getSize().x});
+    view.setSize({50.f, 50.f * window.getSize().y / window.getSize().x});
     window.setView(view);
 
     textures.load(Textures::ID::PlayerShip, "../Resources/playerShip.png");
@@ -347,6 +349,9 @@ void Game::handleEvent(const sf::Event &event)
             group_spawner_timer = 300;
             // boid_world.addGroupOfBoids( 10, player.pos + angle2dir(rand()%180)*randf(5, 10), 5);
         }
+
+        lights.center = player.pos;
+        lights.update();
     }
 
     void Game::draw(sf::RenderWindow & window)
@@ -365,6 +370,10 @@ void Game::handleEvent(const sf::Event &event)
         t.display();
 
         bloom.doTheThing(t, window);
+        // darken(t, light_texture);
+
+        // lights.draw(light_texture, window);
+
 
         drawUI(window);
     }
@@ -379,8 +388,8 @@ void Game::handleEvent(const sf::Event &event)
 
         sf::RectangleShape health_rect;
 
-        sf::Vector2f healt_comp_uisize = {window.getSize().x * 1. / 6., window.getSize().y * 1. / 10.};
-        sf::Vector2f healt_comp_min = {window.getSize().x * 5. / 6., window.getSize().y * 9. / 10.};
+        sf::Vector2f healt_comp_uisize = {(float)window.getSize().x * 1.f / 6.f, (float)window.getSize().y * 1.f / 10.f};
+        sf::Vector2f healt_comp_min = {(float)window.getSize().x * 5.f / 6.f, (float)window.getSize().y * 9.f / 10.f};
 
         health_text.setPosition(healt_comp_min);
         health_text.setString(hp_text);
