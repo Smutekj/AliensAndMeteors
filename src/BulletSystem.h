@@ -66,6 +66,7 @@ constexpr int N_BULLET_GRID_X = Geometry::BOX[0] / MAX_AGENT_SIZE + 1;
 constexpr int N_BULLET_GRID_Y = Geometry::BOX[1] / MAX_AGENT_SIZE + 1;
 
 class BoidSystem;
+class Game;
 
 struct BulletSystem
 {
@@ -75,6 +76,7 @@ struct BulletSystem
     BoidSystem *p_boids = nullptr;
     PolygonObstacleManager *p_meteors = nullptr;
     EffectsManager *p_effects = nullptr;
+    Game* p_game = nullptr;
 
     std::array<std::vector<int>, N_BULLET_GRID_X * N_BULLET_GRID_Y> grid2entities;
     std::unordered_set<int> visited_grids;
@@ -224,7 +226,7 @@ private:
         auto inters = p_meteors->collision_tree.rayCast(at, dir, length);
         for (auto ent_idn : inters)
         {
-            auto points = p_meteors->meteors.at(ent_idn).getPointsInWorld();
+            auto points = p_meteors->obstacles.at(ent_idn).getPointsInWorld();
             int next = 1;
 
             for (int i = 0; i < points.size(); ++i)

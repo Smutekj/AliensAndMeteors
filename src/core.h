@@ -23,6 +23,8 @@
 #endif 
 
 
+#define RAND_MAXF static_cast<float>(RAND_MAX)
+
 //! OMP THREADS
 #ifndef NUM_OMP_INTERACTION_THREADS
 #define NUM_OMP_INTERACTION_THREADS 6
@@ -306,8 +308,8 @@ template <typename EdgeType> inline sf::Vector2f closestPointOnEdge(const sf::Ve
 }
 
 inline sf::Vector2f randPoint(const float& x_min, const float& x_max, const float& y_min, const float&  y_max){
-    float&& x = static_cast<float>(rand()) / RAND_MAX * (x_max - x_min) + x_min;
-    float&& y = static_cast<float>(rand()) / RAND_MAX * (y_max - y_min) + y_min;
+    float x = static_cast<float>(rand()) / RAND_MAXF * (x_max - x_min) + x_min;
+    float y = static_cast<float>(rand()) / RAND_MAXF * (y_max - y_min) + y_min;
     return {x, y};
 }
 
@@ -360,7 +362,7 @@ struct EntityData
     sf::Vector2f target_position;
     sf::Vector2f vel;
     sf::Vector2f acc;
-    float max_vel = 25.f;
+    float max_vel = 35.f;
     float max_acc = 2.f;
     int health = 5;
     int group_ind = -1;

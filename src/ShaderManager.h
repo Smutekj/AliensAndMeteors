@@ -1,7 +1,6 @@
 #pragma once
 
 #include "SFML/Graphics/Shader.hpp"
-#include "ShaderNames.h"
 
 #include <unordered_map>
 #include <memory>

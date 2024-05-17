@@ -14,7 +14,6 @@ bool inline overlap1D(const Projection1D &p1, const Projection1D &p2)
 
 float inline calcOverlap(const Projection1D &p1, const Projection1D &p2)
 {
-  p1.min <= p2.max &&p2.min <= p1.max;
   float a = p1.max - p2.min;
   float b = p2.max - p1.min;
   assert(overlap1D(p1, p2));
@@ -46,8 +45,6 @@ struct Polygon : sf::Transformable
   float mass = 1;
   float inertia = 1;
   float radius;
-
-
 
   Polygon(int n_points = 3, sf::Vector2f at = {0, 0}, float radius = 10.f);
 

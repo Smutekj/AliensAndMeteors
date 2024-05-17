@@ -13,9 +13,10 @@
 
 #include <iostream>
 
-Game::Game(sf::RenderWindow &window)
-    : bullet_world(player), m_window(window), lights(poly_manager)
+Game::Game(sf::RenderWindow &window, KeyBindings &bindings)
+    : bullet_world(player), m_window(window), lights(poly_manager), key_binding(bindings)
 {
+
     t.create(window.getSize().x, window.getSize().y);
     light_texture.create(window.getSize().x, window.getSize().y);
     t.setSmooth(true);
@@ -47,10 +48,13 @@ Game::Game(sf::RenderWindow &window)
     }
     player.pos = {box_size.x / 2.f, box_size.y / 2.f};
 
+    poly_manager.addRegularObstacle(ObstacleType::POWERUP, player.pos);
+
     auto view = window.getView();
     view.setCenter(player.pos);
-    view.setSize({50.f, 50.f * window.getSize().y / window.getSize().x});
+    view.setSize({100.f, 100.f * window.getSize().y / window.getSize().x});
     window.setView(view);
+    default_view = view;
 
     textures.load(Textures::ID::PlayerShip, "../Resources/playerShip.png");
 
@@ -67,6 +71,7 @@ Game::Game(sf::RenderWindow &window)
     bullet_world.p_boids = &boid_world;
     bullet_world.p_meteors = &poly_manager;
     bullet_world.p_effects = &effects;
+    bullet_world.p_game = this;
 
     font.loadFromFile("../Resources/DigiGraphics.ttf");
     health_text.setFont(font);
@@ -113,17 +118,16 @@ void Game::moveView(sf::RenderWindow &window)
     {
         view.setCenter(view.getCenter() + sf::Vector2f{0, dy + threshold.y});
     }
+
+    float booster_ratio = player.speed/player.max_speed;
+    view.setSize(default_view.getSize()*(1 + booster_ratio/3.f));
+
     window.setView(view);
 }
 
 void Game::handleEvent(const sf::Event &event)
 {
     auto mouse_position = m_window.mapPixelToCoords(sf::Mouse::getPosition(m_window));
-
-    if (event.type == sf::Event::Closed)
-    {
-        game_is_running = false;
-    }
 
     if (event.type == sf::Event::Resized)
     {
@@ -135,39 +139,29 @@ void Game::handleEvent(const sf::Event &event)
         {
             bullet_world.spawnBullet(-1, player.pos, angle2dir(player.angle));
         }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Delete))
+        if (event.key.code == key_binding[PlayerControl::BOOST])
         {
-            boid_world.removeBoids(selection);
-            for (auto i : selected_meteors)
-            {
-                onMeteorDestruction(i);
-            }
-            selected_meteors.clear();
-            selection.clear();
+            player.is_boosting = true;
         }
     }
     if (event.type == sf::Event::KeyReleased)
     {
-        if (last_pressed_was_space)
-        {
-            game_is_stopped_ = false;
-            last_pressed_was_space = false;
-        }
-        if (event.key.code == sf::Keyboard::Key::E)
-        {
-            addExplosion(mouse_position, 0);
-        }
-        if (event.key.code == sf::Keyboard::Key::LShift)
+
+        if (event.key.code == key_binding[PlayerControl::SHOOT_LASER])
         {
             auto dir = angle2dir(player.angle);
 
             bullet_world.createLaser(-1, player.pos, player.pos + dir * 200.f);
         }
-        if (event.key.code == sf::Keyboard::Key::B)
+        if (event.key.code == key_binding[PlayerControl::THROW_BOMB])
         {
             auto dir = angle2dir(player.angle);
 
             bullet_world.createBomb(-1, player.pos, 150.f * angle2dir(player.angle));
+        }
+        if (event.key.code == key_binding[PlayerControl::BOOST])
+        {
+            player.is_boosting = false;
         }
     }
     if (event.type == sf::Event::MouseButtonPressed)
@@ -183,51 +177,13 @@ void Game::handleEvent(const sf::Event &event)
         {
         }
     }
-    if (event.type == sf::Event::MouseButtonPressed)
-    {
 
-        if (event.mouseButton.button == sf::Mouse::Left)
-        {
-            if (!selection_pending)
-            {
-                start_position = mouse_position;
-                end_position = start_position;
-                selection_pending = true;
-            }
-        }
-        else if (event.mouseButton.button == sf::Mouse::Right)
-        {
-            boid_world.setTargetOf(selection, player.pos);
-        }
-    }
-    else if (event.type == sf::Event::MouseMoved)
-    {
-        if (selection_pending)
-        {
-            end_position = mouse_position;
-        }
-    }
     else if (event.type == sf::Event::MouseButtonReleased)
     {
-        // ui.onRelease(window);
-        if (selection_pending)
-        {
-            end_position = mouse_position;
-        }
-        if (event.mouseButton.button == sf::Mouse::Left)
-        {
-            end_position = mouse_position;
-            selection_pending = false;
-            sf::FloatRect selection_rect{start_position, end_position - start_position};
-            selection = boid_world.getBoidsIn(selection_rect);
-            selected_meteors = poly_manager.getNearestMeteorInds(start_position, end_position);
-
-            // selection.selectInRectangle(*p_the_god, start_position, end_position, 0);
-        }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LControl))
         {
 
-            poly_manager.addRandomMeteorAt(mouse_position);
+            poly_manager.addRandomMeteorAt(mouse_position, {5, 5});
         }
     }
 
@@ -246,171 +202,225 @@ void Game::handleEvent(const sf::Event &event)
     }
 }
 
+//! \brief parse events and normal input
+//! \note  right now this is just a placeholder code until I make a nice OOP solution with bindings and stuff
+void Game::parseInput(sf::RenderWindow &window)
+{
 
-
-
-    //! \brief parse events and normal input
-    //! \note  right now this is just a placeholder code until I make a nice OOP solution with bindings and stuff
-    void Game::parseInput(sf::RenderWindow & window)
+    if (sf::Keyboard::isKeyPressed(key_binding[PlayerControl::MOVE_FORWARD]))
     {
-        moveView(window);
+        player.speed += player.acceleration;
+    }
+    else if (sf::Keyboard::isKeyPressed(key_binding[PlayerControl::MOVE_BACK]))
+    {
+        player.speed -= player.acceleration;
+    }
+    else
+    {
+        player.speed /= 1.1f;
+    }
+    if (sf::Keyboard::isKeyPressed(key_binding[PlayerControl::STEER_LEFT]))
+    {
+        player.angle -= 5.f;
+    }
+    if (sf::Keyboard::isKeyPressed(key_binding[PlayerControl::STEER_RIGHT]))
+    {
+        player.angle += 5.f;
+    }
+}
 
-        if (game_is_stopped_)
-        {
-            return;
-        }
+void Game::update(const float dt, sf::RenderWindow &window)
+{
 
-        // parseEvents(window);
+    moveView(window);
 
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
+    parseInput(window);
+
+    effects.update();
+    player_particles->update(dt);
+
+    player.update(dt);
+
+    player_shape.setPosition(player.pos);
+    player_shape.setRotation(player.angle);
+
+    poly_manager.update(dt);
+    boid_world.update(dt);
+    bullet_world.update(dt);
+
+    while (!boid_world.to_destroy.empty())
+    {
+        auto entity_ind = boid_world.to_destroy.front();
+
+        effects.createExplosion(boid_world.entity2boid_data.at(entity_ind).r, 5.f);
+        boid_world.removeBoid(entity_ind);
+        score++;
+        boid_world.to_destroy.pop();
+    }
+
+    poly_manager.collideWithPlayer(player);
+
+    if (player.health == 0)
+    {
+        state = GameState::PLAYER_DIED;
+    }
+
+    if (boss_spawner_timer-- < 0)
+    {
+        auto spawn_position = player.pos + angle2dir(randf(0, 180)) * randf(50, 100);
+        boss_spawner_timer = 600;
+        if (rand() % 2 == 0)
         {
-            player.speed += 0.5f;
-            player.speed = std::min(player.speed, 25.f);
-        }
-        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
-        {
-            player.speed -= 0.5f;
-            player.speed = std::max(player.speed, -10.f);
+            boid_world.spawn(Boid::EnemyType::BOMBER, spawn_position);
         }
         else
         {
-            player.speed = 0.f;
-        }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
-        {
-            player.angle -= 5.f;
-        }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
-        {
-            player.angle += 5.f;
+            boid_world.spawn(Boid::EnemyType::LASERBOI, spawn_position);
         }
     }
 
-    void Game::update(const float dt, sf::RenderWindow &window)
+    if (normal_spawner_timer-- < 0)
     {
-        if (game_is_stopped_)
-        {
-            return;
-        }
-
-        parseInput(window);
-
-        effects.update();
-        player_particles->update(dt);
-
-        player.pos += player.speed * angle2dir(player.angle) * dt;
-
-        player_shape.setPosition(player.pos);
-        player_shape.setRotation(player.angle);
-
-        poly_manager.update(dt);
-        boid_world.update(dt);
-        bullet_world.update(dt);
-
-        // poly_manager.collideWithPlayer(player);
-
-        if (player.angle < -180.f)
-        {
-            player.angle = 180.f;
-        }
-        if (player.angle > 180.f)
-        {
-            player.angle = -180.f;
-        }
-
-        while (!boid_world.to_destroy.empty())
-        {
-            auto entity_ind = boid_world.to_destroy.front();
-
-            effects.createExplosion(boid_world.entity2boid_data.at(entity_ind).r, 5.f);
-            boid_world.removeBoid(entity_ind);
-            boid_world.to_destroy.pop();
-        }
-
-        // if (player.health == 0)
-        // {
-        //     endGame(EndGameType::DIED);
-        // }
-
-        if (boss_spawner_timer-- < 0)
-        {
-            boss_spawner_timer = 600;
-            // boid_world.spawnBoss(player.pos + angle2dir(rand() % 180) * randf(100, 150));
-            // boid_world.spawnBoss(player.pos + angle2dir(rand() % 180) * randf(100, 150));
-        }
-
-        if (normal_spawner_timer-- < 0)
-        {
-            normal_spawner_timer = 60;
-            boid_world.addBoid(player.pos + angle2dir(rand() % 180) * randf(50, 51));
-        }
-        if (group_spawner_timer-- < 0)
-        {
-            group_spawner_timer = 300;
-            // boid_world.addGroupOfBoids( 10, player.pos + angle2dir(rand()%180)*randf(5, 10), 5);
-        }
-
-        lights.center = player.pos;
-        lights.update();
+        normal_spawner_timer = 60;
+        auto spawn_position = player.pos + angle2dir(randf(0, 180)) * randf(50, 100);
+        boid_world.spawn(Boid::EnemyType::BASIC, spawn_position);
     }
-
-    void Game::draw(sf::RenderWindow & window)
+    if (group_spawner_timer-- < 0)
     {
-
-        t.setView(window.getView());
-        t.clear(sf::Color::Black);
-
-        window.draw(player_shape);
-
-        player_particles->draw(t);
-        effects.draw(t);
-        poly_manager.draw(t);
-        bullet_world.draw(t);
-        boid_world.draw(t);
-        t.display();
-
-        bloom.doTheThing(t, window);
-        // darken(t, light_texture);
-
-        // lights.draw(light_texture, window);
-
-
-        drawUI(window);
+        group_spawner_timer = 300;
+        // boid_world.addGroupOfBoids( 10, player.pos + angle2dir(rand()%180)*randf(5, 10), 5);
     }
-
-    void Game::drawUI(sf::RenderWindow & window)
+    if(power_spawner_timer-- < 0)
     {
-
-        auto old_view = window.getView();
-        window.setView(window.getDefaultView());
-
-        std::string hp_text = "HP: " + std::to_string(player.health);
-
-        sf::RectangleShape health_rect;
-
-        sf::Vector2f healt_comp_uisize = {(float)window.getSize().x * 1.f / 6.f, (float)window.getSize().y * 1.f / 10.f};
-        sf::Vector2f healt_comp_min = {(float)window.getSize().x * 5.f / 6.f, (float)window.getSize().y * 9.f / 10.f};
-
-        health_text.setPosition(healt_comp_min);
-        health_text.setString(hp_text);
-
-        health_rect.setPosition({healt_comp_min.x, healt_comp_min.y + healt_comp_uisize.y / 2.f});
-        float health_ratio = player.health / (float)player.max_health;
-        health_rect.setSize({health_ratio * healt_comp_uisize.x * 3.f / 4.f, healt_comp_uisize.y / 3.f});
-        health_rect.setFillColor(sf::Color::Red);
-        health_rect.setOutlineThickness(1.f);
-        health_rect.setOutlineColor(sf::Color::Black);
-        window.draw(health_text);
-        window.draw(health_rect);
-        window.setView(old_view);
+        auto spawn_position = player.pos + angle2dir(randf(0, 180)) * randf(50, 200);
+        poly_manager.addRegularObstacle(ObstacleType::POWERUP, spawn_position);
+        power_spawner_timer = 500;
     }
 
-    void Game::addEnemy(sf::Vector2f at)
+    lights.center = player.pos;
+    lights.update();
+}
+
+void Game::draw(sf::RenderWindow &window)
+{
+
+    t.setView(window.getView());
+    t.clear(sf::Color::Black);
+
+    window.draw(player_shape);
+    boid_world.draw(window);
+    player_particles->draw(t);
+    effects.draw(t);
+    poly_manager.draw(t);
+    bullet_world.draw(t);
+    t.display();
+
+    bloom.doTheThing(t, window);
+    // darken(t, light_texture);
+
+    // lights.draw(light_texture, window);
+
+    drawUI(window);
+}
+
+void Game::drawUI(sf::RenderWindow &window)
+{
+
+    auto old_view = window.getView();
+    window.setView(window.getDefaultView());
+
+    std::string hp_text = "HP: " + std::to_string(player.health);
+
+    sf::RectangleShape health_rect;
+
+    sf::Vector2f healt_comp_uisize = {(float)window.getSize().x * 1.f / 6.f, (float)window.getSize().y * 1.f / 10.f};
+    sf::Vector2f healt_comp_min = {(float)window.getSize().x * 5.f / 6.f, (float)window.getSize().y * 9.f / 10.f};
+
+    health_text.setPosition(healt_comp_min);
+    health_text.setString(hp_text);
+
+    health_rect.setPosition({healt_comp_min.x, healt_comp_min.y + healt_comp_uisize.y / 2.f});
+    float health_ratio = player.health / (float)player.max_health;
+    health_rect.setSize({health_ratio * healt_comp_uisize.x * 3.f / 4.f, healt_comp_uisize.y / 3.f});
+    health_rect.setFillColor(sf::Color::Red);
+    health_rect.setOutlineThickness(1.f);
+    health_rect.setOutlineColor(sf::Color::Black);
+    window.draw(health_text);
+    window.draw(health_rect);
+
+    sf::Vector2f booster_size = {(float)window.getSize().x * 1.f / 6.f, health_rect.getSize().y};
+    sf::Vector2f booster_pos = {(float)window.getSize().x * 1.f / 6.f, health_rect.getPosition().y};
+
+    sf::VertexArray booster_rect;
+    booster_rect.setPrimitiveType(sf::Quads);
+    booster_rect.resize(4);
+
+
+    sf::RectangleShape booster_boundary(booster_size);
+    booster_boundary.setOutlineThickness(3.f);
+    booster_boundary.setOutlineColor(sf::Color::Black);
+    booster_boundary.setPosition(booster_pos);
+    booster_boundary.setFillColor(sf::Color::Transparent);
+    window.draw(booster_boundary);
+
+    float booster_ratio = player.boost_heat / player.max_boost_heat;
+    booster_size.x *= booster_ratio;
+    sf::Color booster_color(255 * (booster_ratio), 255 * (1 - booster_ratio), 0);
+
+    booster_rect[0] = {{booster_pos.x, booster_pos.y}, sf::Color::Yellow};
+    booster_rect[1] = {{booster_pos.x + booster_size.x, booster_pos.y}, booster_color};
+    booster_rect[2] = {{booster_pos.x + booster_size.x, booster_pos.y + booster_size.y}, booster_color};
+    booster_rect[3] = {{booster_pos.x, booster_pos.y + booster_size.y}, sf::Color::Yellow};
+    window.draw(booster_rect);
+
+
+    sf::RectangleShape score_rect;
+
+    sf::Vector2f score_comp_uisize = {(float)window.getSize().x * 1.f / 6.f, (float)window.getSize().y * 1.f / 10.f};
+    sf::Vector2f score_comp_min = {(float)window.getSize().x / 2.f - score_comp_uisize.x/2.f,
+                                 (float)window.getSize().y * 1.f / 10.f};
+    health_text.setPosition(score_comp_min);
+    health_text.setString(std::to_string(score));
+
+    window.setView(old_view);
+
+}
+
+void Game::onMeteorDestruction(int entity_ind)
+{
+    auto &meteor = poly_manager.obstacles.at(entity_ind);
+
+    assert(meteor.type == ObstacleType::METEOR);
+
+    if (meteor.radius <= 3.f)
     {
-        boid_world.addBoid(at);
+        poly_manager.destroyMeteor(entity_ind);
+        return; //! no shattering of small meteors
     }
 
-    void Game::addGroupOfEnemies(sf::Vector2f at, float radius, int n_in_group)
+    auto old_center = meteor.getCenter();
+    const auto &old_points = meteor.points;
+    int n_points = old_points.size();
+
+    std::vector<Polygon> new_meteors;
+
+    for (int i = 0; i < 2; ++i)
     {
-        boid_world.addGroupOfBoids(n_in_group, at, radius);
+        Polygon new_meteor(0);
+        auto new_center = (old_center + old_points[i] + old_points[(i + 1) % n_points]) / 3.f;
+        new_meteor.points.push_back(old_center - new_center);
+        new_meteor.points.push_back(old_points[i] - new_center);
+        new_meteor.points.push_back(old_points[(i + 1) % n_points] - new_center);
+        new_meteor.setPosition(meteor.getPosition());
+        new_meteor.setScale(meteor.getScale());
+        new_meteor.setRotation(meteor.getRotation());
+        auto transform = meteor.getTransform();
+
+        new_meteor.vel = transform.transformPoint(new_center - old_center);
+        poly_manager.addRandomMeteorAt(meteor.getPosition(), meteor.getScale() / 2.f);
+
+        // poly_manager.addMeteor(new_meteor);
     }
+
+    poly_manager.destroyMeteor(entity_ind);
+}

@@ -42,12 +42,13 @@ class PlayerParticleSpawner : public ParticleSpawner
 
     virtual Particle spawnParticle() override
     {
-
+        return {};
     }
 };
 
 class ExplosionParticleSpawner : public ParticleSpawner
 {
+    
 };
 
 class Particles

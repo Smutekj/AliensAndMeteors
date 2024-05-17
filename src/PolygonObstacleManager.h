@@ -6,12 +6,14 @@
 #include "SFML/Graphics/ConvexShape.hpp"
 #include "BVH.h"
 #include "Utils/GayVector.h"
+#include "ResourceIdentifiers.h"
 
 #include <chrono>
 #include <limits>
 #include <iostream>
 #include <memory>
 #include <algorithm>
+
 
 struct CollisionData
 {
@@ -485,15 +487,42 @@ void inline collide(Polygon &pa, Polygon &pb)
 
 constexpr int N_MAX_METEORS = 5000;
 
+enum class ObstacleType
+{
+  FLAG,
+  POWERUP,
+  STATION,
+  METEOR,
+  ALL
+};
+
+
+struct Obstacle : public Polygon
+{
+  ObstacleType type = ObstacleType::METEOR;
+  std::unique_ptr<sf::Shape> draw_shape;
+
+  Obstacle(ObstacleType type, sf::Vector2f at = {0, 0}, int n_points = 3, float radius = 10.f)
+      : type(type), Polygon(n_points, at, radius)
+  {}
+  Obstacle(ObstacleType type, Polygon& shape) : type(type), Polygon(shape) {} 
+  Obstacle() = default;
+};
+
+struct Player;
+class Game;
+
 struct PolygonObstacleManager
 {
 
   BoundingVolumeTree collision_tree;
-  ObjectPool<Polygon, N_MAX_METEORS> meteors;
-
-  ObjectPool<sf::ConvexShape, N_MAX_METEORS> drawables;
+  ObjectPool<Obstacle, N_MAX_METEORS> obstacles;
 
   std::vector<std::pair<int, int>> collisions;
+
+  TextureHolder obstacle_textures;
+
+  Game* p_game;
 
   struct pair_hash
   {
@@ -504,44 +533,46 @@ struct PolygonObstacleManager
   };
   std::unordered_set<std::pair<int, int>, pair_hash> collided;
 
-  PolygonObstacleManager(int n_meteors = 100);
+  PolygonObstacleManager(int n_meteors = 500);
 
   void update(float dt);
 
   void draw(sf::RenderTarget &window);
 
   std::vector<Polygon *> getNearestMeteors(sf::Vector2f r, float radius);
+  std::vector<Obstacle *> getNearestObstacles(ObstacleType type, sf::Vector2f r_center, float radius);
 
   std::vector<int> getNearestMeteorInds(sf::Vector2f lower_left, sf::Vector2f upper_right);
+  std::vector<int> getNearestObstacleInds(ObstacleType type, sf::Vector2f lower_left, sf::Vector2f upper_right);
 
-  // void collideWithPlayer(Player &player)
-  // {
 
-  //   auto player_vel = player.speed * angle2dir(player.angle);
-  //   auto meteors = getNearestMeteors(player.pos, player.radius);
-  //   for (auto *meteor : meteors)
-  //   {
-  //     auto mvt = meteor->getMVTOfSphere(player.pos, player.radius);
-  //     auto vel_mvt_dir = dot(mvt, player_vel);
-  //     if (norm(mvt) > 0.01f && vel_mvt_dir < 0)
-  //     {
-  //       player_vel -= 2.f * vel_mvt_dir * mvt;
-  //       player.angle = std::atan2(player_vel.y, player_vel.x) * 180.f / M_PIf;
-  //       player.health -= 1;
-  //     }
-  //   }
-  // }
+  Obstacle& addRegularObstacle(ObstacleType type, sf::Vector2f position, int n_points = 10, float radius = 3.f)
+  {
+    int entity_ind = obstacles.addObject({type, position, n_points, radius});
+    auto& new_obstacle = obstacles.at(entity_ind);
+    new_obstacle.radius = radius;
+    collision_tree.addRect(new_obstacle.getBoundingRect().inflate(1.5f), entity_ind);
+
+    new_obstacle.draw_shape = std::make_unique<sf::RectangleShape>(sf::Vector2f{radius, radius});
+    new_obstacle.draw_shape->setPosition(new_obstacle.getPosition());
+    new_obstacle.draw_shape->setRotation(new_obstacle.getRotation());
+    new_obstacle.draw_shape->setScale(new_obstacle.getScale());
+    new_obstacle.draw_shape->setTexture(&obstacle_textures.get(Textures::ID::Heart));
+    return new_obstacle;
+  }
+
+  void collideWithPlayer(Player &player);
 
   sf::Vector2f findClosestIntesection(sf::Vector2f at, sf::Vector2f dir, float length);
 
-  void addRandomMeteorAt(sf::Vector2f position);
+  void addRandomMeteorAt(sf::Vector2f position, sf::Vector2f scale);
 
   void addMeteor(Polygon &new_meteor);
-
+  void addMeteor(Obstacle &new_meteor);
   void destroyMeteor(int entity_ind);
 
 private:
-  Polygon createRandomMeteor();
+  Obstacle createRandomMeteor();
   Polygon generateRandomConvexPolygon(int n_edges) const;
   void bounceFromWall(Polygon &meteor);
   void inline collidePolygons(Polygon &pa, Polygon &pb);

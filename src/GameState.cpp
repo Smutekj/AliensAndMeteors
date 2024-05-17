@@ -8,7 +8,8 @@ GameState::GameState(StateStack &stack, State::Context context)
     : State(stack, context)
 {
     m_is_final_state = true;
-    mp_game = std::make_unique<Game>(*m_context.window);
+    mp_game = std::make_unique<Game>(*m_context.window, bindings);
+
 
     auto& background_texture = context.textures->get(Textures::ID::BackGround);
     background_texture.setRepeated(true);
@@ -22,6 +23,13 @@ void GameState::update(float dt)
     auto &window = *getContext().window;
 
     mp_game->update(dt, window);
+
+    if(mp_game->getState() == Game::GameState::PLAYER_DIED)
+    {
+        requestStackPop();
+        //! requestStackPush(States::ID::Score)
+    }
+
 }
 
 void GameState::handleEvent(const sf::Event &event)

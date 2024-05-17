@@ -1,12 +1,12 @@
 #include "BulletSystem.h"
 #include "PolygonObstacleManager.h"
 #include "BoidSystem.h"
+#include "Game.h"
 
 void BulletSystem::explodeBomb(sf::Vector2f center, float radius) {
 
     AABB bounding_rect(center - sf::Vector2f{ radius, radius }, center + sf::Vector2f{ radius, radius });
-    p_meteors->collision_tree.findIntersectingLeaves(bounding_rect);
-
+    
     auto intersecting_boids = p_boids->getBoidsIn(bounding_rect);
     for (auto ent_ind : intersecting_boids) {
         auto& boid = p_boids->entity2boid_data.at(ent_ind);
@@ -28,10 +28,10 @@ void BulletSystem::explodeBomb(sf::Vector2f center, float radius) {
 
     auto meteor_inds = p_meteors->getNearestMeteorInds(bounding_rect.r_min, bounding_rect.r_max);
     for (auto meteor_ind: meteor_inds) {
-        auto& meteor = p_meteors->meteors.at(meteor_ind);
+        auto& meteor = p_meteors->obstacles.at(meteor_ind);
         auto mvt = meteor.getMVTOfSphere(center, radius);
         if (norm2(mvt) > 0.001f ) {
-            p_meteors->destroyMeteor(meteor_ind);
+            p_game->onMeteorDestruction(meteor_ind);
         }
     }
 
@@ -187,9 +187,9 @@ void BulletSystem::update(float dt)
 
 void BulletSystem::collideWithMeteors(int bullet_ind){
     auto& bullet = bullets.data.at(bullet_ind);
-    for(auto i : p_meteors->meteors.active_inds)
+    for(auto i : p_meteors->obstacles.active_inds)
     {       
-        auto& meteor = p_meteors->meteors.at(i);
+        auto& meteor = p_meteors->obstacles.at(i);
         auto mvt = meteor.getMVTOfSphere(bullet.pos, bullet.radius);
         float vel_in_mvt_dir = dot(bullet.vel, mvt);
         if(norm2(mvt) > 0.001f && vel_in_mvt_dir < 0.f){

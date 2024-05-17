@@ -12,6 +12,7 @@
 
 #include <queue>
 #include <set>
+#include <unordered_map>
 
 #include "Messanger.h"
 
@@ -23,11 +24,20 @@ struct Boid
 
     MoveState state = MoveState::STANDING;
 
-    float radius = 5.f;
+    float radius = 2.f;
     float orientation = 0.f;
     sf::Vector2f target_pos;
     int group_ind = -1;
     int entity_ind = -1;
+
+    enum class EnemyType
+    {
+        BOMBER,
+        BASIC,
+        LASERBOI
+    };
+
+    EnemyType type = EnemyType::BASIC;
 };
 
 struct GridInds
@@ -66,8 +76,12 @@ class BoidSystem
     std::unique_ptr<SearchGrid> p_grid;
     std::vector<std::vector<int>> grid2boid_inds;
 
-    const float max_vel = 25.f;
+    const float max_vel = 50.f;
+    const float max_acc = 0.5f;
     const float max_impulse_vel = 40.f;
+
+    TextureHolder textures;
+    std::unordered_map<Boid::EnemyType, Textures::ID> enemy_type2texture;
 
 public:
     std::queue<int> to_destroy;
@@ -122,7 +136,8 @@ public:
 
     void removeBoid(int boid_ind);
     void removeBoids(const std::vector<int> &boid_ind);
-    void addBoid(sf::Vector2f at, std::unique_ptr<BoidAI> &&ai, int group_ind = -1);
+    void addBoid(sf::Vector2f at, std::unique_ptr<BoidAI> &&ai,
+                 int group_ind = -1, Boid::EnemyType type = Boid::EnemyType::BASIC);
     void setBehaviourOf(int entity_ind, std::unique_ptr<BoidAI> behaviour);
     void addGroupOfBoids(int n_boids, sf::Vector2f center, float radius);
 
@@ -247,7 +262,7 @@ public:
         sf::VertexArray boid_vertices;
         boid_vertices.setPrimitiveType(sf::Quads);
         boid_vertices.resize(4 * boids.size());
-        sf::Color color = sf::Color::Green;
+        // sf::Color color = sf::Color::Green;
 
         for (int boid_ind = 0; boid_ind < boids.size(); ++boid_ind)
         {
@@ -257,13 +272,21 @@ public:
             a.rotate(boid.orientation);
             a.scale({boid.radius, boid.radius});
 
-            boid_vertices[boid_ind * 4 + 0] = {boid.r + a.transformPoint({-0.5, -0.5}), color};
-            boid_vertices[boid_ind * 4 + 1] = {boid.r + a.transformPoint({0.5, -0.5}), color};
-            boid_vertices[boid_ind * 4 + 2] = {boid.r + a.transformPoint({0.5, 0.5}), color};
-            boid_vertices[boid_ind * 4 + 3] = {boid.r + a.transformPoint({-0.5, 0.5}), color};
+            auto texture_type = enemy_type2texture.at(boid.type);
+            float ship_size_x = textures.get(texture_type).getSize().x;
+            float ship_size_y = textures.get(texture_type).getSize().y;
+            boid_vertices.resize(4);
+            boid_vertices[0 * boid_ind * 4 + 0] = {boid.r + a.transformPoint({-0.5, -0.5}), {0, 0}};
+            boid_vertices[0 * boid_ind * 4 + 1] = {boid.r + a.transformPoint({0.5, -0.5}), {ship_size_x, 0}};
+            boid_vertices[0 * boid_ind * 4 + 2] = {boid.r + a.transformPoint({0.5, 0.5}), {ship_size_x, ship_size_y}};
+            boid_vertices[0 * boid_ind * 4 + 3] = {boid.r + a.transformPoint({-0.5, 0.5}), {0, ship_size_y}};
+
+            target.draw(boid_vertices, &textures.get(texture_type));
+            //! will fix once I make a texture atlas
         }
-        target.draw(boid_vertices);
     }
+
+    void spawn(Boid::EnemyType type, sf::Vector2f pos);
 
 private:
     bool mappingsAreOK()

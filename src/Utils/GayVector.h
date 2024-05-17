@@ -37,7 +37,7 @@ struct ObjectPool
     assert(new_entity_ind < MAX_OBJECTS);
     free_inds.erase(free_inds.begin());
 
-    objects.at(new_entity_ind) = obj;
+    objects.at(new_entity_ind) = std::move(obj);
 
     entity2ind.at(new_entity_ind) = active_inds.size();
     active_inds.push_back(new_entity_ind);

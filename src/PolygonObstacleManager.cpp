@@ -1,7 +1,10 @@
 #include "PolygonObstacleManager.h"
+#include "Player.h"
+#include "Game.h"
 
 PolygonObstacleManager::PolygonObstacleManager(int n_meteors)
 {
+  obstacle_textures.load(Textures::ID::Heart, "../Resources/Heart.png");
   for (int i = 0; i < n_meteors; ++i)
   {
     auto meteor = createRandomMeteor();
@@ -17,12 +20,36 @@ std::vector<Polygon *> PolygonObstacleManager::getNearestMeteors(sf::Vector2f r,
 
   for (auto ind : entity_inds)
   {
-    nearest_meteors.push_back(&meteors.at(ind));
+    if (obstacles.at(ind).type == ObstacleType::METEOR)
+    {
+      nearest_meteors.push_back(&obstacles.at(ind));
+    }
+  }
+  return nearest_meteors;
+}
+
+std::vector<Obstacle *> PolygonObstacleManager::getNearestObstacles(ObstacleType type, sf::Vector2f r, float radius)
+{
+  std::vector<Obstacle *> nearest_meteors;
+  auto entity_inds = collision_tree.findIntersectingLeaves({r - sf::Vector2f{radius, radius},
+                                                            r + sf::Vector2f{radius, radius}});
+
+  for (auto ind : entity_inds)
+  {
+    if (obstacles.at(ind).type == type || type == ObstacleType::ALL)
+    {
+      nearest_meteors.push_back(&obstacles.at(ind));
+    }
   }
   return nearest_meteors;
 }
 
 std::vector<int> PolygonObstacleManager::getNearestMeteorInds(sf::Vector2f lower_left, sf::Vector2f upper_right)
+{
+  return getNearestObstacleInds(ObstacleType::METEOR, lower_left, upper_right);
+}
+
+std::vector<int> PolygonObstacleManager::getNearestObstacleInds(ObstacleType type, sf::Vector2f lower_left, sf::Vector2f upper_right)
 {
   sf::Vector2f ll = lower_left;
   sf::Vector2f ur = upper_right;
@@ -33,13 +60,21 @@ std::vector<int> PolygonObstacleManager::getNearestMeteorInds(sf::Vector2f lower
   ur.x = std::max(lower_left.x, upper_right.x);
   ur.y = std::max(lower_left.y, upper_right.y);
 
-  std::vector<Polygon *> nearest_meteors;
-  auto entity_inds = collision_tree.findIntersectingLeaves({ll, ur});
+  std::vector<int> obstacle_inds;
+  auto broad_entity_inds = collision_tree.findIntersectingLeaves({ll, ur});
 
-  return entity_inds;
+  for (auto ind : broad_entity_inds)
+  {
+    if (obstacles.at(ind).type == type)
+    {
+      obstacle_inds.push_back(ind);
+    }
+  }
+
+  return obstacle_inds;
 }
 
-Polygon PolygonObstacleManager::createRandomMeteor()
+Obstacle PolygonObstacleManager::createRandomMeteor()
 {
   auto polygon = generateRandomConvexPolygon(12 + rand() % 3);
   auto radius = randf(5, 20);
@@ -50,40 +85,46 @@ Polygon PolygonObstacleManager::createRandomMeteor()
   polygon.angle_vel = randf(-0.02, 0.02);
   polygon.mass = radius * radius;
   polygon.inertia = std::pow(polygon.radius, 2) * polygon.mass;
-  return std::move(polygon);
+  return {ObstacleType::METEOR, polygon};
 }
 
-void PolygonObstacleManager::addRandomMeteorAt(sf::Vector2f position)
+void PolygonObstacleManager::addRandomMeteorAt(sf::Vector2f position, sf::Vector2f scale)
 {
   auto new_meteor = createRandomMeteor();
+  new_meteor.setPosition(position);
+  new_meteor.radius /= new_meteor.radius / scale.x;
+  new_meteor.setScale(scale);
   addMeteor(new_meteor);
 }
 
-void PolygonObstacleManager::addMeteor(Polygon &new_meteor)
+void PolygonObstacleManager::addMeteor(Obstacle &new_meteor)
 {
-  auto new_entity_ind = meteors.addObject(new_meteor);
-  collision_tree.addRect(new_meteor.getBoundingRect().inflate(1.5f), new_entity_ind);
 
-  sf::ConvexShape wtf(new_meteor.points.size());
+  auto new_entity_ind = obstacles.addObject(new_meteor);
+  auto &new_obstacle = obstacles.at(new_entity_ind);
+  collision_tree.addRect(new_obstacle.getBoundingRect().inflate(1.5f), new_entity_ind);
 
-  for (int i = 0; i < new_meteor.points.size(); ++i)
+  auto draw_shape = std::make_unique<sf::ConvexShape>(new_obstacle.points.size());
+
+  for (int i = 0; i < new_obstacle.points.size(); ++i)
   {
-    wtf.setPoint(i, new_meteor.points.at(i));
+    draw_shape->setPoint(i, new_obstacle.points.at(i));
   }
 
-  wtf.setPosition(new_meteor.getPosition());
-  wtf.setRotation(new_meteor.getRotation());
-  wtf.setScale(new_meteor.getScale());
-  wtf.setFillColor(sf::Color(rand() % 256, 255, 0, 255));
+  draw_shape->setPosition(new_obstacle.getPosition());
+  draw_shape->setRotation(new_obstacle.getRotation());
+  draw_shape->setScale(new_obstacle.getScale());
+  draw_shape->setFillColor(sf::Color(rand() % 256, 255, 0, 255));
 
-  auto new_entity_ind2 = drawables.addObject(wtf);
-  assert(new_entity_ind == new_entity_ind2);
+  new_obstacle.draw_shape = std::move(draw_shape);
+  // auto new_entity_ind2 = drawables.addObject(wtf);
+  // assert(new_entity_ind == new_entity_ind2);
 }
 
 void PolygonObstacleManager::destroyMeteor(int entity_ind)
 {
-  meteors.remove(entity_ind);
-  drawables.remove(entity_ind);
+  // meteors.remove(entity_ind);
+  obstacles.remove(entity_ind);
   collision_tree.removeObject(entity_ind);
 }
 
@@ -109,16 +150,16 @@ void PolygonObstacleManager::bounceFromWall(Polygon &meteor)
 
 void PolygonObstacleManager::update(float dt)
 {
-  for (auto k : meteors.active_inds)
+  for (auto k : obstacles.active_inds)
   {
-    auto &meteor = meteors.at(k);
+    auto &meteor = obstacles.at(k);
     meteor.update(dt);
     bounceFromWall(meteor);
     truncate(meteor.vel, 5.0f);
 
-    drawables.at(k).setPosition(meteor.getPosition());
-    drawables.at(k).setRotation(meteor.getRotation());
-    drawables.at(k).setScale(meteor.getScale());
+    meteor.draw_shape->setPosition(meteor.getPosition());
+    meteor.draw_shape->setRotation(meteor.getRotation());
+    meteor.draw_shape->setScale(meteor.getScale());
 
     auto fitting_rect = meteor.getBoundingRect();
     auto big_bounding_rect = collision_tree.getObjectRect(k);
@@ -148,10 +189,10 @@ void PolygonObstacleManager::update(float dt)
   // }
 
   auto tic = std::chrono::high_resolution_clock::now();
-  for (auto i : meteors.active_inds)
+  for (auto i : obstacles.active_inds)
   {
 
-    auto nearest_inds = collision_tree.findIntersectingLeaves(meteors.at(i).getBoundingRect());
+    auto nearest_inds = collision_tree.findIntersectingLeaves(obstacles.at(i).getBoundingRect());
     for (int meteor_ind : nearest_inds)
     {
       if (i == meteor_ind)
@@ -161,12 +202,11 @@ void PolygonObstacleManager::update(float dt)
       std::pair<int, int> collision_inds = {std::min(i, meteor_ind), std::max(i, meteor_ind)};
       if (collided.count(collision_inds) == 0)
       {
-        if (intersects(meteors.at(meteor_ind).getBoundingRect(), meteors.at(i).getBoundingRect()))
+        if (intersects(obstacles.at(meteor_ind).getBoundingRect(), obstacles.at(i).getBoundingRect()))
         {
-          collidePolygons(meteors.at(meteor_ind), meteors.at(i));
+          collidePolygons(obstacles.at(meteor_ind), obstacles.at(i));
         }
         collided.insert(collision_inds);
-
       }
     }
   }
@@ -178,9 +218,9 @@ void PolygonObstacleManager::update(float dt)
 
 void PolygonObstacleManager::draw(sf::RenderTarget &window)
 {
-  for (auto i : meteors.active_inds)
+  for (auto i : obstacles.active_inds)
   {
-    window.draw(drawables.at(i));
+    window.draw(*obstacles.at(i).draw_shape);
   }
 }
 
@@ -378,36 +418,77 @@ void PolygonObstacleManager::collidePolygons(Polygon &pa, Polygon &pb)
 }
 
 sf::Vector2f PolygonObstacleManager::findClosestIntesection(sf::Vector2f at, sf::Vector2f dir, float length)
+{
+  sf::Vector2f closest_intersection = at + dir * length;
+  float min_dist = 200.f;
+  auto inters = collision_tree.rayCast(at, dir, length);
+  for (auto ent_idn : inters)
   {
-    sf::Vector2f closest_intersection = at + dir * length;
-    float min_dist = 200.f;
-    auto inters = collision_tree.rayCast(at, dir, length);
-    for (auto ent_idn : inters)
+    auto points = obstacles.at(ent_idn).getPointsInWorld();
+    int next = 1;
+
+    for (int i = 0; i < points.size(); ++i)
     {
-      auto points = meteors.at(ent_idn).getPointsInWorld();
-      int next = 1;
+      sf::Vector2f r1 = points.at(i);
+      sf::Vector2f r2 = points.at(next);
 
-      for (int i = 0; i < points.size(); ++i)
+      auto intersection = getIntersection(r1, r2, at, at + dir * length);
+      if (intersection.x > 0 & intersection.y > 0)
       {
-        sf::Vector2f r1 = points.at(i);
-        sf::Vector2f r2 = points.at(next);
-
-        auto intersection = getIntersection(r1, r2, at, at + dir * length);
-        if (intersection.x > 0 & intersection.y > 0)
+        auto new_dist = dist(intersection, at);
+        if (new_dist < min_dist)
         {
-          auto new_dist = dist(intersection, at);
-          if (new_dist < min_dist)
-          {
-            closest_intersection = intersection;
-            min_dist = new_dist;
-          }
-        }
-        next++;
-        if (next == points.size())
-        {
-          next = 0;
+          closest_intersection = intersection;
+          min_dist = new_dist;
         }
       }
+      next++;
+      if (next == points.size())
+      {
+        next = 0;
+      }
     }
-    return closest_intersection;
+  }
+  return closest_intersection;
+}
+
+  void PolygonObstacleManager::collideWithPlayer(Player &player)
+  {
+
+    auto player_vel = player.speed * angle2dir(player.angle);
+    auto meteors = getNearestMeteors(player.pos, player.radius);
+    for (auto *meteor : meteors)
+    {
+      auto mvt = meteor->getMVTOfSphere(player.pos, player.radius);
+      auto vel_mvt_dir = dot(mvt, player_vel);
+      if (norm(mvt) > 0.01f && vel_mvt_dir < 0)
+      {
+        player_vel -= 2.f * vel_mvt_dir * mvt;
+        player.angle = std::atan2(player_vel.y, player_vel.x) * 180.f / M_PIf;
+        player.health -= 1;
+        p_game->score--;
+      }
+    }
+    auto power_ups = getNearestObstacleInds(ObstacleType::POWERUP, player.pos , {player.radius, player.radius});
+    for (auto ind : power_ups)
+    {
+      auto mvt = obstacles.at(ind).getMVTOfSphere(player.pos, player.radius);
+      auto vel_mvt_dir = dot(mvt, player_vel);
+      if (norm(mvt) > 0.01f)
+      {
+        player.health += 5;
+        destroyMeteor(ind);
+      }
+    }
+    auto flags = getNearestObstacleInds(ObstacleType::FLAG, player.pos , {player.radius, player.radius});
+    for (auto ind : flags)
+    {
+      auto mvt = obstacles.at(ind).getMVTOfSphere(player.pos, player.radius);
+      auto vel_mvt_dir = dot(mvt, player_vel);
+      if (norm(mvt) > 0.01f)
+      {
+        addRegularObstacle(ObstacleType::FLAG, randomPosInBox());
+        destroyMeteor(ind);
+      }
+    }
   }

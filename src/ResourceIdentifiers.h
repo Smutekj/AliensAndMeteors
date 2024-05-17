@@ -19,6 +19,9 @@ namespace Textures
 		Bomb,
 		Particle,
 		PlayerShip,
+		EnemyShip,
+		EnemyBomber,
+		Heart,
 		BackGround,
 	};
 }

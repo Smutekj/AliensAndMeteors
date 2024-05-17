@@ -8,6 +8,14 @@
 
 BoidSystem::BoidSystem(float max_dist)
 {
+    textures.load(Textures::EnemyShip, "../Resources/EnemyShip.png");
+    textures.load(Textures::EnemyBomber, "../Resources/EnemyBomber.png");
+
+    enemy_type2texture[Boid::EnemyType::BASIC] = Textures::EnemyShip;
+    enemy_type2texture[Boid::EnemyType::BOMBER] = Textures::EnemyBomber;
+    enemy_type2texture[Boid::EnemyType::LASERBOI] = Textures::EnemyShip;
+    // enemy_type2texture[Boids::EnemyType::BASIC] = Textures::EnemyShip;
+
     groups = std::make_shared<GroupManager>(entity2boid_data);
 
     sf::Vector2f box_size = {Geometry::BOX[0], Geometry::BOX[1]};
@@ -48,6 +56,7 @@ void BoidSystem::avoidMeteors()
 
         auto nearest_meteors = polygons->getNearestMeteors(boid.r, boid.radius * 5.0f);
         // auto wtf = polygons->collision_tree.rayCast(boid.r, boid.target_pos)
+        sf::Vector2f avoid_force = {0,0};
         for (auto *meteor : nearest_meteors)
         {
             auto mvt = meteor->getMVTOfSphere(r, boid.radius);
@@ -59,8 +68,8 @@ void BoidSystem::avoidMeteors()
             }
             auto r_meteor = meteor->getPosition();
             auto radius_meteor = meteor->radius;
-            auto dr_to_target =  v / norm(v);
-            // dr_to_target/=norm(dr_to_target);
+            auto dr_to_target =  boid.target_pos - boid.r;
+            dr_to_target/=norm(dr_to_target);
             auto dr_to_meteor = (r_meteor - r) / norm(r - r_meteor);
             auto dv_rel = v - meteor->vel;
             // sf::Vector2f dr_norm = {dr_to_target.y, -dr_to_target.x};
@@ -76,13 +85,14 @@ void BoidSystem::avoidMeteors()
 
                 if (std::abs(angle) < 110)
                 {
-                    auto avoid_force = 5.f * sign * dr_norm * radius_meteor / (dist_to_meteor + radius_meteor);
-                    avoid_force = avoid_multiplier* avoid_force ;
-                    truncate(avoid_force, 25.f);
-                    boid.acc += avoid_force;
+                    avoid_force += sign * dr_norm * radius_meteor*radius_meteor/ (dist_to_meteor + radius_meteor);
+                    avoid_force *= avoid_multiplier ;
+
                 }
             }
         }
+        truncate(avoid_force, 5.f);
+        boid.acc += avoid_force;    
     }
 }
 
@@ -167,7 +177,7 @@ void BoidSystem::applyForces(int boid_ind)
     }
 
     boid.acc += (scatter_force + align_force + seek_force + 0.00001f * cohesion_force);
-    truncate(boid.acc, 0.5f);
+    truncate(boid.acc, max_acc);
 }
 
 void BoidSystem::update(float dt)
@@ -263,6 +273,7 @@ void BoidSystem::addBoid(sf::Vector2f at)
     new_boid.entity_ind = ent_ind;
     new_boid.r = at;
     new_boid.target_pos = at;
+    new_boid.type = Boid::EnemyType::BASIC;
     boids.push_back(new_boid);
 
     boid2neighbour_inds.resize(boids.size());
@@ -270,7 +281,8 @@ void BoidSystem::addBoid(sf::Vector2f at)
     insertToGrid(p_grid->coordToCell(at), new_boid_ind);
 }
 
-void BoidSystem::addBoid(sf::Vector2f at, std::unique_ptr<BoidAI> &&ai, int group_ind)
+void BoidSystem::addBoid(sf::Vector2f at, std::unique_ptr<BoidAI> &&ai,
+                     int group_ind, Boid::EnemyType type)
 {
 
     auto ent_ind = *free_entities.begin();
@@ -292,6 +304,7 @@ void BoidSystem::addBoid(sf::Vector2f at, std::unique_ptr<BoidAI> &&ai, int grou
     new_boid.r = at;
     new_boid.target_pos = at;
     new_boid.group_ind = group_ind;
+    new_boid.type = type;
     boids.push_back(new_boid);
 
     boid2neighbour_inds.resize(boids.size());
@@ -425,9 +438,38 @@ void BoidSystem::addGroupOfBoids(int n_boids, sf::Vector2f center, float radius)
 void BoidSystem::spawnBoss(sf::Vector2f pos)
 {
     auto new_entity_ind = *free_entities.begin();
+
     auto ai = std::make_unique<BomberAI>(new_entity_ind, player,
                                        &entity2boid_data.at(new_entity_ind), p_bs);
-    addBoid(pos, std::move(ai), -1);
+
+    addBoid(pos, std::move(ai), -1, Boid::EnemyType::BOMBER);
+}
+
+void BoidSystem::spawn(Boid::EnemyType type, sf::Vector2f pos )
+{
+    auto new_entity_ind = *free_entities.begin();
+
+
+    std::unique_ptr<BoidAI> ai;
+    switch(type)
+    {
+        case Boid::EnemyType::BASIC:
+            ai = std::make_unique<FollowAndShootAI>(new_entity_ind, player,
+                                       &entity2boid_data.at(new_entity_ind), p_bs);
+            break;
+        case Boid::EnemyType::LASERBOI:
+            ai = std::make_unique<BomberAI>(new_entity_ind, player,
+                                       &entity2boid_data.at(new_entity_ind), p_bs);
+            break;
+        case Boid::EnemyType::BOMBER:
+            ai = std::make_unique<BossAI>(new_entity_ind, player,
+                                       &entity2boid_data.at(new_entity_ind), p_bs);
+            break;
+        default:
+            throw std::runtime_error("Type not supported");
+    }   
+    
+    addBoid(pos, std::move(ai), -1, type);
 }
 
 void BoidSystem::fillNeighbourList()
