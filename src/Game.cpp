@@ -14,7 +14,7 @@
 #include <iostream>
 
 Game::Game(sf::RenderWindow &window, KeyBindings &bindings)
-    : bullet_world(player), m_window(window), lights(poly_manager), key_binding(bindings)
+    : bullet_world(player), m_window(window), lights(poly_manager), key_binding(bindings), poly_manager(500, this)
 {
 
     t.create(window.getSize().x, window.getSize().y);
@@ -374,13 +374,13 @@ void Game::drawUI(sf::RenderWindow &window)
     window.draw(booster_rect);
 
 
-    sf::RectangleShape score_rect;
-
     sf::Vector2f score_comp_uisize = {(float)window.getSize().x * 1.f / 6.f, (float)window.getSize().y * 1.f / 10.f};
     sf::Vector2f score_comp_min = {(float)window.getSize().x / 2.f - score_comp_uisize.x/2.f,
-                                 (float)window.getSize().y * 1.f / 10.f};
-    health_text.setPosition(score_comp_min);
-    health_text.setString(std::to_string(score));
+                                 (float)window.getSize().y * 1.f / 20.f};
+    health_text.setString("Score: " + std::to_string(score));
+    health_text.setPosition(score_comp_min.x - health_text.getLocalBounds().width/2.f, score_comp_min.y);
+
+    window.draw(health_text);
 
     window.setView(old_view);
 

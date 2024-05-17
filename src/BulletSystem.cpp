@@ -147,6 +147,7 @@ void BulletSystem::update(float dt)
             bullet.target = bullet.player->pos;
             if (dist(bullet.target, bullet.pos) < bullet.radius + bullet.player->radius)
             {
+                player.health--;
                 to_remove.push_back(bullet_ind);
                 continue;
             }

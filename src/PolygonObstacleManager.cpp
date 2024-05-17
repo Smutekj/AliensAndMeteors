@@ -2,7 +2,8 @@
 #include "Player.h"
 #include "Game.h"
 
-PolygonObstacleManager::PolygonObstacleManager(int n_meteors)
+PolygonObstacleManager::PolygonObstacleManager(int n_meteors, Game* game)
+: p_game(game)
 {
   obstacle_textures.load(Textures::ID::Heart, "../Resources/Heart.png");
   for (int i = 0; i < n_meteors; ++i)

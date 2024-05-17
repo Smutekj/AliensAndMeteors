@@ -151,7 +151,7 @@ public:
 class FollowAndShootAI : public BoidAI
 {
 
-    int cool_down = 500;
+    int cool_down = 200;
     int frames_since_shot = 5000;
     float vision_radius = 60.f;
     BulletSystem *p_bs;
@@ -179,7 +179,7 @@ public:
             if (frames_since_shot > cool_down)
             {
                 frames_since_shot = 0;
-                p_bs->spawnBulletNoSeek(entity_ind, data->r, player->pos);
+                p_bs->spawnBullet(entity_ind, data->r, player->pos - data->r, player);
             }
         }
     }

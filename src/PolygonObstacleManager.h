@@ -533,7 +533,7 @@ struct PolygonObstacleManager
   };
   std::unordered_set<std::pair<int, int>, pair_hash> collided;
 
-  PolygonObstacleManager(int n_meteors = 500);
+  PolygonObstacleManager(int n_meteors = 500, Game* game = nullptr);
 
   void update(float dt);
 
@@ -554,7 +554,7 @@ struct PolygonObstacleManager
     collision_tree.addRect(new_obstacle.getBoundingRect().inflate(1.5f), entity_ind);
 
     new_obstacle.draw_shape = std::make_unique<sf::RectangleShape>(sf::Vector2f{radius, radius});
-    new_obstacle.draw_shape->setPosition(new_obstacle.getPosition());
+    new_obstacle.draw_shape->setPosition(new_obstacle.getPosition() - new_obstacle.getScale()/2.f);
     new_obstacle.draw_shape->setRotation(new_obstacle.getRotation());
     new_obstacle.draw_shape->setScale(new_obstacle.getScale());
     new_obstacle.draw_shape->setTexture(&obstacle_textures.get(Textures::ID::Heart));

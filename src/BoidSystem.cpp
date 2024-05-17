@@ -302,7 +302,7 @@ void BoidSystem::addBoid(sf::Vector2f at, std::unique_ptr<BoidAI> &&ai,
     Boid new_boid;
     new_boid.entity_ind = ent_ind;
     new_boid.r = at;
-    new_boid.target_pos = at;
+    new_boid.target_pos = player->pos;
     new_boid.group_ind = group_ind;
     new_boid.type = type;
     boids.push_back(new_boid);
