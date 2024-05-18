@@ -4,7 +4,8 @@
 #include "SFML/Graphics/RenderWindow.hpp"
 #include "SFML/Graphics/RectangleShape.hpp"
 
-MenuState::MenuState(StateStack &stack, Context &context) : State(stack, context)
+MenuState::MenuState(StateStack &stack, Context &context)
+    : State(stack, context), m_menu(context.font)
 {
   m_is_final_state = true;
 
@@ -16,11 +17,18 @@ MenuState::MenuState(StateStack &stack, Context &context) : State(stack, context
   fields.push_back({MenuField::EXIT, "EXIT", States::ID::None, true});
 
   background_texture.loadFromFile("../Resources/Starbasesnow.png");
-	background_texture.setRepeated(true);
-	background_texture.setSmooth(true);
+  background_texture.setRepeated(true);
+  background_texture.setSmooth(true);
 
+  auto new_game_button = std::make_unique<ChangeStateItem>(m_stack, States::ID::Game);
+  new_game_button->m_text = "New Game";
+  auto settings_button = std::make_unique<ChangeStateItem>(m_stack, States::ID::Settings);
+  auto exit_button = std::make_unique<ChangeStateItem>(m_stack, States::ID::Exit);
+  exit_button->m_text = "Exit";
 
-
+  m_menu.addItem(std::move(new_game_button));
+  m_menu.addItem(std::move(settings_button));
+  m_menu.addItem(std::move(exit_button));
 }
 
 MenuState::~MenuState() {}
@@ -34,67 +42,56 @@ void MenuState::handleEvent(const sf::Event &event)
 
   auto &window = *getContext().window;
 
-  if (event.type == sf::Event::KeyReleased)
-  {
-    if (event.key.code == sf::Keyboard::Up)
-    {
-      moveSelectionUp();
-    }
-    else if (event.key.code == sf::Keyboard::Down)
-    {
-      moveSelectionDown();
-    }
-    else if (event.key.code == sf::Keyboard::Enter)
-    {
-      if (selected_field == MenuField::EXIT)
-      {
-        window.close();
-      }
-      else
-      {
-        if(fields.at(selected_field).pop_current_state){
-          requestStackPop();
-        }
-        requestStackPush(fields.at(selected_field).destination);
-      }
-    }
-  }
+  m_menu.handleEvent(event);
 }
 
 void MenuState::draw()
 {
 
+
   auto &window = *getContext().window;
-  window.setView(window.getDefaultView());
+  m_menu.draw(window);
 
-  sf::RectangleShape background;
-  sf::Vector2f size = {static_cast<float>(window.getSize().x), static_cast<float>(window.getSize().y)};
-  background.setSize(size);
-	background.setTexture(&background_texture);
-  sf::Vector2i rect_size = {static_cast<int>(2*window.getSize().x), static_cast<int>(2*window.getSize().y)};
-  background.setTextureRect({0,0,rect_size.x , rect_size.y});  
-  window.draw(background);
+}
 
+EndScreenState::EndScreenState(StateStack &stack, Context &context)
+:
+State(stack, context)
+{
+  m_goodbye_text.setFont(*context.font);
+}
 
-  auto window_size = window.getSize();
-  float field_y_pos = 100;
+EndScreenState::~EndScreenState() {}
 
-  for (const auto &field : fields)
+void EndScreenState::update(float dt)
+{
+  m_timer--;
+  if(m_timer < 0)
   {
-    if (field.field == selected_field)
-    {
-      field_text.setScale({1.1f, 1.1f});
-      field_text.setFillColor(sf::Color::Red);
-    }
-    auto &text = field.text;
-    field_text.setString(text);
-    auto text_bound = field_text.getGlobalBounds();
-    field_text.setPosition({window_size.x / 2.f - text_bound.width / 2.f, field_y_pos});
-    field_y_pos += text_bound.height * 1.05f;
-    window.draw(field_text);
-
-    field_text.setScale({1.f, 1.f});
-    field_text.setFillColor(sf::Color::White);
+    m_context.window->close();
   }
+}
 
+void EndScreenState::handleEvent(const sf::Event &event)
+{
+  if(event.type == sf::Event::Closed)
+  {
+    m_context.window->close();
+  }  
+}
+
+void EndScreenState::draw()
+{
+
+
+  auto &window = *getContext().window;
+  
+  sf::Vector2f window_size = {static_cast<float>(window.getSize().x), static_cast<float>(window.getSize().y)};
+
+  m_goodbye_text.setString("Good Bye!");
+  m_goodbye_text.setFillColor(sf::Color::Blue);
+  m_goodbye_text.setScale({2.f,2.f});
+  m_goodbye_text.setPosition({window_size.x - m_goodbye_text.getGlobalBounds().width/2.f, window_size.y/2.f});
+
+  window.draw(m_goodbye_text);
 }

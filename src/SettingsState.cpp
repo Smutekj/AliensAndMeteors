@@ -1,91 +1,44 @@
-// #include "SettingsState.h"
-// #include "State.h"
+#include "SettingsState.h"
+#include "State.h"
 
-// #include "SFML/Graphics/RenderWindow.hpp"
+#include "SFML/Graphics/RenderWindow.hpp"
 
-// SettingsState::SettingsState(StateStack &stack, Context &context) : State(stack, context)
-// {
-//     m_is_final_state = true;
+#include "Utils/magic_enum.hpp"
+#include "Utils/magic_enum_utility.hpp"
 
-//     menu_font.loadFromFile("../Resources/DigiGraphics.ttf");
-//     field_text.setFont(menu_font);
+SettingsState::SettingsState(StateStack &stack, Context &context) : State(stack, context), m_menu(context.font)
+{
+    m_is_final_state = true;
 
-//     fields.push_back({MenuField::RESUME, "RESUME", States::ID::None, true});
-//     fields.push_back({MenuField::SETTINGS, "SETTINGS", States::ID::Settings, false});
-// }
+    int num_commands = static_cast<int>(magic_enum::enum_count<PlayerControl>());
+    magic_enum::enum_for_each<PlayerControl>([&](PlayerControl control)
+        {
+            std::string control_name = static_cast<std::string>(magic_enum::enum_name(control));
 
-// void SettingsState::update(float dt)
-// {
-// }
+            auto change_key_1 = std::make_unique<ChangeKeyItem>(control_name, control, context.bindings);
+            m_menu.addItem(std::move(change_key_1));
+        });
 
-// void SettingsState::handleEvent(const sf::Event &event)
-// {
+    auto back = std::make_unique<ChangeStateItem>(m_stack, States::ID::Menu);
+    m_menu.addItem(std::move(back));
 
-//     auto &window = *getContext().window;
+}
 
-//     if (event.type == sf::Event::KeyReleased)
-//     {
-//         if (event.key.code == sf::Keyboard::Up)
-//         {
-//             moveSelectionUp();
-//         }
-//         else if (event.key.code == sf::Keyboard::Down)
-//         {
-//             moveSelectionDown();
-//         }
-//         else if (event.key.code == sf::Keyboard::Enter)
-//         {
+void SettingsState::update(float dt)
+{
+}
 
-//             auto &selected_field_data = fields.at(selected_field);
+void SettingsState::handleEvent(const sf::Event &event)
+{
 
-//             switch(selected_field)
-//             {
-//                 case CHANGE_MOVE_BACK:
-//                     key_binding[PlayerControl::MOVE_BACK] =
-//             }
+    m_menu.handleEvent(event);
+}
 
-//             if (selected_field == MenuField::RESUME)
-//             {
-//                 window.setView(old_view);
-//                 requestStackPop();
+void SettingsState::draw()
+{
 
-//             }
-//             else if(selected_field == MenuField::)
+    auto &window = *getContext().window;
+    m_menu.draw(window);
+}
 
 
-//             requestStackPush(selected_field_data.destination);
-//         }
-//     }
-// }
-
-// void SettingsState::draw()
-// {
-
-//     auto &window = *getContext().window;
-//     old_view = window.getView();
-
-//     window.setView(window.getDefaultView());
-
-//     auto window_size = window.getSize();
-//     float field_y_pos = 100;
-
-//     for (const auto &field : fields)
-//     {
-//         if (field.field == selected_field)
-//         {
-//             field_text.setScale({1.1f, 1.1f});
-//             field_text.setFillColor(sf::Color::Red);
-//         }
-//         auto &text = field.text;
-//         field_text.setString(text);
-//         auto text_bound = field_text.getGlobalBounds();
-//         field_text.setPosition({window_size.x / 2.f - text_bound.width / 2.f, field_y_pos});
-//         field_y_pos += text_bound.height * 1.05f;
-//         window.draw(field_text);
-
-//         field_text.setScale({1.f, 1.f});
-//         field_text.setFillColor(sf::Color::White);
-//     }
-
-//     window.setView(old_view);
-// }

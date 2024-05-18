@@ -8,7 +8,7 @@ GameState::GameState(StateStack &stack, State::Context context)
     : State(stack, context)
 {
     m_is_final_state = true;
-    mp_game = std::make_unique<Game>(*m_context.window, bindings);
+    mp_game = std::make_unique<Game>(*m_context.window, *context.bindings);
 
 
     auto& background_texture = context.textures->get(Textures::ID::BackGround);

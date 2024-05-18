@@ -6,6 +6,8 @@
 #include "ResourceIdentifiers.h"
 #include "ResourceHolder.h"
 
+#include "Commands.h"
+
 class Application
 {
 
@@ -20,6 +22,9 @@ private:
 
     ResourceHolder<sf::Texture, Textures::ID> m_textures;
     float m_dt;
+
+    KeyBindings m_bindings;
+    sf::Font font;
 
     void registerStates();
 };

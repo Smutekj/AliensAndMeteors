@@ -99,5 +99,9 @@ void StateStack::handleEvent(const sf::Event &event)
     for (int i = mStack.size() - 1; i >= 0; --i)
     {
         mStack.at(i)->handleEvent(event);
+        if (mStack.at(i)->isFinalState())
+        {
+            break;
+        }
     }
 }

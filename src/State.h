@@ -14,7 +14,7 @@ namespace States
 	enum ID
 	{
 		None,
-		Title,
+		Exit,
 		Menu,
 		Game,
 		Loading,
@@ -31,17 +31,20 @@ namespace sf
 
 class StateStack;
 class Player;
+class KeyBindings;
 
 class State
 {
 public:
 	struct Context
 	{
-		Context(sf::RenderWindow &window, TextureHolder& textures) 
-		: textures(&textures), window(&window) {}
+		Context(sf::RenderWindow &window, TextureHolder& textures, KeyBindings& bindings, sf::Font& font) 
+		: textures(&textures), window(&window), bindings(&bindings), font(&font) {}
 
 		TextureHolder* textures;
 		sf::RenderWindow *window;
+		KeyBindings* bindings;
+		sf::Font* font;
 	};
 
 public:
@@ -71,3 +74,6 @@ protected:
 	Context m_context;
 	bool m_is_final_state = false; //! if true no state below this one gets updated
 };
+
+
+

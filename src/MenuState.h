@@ -7,6 +7,7 @@
 #include "SFML/Graphics/Font.hpp"
 #include "SFML/Graphics/Text.hpp"
 
+#include "Menu.h"
 
 class MenuState : public State
 {
@@ -40,25 +41,26 @@ public:
 
     virtual void update(float dt) override;
     virtual void handleEvent(const sf::Event& event) override;
-
     virtual void draw() override;
 
     private:
-    void moveSelectionUp(){
-        if(selected_field == MenuField::NEW_GAME){
-            selected_field = MenuField::EXIT;
-        }else{
-            selected_field = static_cast<MenuField>(selected_field -1);
-        }
-    }
-    void moveSelectionDown(){
-        if(selected_field == MenuField::EXIT){
-            selected_field = MenuField::NEW_GAME;
-        }else{
-            selected_field = static_cast<MenuField>(selected_field + 1 );
-        }
-    }
+    sf::Texture background_texture;
+    Menu m_menu;
+};
+
+class EndScreenState : public State
+{
+
+    public:
+        virtual ~EndScreenState() override;
+
+        EndScreenState(StateStack &stack, Context &context);
+        virtual void update(float dt) override;
+        virtual void handleEvent(const sf::Event& event) override;
+        virtual void draw() override;
 
     private:
-    sf::Texture background_texture;
+    float m_timer;
+    sf::Text m_goodbye_text;
+  
 };

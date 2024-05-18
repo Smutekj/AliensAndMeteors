@@ -14,11 +14,13 @@ Application::Application(float fps)
 
     m_textures.load(Textures::ID::BackGround, "../Resources/Starbasesnow.png");
 
-    State::Context context(*m_window, m_textures);
+    font.loadFromFile("../Resources/DigiGraphics.ttf");
+    State::Context context(*m_window, m_textures, m_bindings, font);
     m_state_stack = std::make_unique<StateStack>(context);
 
     registerStates();
     m_state_stack->pushState(States::ID::Menu);
+
 }
 
 void Application::run()
@@ -38,9 +40,9 @@ void Application::run()
 
 void Application::registerStates()
 {
-    // m_state_stack->registerState<TitleState>(States::Title);
+    m_state_stack->registerState<EndScreenState>(States::Exit);
     m_state_stack->registerState<MenuState>(States::Menu);
     m_state_stack->registerState<GameState>(States::Game);
     m_state_stack->registerState<PauseState>(States::Pause);
-    // m_state_stack->registerState<SettingsState>(States::Settings);
+    m_state_stack->registerState<SettingsState>(States::Settings);
 }
