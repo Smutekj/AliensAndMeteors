@@ -30,90 +30,6 @@ enum class Context
   GAME
 };
 
-class ScoreBoard
-{
-
-  std::map<int, std::vector<std::string>, std::greater<int>> score2players;
-
-  int n_shown_scores = 10;
-
-  std::string score_file;
-
-public:
-  ScoreBoard(std::string score_file)
-      : score_file(score_file)
-  {
-    readScoresFromFile(score_file);
-  }
-
-  ~ScoreBoard()
-  {
-    writeScoresToFile(score_file);
-  }
-
-  void addScore(std::string player_name, int score)
-  {
-
-    if (score2players.count(score) > 0)
-    {
-      score2players.at(score).push_back(player_name);
-    }
-    else
-    {
-      score2players[score] = {player_name};
-    }
-  }
-
-private:
-  void readScoresFromFile(std::string score_file)
-  {
-    std::ifstream file(score_file);
-
-    std::string line;
-    while (std::getline(file, line))
-    {
-      std::string player_name;
-      std::stringstream ss(line);
-      ss >> player_name;
-      int score;
-      ss >> score;
-      score2players[score].push_back(player_name);
-    }
-    file.close();
-  }
-
-  void writeScoresToFile(std::string score_file)
-  {
-    std::ofstream file(score_file);
-
-    for (auto &[score, players] : score2players)
-    {
-      for (auto &player : players)
-      {
-        file << player << " " << score << "\n";
-      }
-    }
-    file.close();
-  }
-};
-
-class Settings
-{
-
-  int volume;
-
-public:
-  Settings() = default;
-
-  void setVolume(int new_volume)
-  {
-    volume = new_volume;
-  }
-  int getVolume() const
-  {
-    return volume;
-  }
-};
 
 class Game
 {
@@ -175,7 +91,8 @@ private:
   int group_spawner_timer = 0;
   int power_spawner_timer = 0;
 
-  std::unique_ptr<Particles> player_particles;
+  std::unique_ptr<Particles> player_particles_left;
+  std::unique_ptr<Particles> player_particles_right;
 
   sf::Font font;
   sf::Text health_text;

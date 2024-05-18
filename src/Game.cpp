@@ -28,7 +28,8 @@ Game::Game(sf::RenderWindow &window, KeyBindings &bindings)
         static_cast<float>(Geometry::BOX[0] / n_cells.x),
         static_cast<float>(Geometry::BOX[1] / n_cells.y)};
 
-    player_particles = std::make_unique<Particles>(player.pos, 100);
+    player_particles_left = std::make_unique<Particles>(player.pos, 100);
+    player_particles_right = std::make_unique<Particles>(player.pos, 100);
 
     bool player_is_inside_meteor = true;
     while (player_is_inside_meteor)
@@ -48,8 +49,6 @@ Game::Game(sf::RenderWindow &window, KeyBindings &bindings)
     }
     player.pos = {box_size.x / 2.f, box_size.y / 2.f};
 
-    poly_manager.addRegularObstacle(ObstacleType::POWERUP, player.pos);
-
     auto view = window.getView();
     view.setCenter(player.pos);
     view.setSize({100.f, 100.f * window.getSize().y / window.getSize().x});
@@ -58,10 +57,9 @@ Game::Game(sf::RenderWindow &window, KeyBindings &bindings)
 
     textures.load(Textures::ID::PlayerShip, "../Resources/playerShip.png");
 
-    player_shape.setOrigin({player.radius / 2.f, player.radius / 2.f});
+    player_shape.setOrigin({player.radius, player.radius});
     player_shape.setPosition(player.pos);
-    player_shape.setSize({4.f, 4.f});
-    player_shape.setRotation(0);
+    player_shape.setSize({2*player.radius, 2*player.radius});
     player_shape.setTexture(&textures.get(Textures::ID::PlayerShip));
 
     boid_world.player = &player;
@@ -84,24 +82,14 @@ void Game::moveView(sf::RenderWindow &window)
     auto vp1 = window.getViewport(view);
 
     const sf::Vector2f view_size = view.getSize(); // * (view.getViewport().width);
-    const auto left_border = window.getViewport(view).left;
-    const auto right_border = left_border + window.getViewport(view).width;
-    const auto top_border = window.getViewport(view).top;
-    const auto bottom_border = top_border + window.getViewport(view).height;
-
-    const auto &mouse_pos = sf::Mouse::getPosition(window);
-    const auto &mouse_coords = window.mapPixelToCoords(sf::Mouse::getPosition(window));
-
-    bool mouse_in_left_border = mouse_pos.x < 0 + 5;
-    bool mouse_in_top_border = mouse_pos.y < top_border + 5;
-    bool mouse_in_right_border = mouse_pos.x > right_border - 5;
-    bool mouse_in_bottom_border = mouse_pos.y > bottom_border - 5;
 
     auto threshold = view.getSize() / 2.f - view.getSize() / 3.f;
     auto dx = player.pos.x - view.getCenter().x;
     auto dy = player.pos.y - view.getCenter().y;
     auto view_max = view.getCenter() + view.getSize() / 2.f;
     auto view_min = view.getCenter() - view.getSize() / 2.f;
+
+    //! move view when approaching sides
     if (dx > threshold.x && view_max.x < Geometry::BOX[0])
     {
         view.setCenter(view.getCenter() + sf::Vector2f{dx - threshold.x, 0});
@@ -119,6 +107,7 @@ void Game::moveView(sf::RenderWindow &window)
         view.setCenter(view.getCenter() + sf::Vector2f{0, dy + threshold.y});
     }
 
+    //! look from higher distance when boosting
     float booster_ratio = player.speed/player.max_speed;
     view.setSize(default_view.getSize()*(1 + booster_ratio/3.f));
 
@@ -237,12 +226,16 @@ void Game::update(const float dt, sf::RenderWindow &window)
     parseInput(window);
 
     effects.update();
-    player_particles->update(dt);
-
-    player.update(dt);
+    player_particles_left->update(dt);
+    player_particles_left->setSpawnPos(player.pos -player.radius*angle2dir(player.angle+40));
+    player_particles_right->update(dt);
+    player_particles_right->setSpawnPos(player.pos-player.radius*angle2dir(player.angle-40));
+    
 
     player_shape.setPosition(player.pos);
     player_shape.setRotation(player.angle);
+
+    player.update(dt);
 
     poly_manager.update(dt);
     boid_world.update(dt);
@@ -309,7 +302,8 @@ void Game::draw(sf::RenderWindow &window)
 
     window.draw(player_shape);
     boid_world.draw(window);
-    player_particles->draw(t);
+    player_particles_left->draw(t);
+    player_particles_right->draw(t);
     effects.draw(t);
     poly_manager.draw(t);
     bullet_world.draw(t);

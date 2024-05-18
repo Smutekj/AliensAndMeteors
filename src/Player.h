@@ -27,6 +27,7 @@ struct Player
     int health = 100;
     int max_health = 100;
 
+
     void update(float dt)
     {
         if (angle < -180.f)

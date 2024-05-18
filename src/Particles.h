@@ -59,7 +59,7 @@ class Particles
     int spawn_cooldown = 1;
     int spawn_timer = 0;
 
-    sf::Vector2f &spawn_pos;
+    sf::Vector2f spawn_pos;
 
     float particle_size = 0.5;
 
@@ -69,10 +69,15 @@ class Particles
 public:
     bool is_active = true;
 
-    Particles(sf::Vector2f &spawn_pos, int n_max_particles = 100)
+    Particles(sf::Vector2f spawn_pos, int n_max_particles = 100)
         : particle_pool(n_max_particles),
           spawn_pos(spawn_pos)
     {
+    }
+
+    void setSpawnPos(sf::Vector2f pos)
+    {
+        spawn_pos = pos;
     }
 
     void update(float dt)
@@ -132,10 +137,10 @@ public:
         {
             auto &particle = particles[p_ind];
 
-            vertices[p_ind * 4 + 0] = sf::Vertex(particle.pos + sf::Vector2f{0, 0}, particle.color);
-            vertices[p_ind * 4 + 1] = sf::Vertex(particle.pos + sf::Vector2f{particle_size, 0}, particle.color);
-            vertices[p_ind * 4 + 2] = sf::Vertex(particle.pos + sf::Vector2f{particle_size, particle_size}, particle.color);
-            vertices[p_ind * 4 + 3] = sf::Vertex(particle.pos + sf::Vector2f{0, particle_size}, particle.color);
+            vertices[p_ind * 4 + 0] = sf::Vertex(particle.pos + sf::Vector2f{-particle_size/2, -particle_size/2}, particle.color);
+            vertices[p_ind * 4 + 1] = sf::Vertex(particle.pos + sf::Vector2f{particle_size/2, -particle_size/2}, particle.color);
+            vertices[p_ind * 4 + 2] = sf::Vertex(particle.pos + sf::Vector2f{particle_size/2, particle_size/2}, particle.color);
+            vertices[p_ind * 4 + 3] = sf::Vertex(particle.pos + sf::Vector2f{-particle_size/2, particle_size/2}, particle.color);
         }
 
         target.draw(vertices);
