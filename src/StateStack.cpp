@@ -10,13 +10,15 @@ StateStack::StateStack(State::Context context)
 void StateStack::update(float dt)
 {
     // Iterate from top to bottom, stop as soon as update() returns false
-    for (int i = mStack.size() - 1; i >= 0; --i)
+    // for (int i = mStack.size() - 1; i >= 0; --i)
+    // {
+        if (mStack.size() > 0)
     {
-        mStack.at(i)->update(dt);
-        if (mStack.at(i)->isFinalState())
-        {
-            break;
-        }
+        mStack.back()->update(dt);
+        // if (mStack.at(i)->isFinalState())
+        // {
+        //     break;
+        // }
     }
 
     applyPendingChanges();
@@ -24,21 +26,22 @@ void StateStack::update(float dt)
 
 void StateStack::draw()
 {
-    // Draw all active states from bottom to top
-    for (int i = mStack.size() - 1; i >= 0; --i)
+    if (mStack.size() > 0)
     {
-        mStack.at(i)->draw();
-        if (mStack.at(i)->isFinalState())
-        {
-            break;
-        }
+        mStack.back()->draw();
     }
-}
+    // if (mStack.at(i)->isFinalState())
+    // {
+    //     break;
+    // }
+    // }
+};
 
 void StateStack::pushState(States::ID stateID)
 {
     if (stateID != States::ID::None)
     {
+        // mStack.push_back(createState(stateID));
         mPendingList.push_back(PendingChange(Push, stateID));
     }
 }
@@ -46,6 +49,7 @@ void StateStack::pushState(States::ID stateID)
 void StateStack::popState()
 {
     mPendingList.push_back(PendingChange(Pop));
+    // mStack.pop_back();
 }
 
 void StateStack::clearStates()
@@ -96,12 +100,15 @@ StateStack::PendingChange::PendingChange(Action action, States::ID stateID)
 
 void StateStack::handleEvent(const sf::Event &event)
 {
-    for (int i = mStack.size() - 1; i >= 0; --i)
+    // for (int i = mStack.size() - 1; i >= 0; --i)
+    // {
+    if (mStack.size() > 0)
     {
-        mStack.at(i)->handleEvent(event);
-        if (mStack.at(i)->isFinalState())
-        {
-            break;
-        }
+        mStack.back()->handleEvent(event);
     }
+    // if (mStack.at(i)->isFinalState())
+    // {
+    //     break;
+    // }
+    // }
 }

@@ -41,6 +41,10 @@ public:
     void handleEvent(const sf::Event &event);
 
     void pushState(States::ID stateID);
+    
+    template <class T, class... Args>
+    void pushState2(Args...);
+    
     void popState();
     void clearStates();
 
@@ -75,3 +79,11 @@ void StateStack::registerState(States::ID stateID)
         return std::make_unique<T>(*this, mContext);
     };
 }
+
+template <class T, class... Args>
+void StateStack::pushState2(Args... arguments)
+{
+    mStack.push_back(std::make_unique<T>(*this, mContext, arguments...));
+}
+
+

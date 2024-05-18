@@ -7,7 +7,8 @@
 #include <SFML/Window/Event.hpp>
 
 #include <memory>
-
+#include <fstream>
+#include <string>
 
 namespace States
 {
@@ -19,6 +20,8 @@ namespace States
 		Game,
 		Loading,
 		Pause,
+		Score,
+		Player_Died,
 		Settings
 	};
 }
@@ -32,19 +35,24 @@ namespace sf
 class StateStack;
 class Player;
 class KeyBindings;
+class ScoreBoard;
+
+
+
 
 class State
 {
 public:
 	struct Context
 	{
-		Context(sf::RenderWindow &window, TextureHolder& textures, KeyBindings& bindings, sf::Font& font) 
-		: textures(&textures), window(&window), bindings(&bindings), font(&font) {}
+		Context(sf::RenderWindow &window, TextureHolder& textures, KeyBindings& bindings, sf::Font& font, ScoreBoard& score) 
+		: textures(&textures), window(&window), bindings(&bindings), font(&font), score(&score) {}
 
 		TextureHolder* textures;
 		sf::RenderWindow *window;
 		KeyBindings* bindings;
 		sf::Font* font;
+		ScoreBoard* score;
 	};
 
 public:

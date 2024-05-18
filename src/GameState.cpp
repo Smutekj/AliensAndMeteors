@@ -1,8 +1,11 @@
 #include "GameState.h"
 #include "Game.h"
 #include "StateStack.h"
+#include "MenuState.h"
 
 #include "SFML/Graphics/Texture.hpp"
+
+#include "Application.h"
 
 GameState::GameState(StateStack &stack, State::Context context)
     : State(stack, context)
@@ -26,8 +29,9 @@ void GameState::update(float dt)
 
     if(mp_game->getState() == Game::GameState::PLAYER_DIED)
     {
-        requestStackPop();
-        //! requestStackPush(States::ID::Score)
+        m_context.score->m_current_score = mp_game->score;
+        m_stack->popState();
+        m_stack->pushState(States::ID::Player_Died);
     }
 
 }

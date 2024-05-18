@@ -8,6 +8,8 @@
 
 #include <iostream>
 
+#include "StateStack.h"
+
 void Menu::draw(sf::RenderWindow &window)
 {
     auto old_view = window.getView();
@@ -24,20 +26,21 @@ void Menu::draw(sf::RenderWindow &window)
         auto &field = m_items.at(item_ind);
         if (item_ind == selected_item_ind)
         {
-            m_text.setScale({1.1f, 1.1f});
-            m_text.setFillColor(sf::Color::Red);
+            field->setScale({1.1f, 1.1f});
+            field->setFillColor(sf::Color::Red);
         }
         else
         {
-            m_text.setFillColor(sf::Color::White);
-            m_text.setScale({1.f, 1.f});
+            field->setFillColor(sf::Color::White);
+            field->setScale({1.f, 1.f});
         }
 
         m_text.setString(field->m_text);
-        auto text_bound = m_text.getLocalBounds();
-        m_text.setPosition({window_size.x / 2.f - text_bound.width / 2.f, field_y_pos});
-        field_y_pos += text_bound.height * 1.05f;
-        window.draw(m_text);
+        field->setPosition({window_size.x / 2.f, field_y_pos});
+        field->draw(window);
+
+        field_y_pos += field->getSize().y;
+        // window.draw(m_text);
     }
 
     window.setView(old_view);
@@ -61,12 +64,12 @@ void Menu::handleEvent(sf::Event event)
             selected_item_ind = (selected_item_ind + 1) % m_items.size();
         }
 
-         m_items.at(selected_item_ind)->handleEvent(event);
+        m_items.at(selected_item_ind)->handleEvent(event);
     }
 }
 
-ChangeStateItem::ChangeStateItem(StateStack *stack, States::ID destination, States::ID source)
- : m_source(source), m_destination(destination), p_stack(stack)
+ChangeStateItem::ChangeStateItem(State::Context &context, StateStack *stack, States::ID destination, States::ID source)
+    : m_source(source), m_destination(destination), p_stack(stack), MenuItem(context.font)
 {
     std::string destination_name = static_cast<std::string>(magic_enum::enum_name(m_destination));
     m_text = (destination_name);
@@ -76,7 +79,7 @@ void ChangeStateItem::handleEvent(sf::Event event)
 {
     if (event.key.code == sf::Keyboard::Enter)
     {
-        if(m_source == States::ID::None) //! if there is no source we don't want to return
+        if (m_source == States::ID::None) //! if there is no source we don't want to return
         {
             p_stack->popState();
         }
@@ -84,11 +87,15 @@ void ChangeStateItem::handleEvent(sf::Event event)
     }
 }
 
-ChangeKeyItem::ChangeKeyItem(std::string command_name, PlayerControl command, KeyBindings *bindings)
-    : m_command(command), m_command_name(command_name), p_bindings(bindings)
+ChangeKeyItem::ChangeKeyItem(std::string command_name, PlayerControl command, State::Context &context)
+    : m_command(command), m_command_name(command_name), p_bindings(context.bindings), MenuItem(context.font)
 {
     std::string key_name = static_cast<std::string>(magic_enum::enum_name((*p_bindings)[m_command]));
-    m_text = (command_name + " " + key_name);
+    m_item_size.x = 200.f;
+    sf::Text text;
+    text.setFont(*context.font);
+    text.setString("KEK");
+    m_item_size.y = text.getGlobalBounds().width * 1.1f;
 }
 
 void ChangeKeyItem::handleEvent(sf::Event event)
@@ -101,11 +108,50 @@ void ChangeKeyItem::handleEvent(sf::Event event)
             m_text = (m_command_name + " ...");
         }
     }
-    else if(m_is_changing_key)
+    else if (m_is_changing_key)
     {
         p_bindings->setBinding(m_command, event.key.code);
         std::string key_name = static_cast<std::string>(magic_enum::enum_name(event.key.code));
         m_text = (m_command_name + " " + key_name);
         m_is_changing_key = false;
     }
+}
+
+void ChangeStateItem::draw(sf::RenderWindow &window)
+{
+    sf::Text text;
+    text.setFont(*p_font);
+    text.setString(m_text);
+    text.setPosition({getPosition().x - text.getLocalBounds().width/2.f, getPosition().y});
+    text.setColor(text_color);
+
+    window.draw(text);
+}
+
+void ChangeKeyItem::draw(sf::RenderWindow &window)
+{
+    sf::Text left_text;
+    left_text.setFont(*p_font);
+    sf::Vector2f left_text_pos = {
+        getPosition().x - m_item_size.x,
+        getPosition().y};
+    left_text.setString(m_command_name);
+    left_text.setPosition(left_text_pos);
+    left_text.setFillColor(text_color);
+    sf::Text right_text;
+    right_text.setFont(*p_font);
+    std::string key_name = static_cast<std::string>(magic_enum::enum_name((*p_bindings)[m_command]));
+    right_text.setString(key_name);
+
+    m_is_changing_key ? right_text.setString("...") : right_text.setString(key_name);
+    
+    right_text.setFillColor(text_color);
+
+    sf::Vector2f right_text_pos = {
+        getPosition().x + m_item_size.x - right_text.getGlobalBounds().width,
+        getPosition().y};
+    right_text.setPosition(right_text_pos);
+
+    window.draw(left_text);
+    window.draw(right_text);
 }
