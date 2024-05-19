@@ -53,10 +53,12 @@ class ChangeKeyItem : public MenuItem
     bool m_is_changing_key = false;
     PlayerControl m_command;
     std::string m_command_name;
+    std::string key_name;
 
     KeyBindings *p_bindings;
 
 public:
+
     ChangeKeyItem(std::string command_name, PlayerControl command, State::Context &context);
     virtual void handleEvent(sf::Event event) override;
     virtual void draw(sf::RenderWindow &window)override;

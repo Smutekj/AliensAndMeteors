@@ -42,15 +42,40 @@ public:
 
     bool setBinding(PlayerControl command, sf::Keyboard::Key new_key)
     {
-        if (key_map.count(new_key) > 0)
+        auto old_key = command_map.at(command);
+        key_map.erase(old_key);
+
+        if (key_map.count(new_key) > 0) //! if key is already bound we switch the commands
         {
-            return false;
+            auto old_command = key_map.at(new_key);
+            // assert(old_key == new_key);
+            command_map[old_command] = old_key;
+            key_map[old_key] = old_command;
+            // assert(old_command != command);
+            // return true;
         }
 
         command_map[command] = new_key;
         key_map[new_key] = command;
 
         return true;
+    }
+
+    bool commandNotSet(PlayerControl command)
+    {
+        return command_map.count(command) == 0;
+    }
+
+    void unsetKey(sf::Keyboard::Key new_key)
+    {
+        assert(key_map.count(new_key)>0);
+        key_map.erase(new_key);
+    }
+    void unsetCommand(PlayerControl command)
+    {
+        auto old_key = command_map.at(command);
+        // command_map.erase(command);
+        key_map.erase(old_key);
     }
 
     sf::Keyboard::Key operator[](PlayerControl command) const

@@ -57,11 +57,15 @@ void Menu::handleEvent(sf::Event event)
     {
         if (event.key.code == sf::Keyboard::Up)
         {
+            m_items.at(selected_item_ind)->m_is_selected = false;
             selected_item_ind = (selected_item_ind - 1 + m_items.size()) % m_items.size();
+            m_items.at(selected_item_ind)->m_is_selected = true;
         }
         else if (event.key.code == sf::Keyboard::Down)
         {
+            m_items.at(selected_item_ind)->m_is_selected = false;
             selected_item_ind = (selected_item_ind + 1) % m_items.size();
+            m_items.at(selected_item_ind)->m_is_selected = true;
         }
 
         m_items.at(selected_item_ind)->handleEvent(event);
@@ -90,7 +94,7 @@ void ChangeStateItem::handleEvent(sf::Event event)
 ChangeKeyItem::ChangeKeyItem(std::string command_name, PlayerControl command, State::Context &context)
     : m_command(command), m_command_name(command_name), p_bindings(context.bindings), MenuItem(context.font)
 {
-    std::string key_name = static_cast<std::string>(magic_enum::enum_name((*p_bindings)[m_command]));
+    key_name = static_cast<std::string>(magic_enum::enum_name((*p_bindings)[m_command]));
     m_item_size.x = 200.f;
     sf::Text text;
     text.setFont(*context.font);
@@ -100,20 +104,23 @@ ChangeKeyItem::ChangeKeyItem(std::string command_name, PlayerControl command, St
 
 void ChangeKeyItem::handleEvent(sf::Event event)
 {
+
+
     if (event.key.code == sf::Keyboard::Enter)
     {
         if (!m_is_changing_key)
         {
             m_is_changing_key = true;
-            m_text = (m_command_name + " ...");
+            // p_bindings->unsetCommand(m_command);
         }
     }
     else if (m_is_changing_key)
     {
-        p_bindings->setBinding(m_command, event.key.code);
-        std::string key_name = static_cast<std::string>(magic_enum::enum_name(event.key.code));
-        m_text = (m_command_name + " " + key_name);
-        m_is_changing_key = false;
+        if (p_bindings->setBinding(m_command, event.key.code)) //! if we succesfully changed key
+        {
+            key_name = static_cast<std::string>(magic_enum::enum_name(event.key.code));
+            m_is_changing_key = false;
+        }
     }
 }
 
@@ -122,7 +129,7 @@ void ChangeStateItem::draw(sf::RenderWindow &window)
     sf::Text text;
     text.setFont(*p_font);
     text.setString(m_text);
-    text.setPosition({getPosition().x - text.getLocalBounds().width/2.f, getPosition().y});
+    text.setPosition({getPosition().x - text.getLocalBounds().width / 2.f, getPosition().y});
     text.setColor(text_color);
 
     window.draw(text);
@@ -140,11 +147,22 @@ void ChangeKeyItem::draw(sf::RenderWindow &window)
     left_text.setFillColor(text_color);
     sf::Text right_text;
     right_text.setFont(*p_font);
-    std::string key_name = static_cast<std::string>(magic_enum::enum_name((*p_bindings)[m_command]));
-    right_text.setString(key_name);
 
-    m_is_changing_key ? right_text.setString("...") : right_text.setString(key_name);
-    
+    // if(p_bindings->commandNotSet(m_command))
+    // {
+    //     m_is_changing_key = true;
+    // }
+
+    if (m_is_changing_key)
+    {
+        right_text.setString("...");
+    }
+    else
+    {
+        key_name = static_cast<std::string>(magic_enum::enum_name((*p_bindings)[m_command]));
+        right_text.setString(key_name);
+    }
+
     right_text.setFillColor(text_color);
 
     sf::Vector2f right_text_pos = {
