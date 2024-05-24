@@ -1,8 +1,8 @@
 #include "Application.h"
 
-#include "MenuState.h"
-#include "GameState.h"
-#include "PauseState.h"
+#include "Menu/MenuState.h"
+#include "Menu/GameState.h"
+#include "Menu/PauseState.h"
 
 Application::Application(float fps)
 

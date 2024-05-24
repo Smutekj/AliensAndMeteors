@@ -118,10 +118,6 @@ void Game::handleEvent(const sf::Event &event)
 {
     auto mouse_position = m_window.mapPixelToCoords(sf::Mouse::getPosition(m_window));
 
-    if (event.type == sf::Event::Resized)
-    {
-    }
-
     if (event.type == sf::Event::KeyPressed)
     {
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
@@ -237,9 +233,20 @@ void Game::update(const float dt, sf::RenderWindow &window)
 
     player.update(dt);
 
+    std::chrono::high_resolution_clock clock;
+    
+    auto tic = clock.now();
     poly_manager.update(dt);
+    std::cout << "poly manager took: " << std::chrono::duration_cast<std::chrono::milliseconds>(clock.now() - tic) << "\n";
+    
+    tic = clock.now();
     boid_world.update(dt);
+    std::cout << "boids took: " << std::chrono::duration_cast<std::chrono::milliseconds>(clock.now() - tic) << "\n";
+    
+    tic = clock.now();
     bullet_world.update(dt);
+    std::cout << "bullets took: " << std::chrono::duration_cast<std::chrono::milliseconds>(clock.now() - tic) << "\n";
+    
 
     while (!boid_world.to_destroy.empty())
     {

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "core.h"
 #include <set>
 #include <unordered_map>
 #include <queue>
 
+#include "core.h"
 
 struct BVHNode
 {
@@ -29,7 +29,6 @@ struct RayCastData
 };
 
 
-// template <class AABBType = AABB>
 class BoundingVolumeTree
 {
 

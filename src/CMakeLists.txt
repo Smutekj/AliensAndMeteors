@@ -8,22 +8,30 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 # ========== cpp and header files ==========
 
-set(objs Menu.cpp SettingsState.cpp StateStack.cpp State.cpp PauseState.cpp MenuState.cpp GameState.cpp Application.cpp Particles.cpp
+set(objs Commands.cpp Application.cpp Particles.cpp
  ExplosionEffect.cpp UI.cpp ShaderManager.cpp BVH.cpp Selection.cpp  PolygonObstacleManager.h Polygon.h )
-set(hdrs Commands.h Menu.h SettingsState.h StateStack.h State.h PauseState.h MenuState.h GameState.h Application.h Particles.h ExplosionEffect.h
+set(hdrs Commands.h   Application.h Particles.h ExplosionEffect.h
  UI.h ShaderManager.h BVH.h core.h Selection.h PolygonObstacleManager.cpp Polygon.cpp)
 
 ###### GAME ###### 
 set(game_objs BehaviourBase.h Behaviours.h Player.h BulletSystem.h BoidSystem.cpp Game.cpp SoundModule.cpp )
 set(game_hdrs Behaviours.cpp Player.cpp BulletSystem.cpp BoidSystem.h Game.h  SoundModule.h )
 
+###### MENU #####
+set(menu_objs  ScoreBoard.cpp Menu.cpp SettingsState.cpp StateStack.cpp State.cpp PauseState.cpp MenuState.cpp GameState.cpp)
+set(menu_hdrs  ScoreBoard.h   Menu.h   SettingsState.h   StateStack.h   State.h   PauseState.h   MenuState.h   GameState.h)
+list(TRANSFORM menu_objs PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/Menu/ )
+list(TRANSFORM menu_hdrs PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/Menu/ )
+
 set(utils_objs  Grid.h GayVector.h  RandomTools.h ) 
 set(utils_hdrs Grid.cpp GayVector.cpp  ) 
 list(TRANSFORM utils_objs PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/Utils/ )
 list(TRANSFORM utils_hdrs PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/Utils/ )
 
-add_executable(Boids main.cpp ${utils_hdrs} ${utils_objs}
-${objs} ${game_objs} ${gui_objs} ${hdrs} ${game_hdrs} ${gui_hdrs}   )
+add_executable(Boids main.cpp
+         ${utils_objs} ${utils_hdrs} 
+          ${menu_objs} ${menu_hdrs}
+        ${objs}  ${hdrs}  ${game_objs} ${game_hdrs} ${gui_objs} ${gui_hdrs}   )
 
 
 #### THIS IS FOR GOOGLE TEST

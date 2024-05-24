@@ -22,6 +22,8 @@ struct ProjectileEntity{
     int max_lifetime = 60;
 };
 
+
+
 struct Bullet 
 {
 
@@ -46,6 +48,7 @@ struct Laser
     float angle = 0;
     float length = 500.f;
     int time = 0;
+    int life_time = 60;
     float width = 1.f;
     int shooter_ind = -1;
 };
@@ -145,9 +148,7 @@ struct BulletSystem
         new_bomb.pos = at;
         new_bomb.vel = vel;
         
-
         bombs.insert(new_bomb);
-
     }
 
     void createLaser(int shooter_ind, sf::Vector2f at, sf::Vector2f dir, float length)
@@ -163,7 +164,7 @@ struct BulletSystem
         new_laser.angle = std::atan2(dr.y, dr.x) * 180.f / M_PIf;
 
         lasers.insert(new_laser);
-        p_effects->createLaser(at, new_laser.length, new_laser.width, new_laser.angle);
+        p_effects->createLaser(at, new_laser.length, new_laser.width, new_laser.angle, new_laser.life_time);
    
    }
 

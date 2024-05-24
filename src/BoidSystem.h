@@ -1,5 +1,9 @@
 #pragma once
 
+#include <queue>
+#include <set>
+#include <unordered_map>
+
 #include "Utils/Grid.h"
 #include "Utils/GayVector.h"
 #include "Utils/RandomTools.h"
@@ -10,11 +14,6 @@
 #include "BulletSystem.h"
 #include "BehaviourBase.h"
 
-#include <queue>
-#include <set>
-#include <unordered_map>
-
-#include "Messanger.h"
 
 struct Boid
 {
@@ -66,6 +65,7 @@ class GroupManager;
 
 class BoidSystem
 {
+
 
     std::vector<Boid> boids;
     std::vector<GridInds> boid2grid;

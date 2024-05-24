@@ -8,17 +8,16 @@
 #include "Utils/Grid.h"
 #include "Utils/RandomTools.h"
 
+#include "core.h"
+
 #include "BoidSystem.h"
 #include "BulletSystem.h"
 #include "PolygonObstacleManager.h"
 #include "ExplosionEffect.h"
-
-#include "core.h"
 #include "SoundModule.h"
 #include "Selection.h"
 #include "Particles.h"
-
-#include "GameState.h"
+#include "Commands.h"
 
 class UI;
 

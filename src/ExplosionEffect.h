@@ -396,72 +396,52 @@ public:
 
 class LaserEffect : public Effect
 {
-    sf::RectangleShape laser_rect;
-    sf::RectangleShape texture_rect;
+    sf::RectangleShape m_texture_rect;
 
-    sf::Vector2f r_center;
-    float radius;
 
-    sf::RenderTexture t1;
-    sf::RenderTexture t2;
+    int m_time = 0;
+    int m_life_time = 90;
 
-    sf::RenderTexture rts[2];
-
-    sf::Shader vert_pass;
-    sf::Shader color_switch;
-    sf::Shader horiz_pass;
-
-    int time = 0;
-    int life_time = 90;
-
-    float length;
-    float width;
-    float max_width;
+    float m_length;
+    float m_width;
+    float m_max_width;
 
 public:
-    LaserEffect(sf::Vector2f center, float length, float width, float angle, sf::Texture *texture = nullptr)
-        : r_center(center), length(length), width(width), max_width(2 * width)
+    LaserEffect(sf::Vector2f start_pos, float length, float width, float angle, float life_time)
+        : m_length(length), m_width(width), m_max_width(2 * width)
     {
-        std::filesystem::path path("../Resources/basic.vert");
-        vert_pass.loadFromFile(path.generic_string(), "../Resources/discreteVert.frag");
-        horiz_pass.loadFromFile("../Resources/basic.vert", "../Resources/discreteHoriz.frag");
-        color_switch.loadFromFile("../Resources/basic.vert", "../Resources/brigthness.frag");
 
-        rts[0].create(100, 100);
-        rts[1].create(100, 100);
-        rts[0].setSmooth(true);
-        rts[1].setSmooth(true);
-        texture_rect.setSize({1, 1});
-        texture_rect.setOrigin({0, 1. / 2.f});
-        texture_rect.setPosition(center);
-        texture_rect.setFillColor(sf::Color{255, 255, 255, 225});
-        texture_rect.setRotation(angle);
+        m_texture_rect.setSize({1, 1});
+        m_texture_rect.setOrigin({0, 1. / 2.f});
+        m_texture_rect.setPosition(start_pos);
+        m_texture_rect.setFillColor(sf::Color{255, 255, 255, 225});
+        m_texture_rect.setRotation(angle);
     }
 
     virtual ~LaserEffect() {}
 
     virtual bool isDone() const override
     {
-        return time > life_time;
+        return m_time > m_life_time;
     }
 
     virtual void update() override
     {
-        float x = time / (float)(life_time);
+        float x = m_time / (float)(m_life_time);
         float x4 = x*x*x*x;
-        auto w = x4 * (max_width - width) + width;
-        auto dy = (max_width - width) / (float)life_time;
-        auto angle = texture_rect.getRotation();
+        auto w = x4 * (m_max_width - m_width) + m_width;
+        auto dy = (m_max_width - m_width) / (float)m_life_time;
+        auto angle = m_texture_rect.getRotation();
         // texture_rect.rotate(-angle);
         // texture_rect.move({0, -dy/2.f});
-        texture_rect.setScale({length, w});
+        m_texture_rect.setScale({m_length, w});
         // texture_rect.rotate(angle);
-        time++;
+        m_time++;
     }
 
     virtual void draw(sf::RenderTarget &window) override
     {
-        window.draw(texture_rect);
+        window.draw(m_texture_rect);
     }
 };
 
@@ -515,9 +495,9 @@ public:
         }
     }
 
-    void createLaser(sf::Vector2f at, float length, float width, float angle)
+    void createLaser(sf::Vector2f at, float length, float width, float angle, float life_time)
     {
-        auto new_effect = std::make_unique<LaserEffect>(at, length, width, angle);
+        auto new_effect = std::make_unique<LaserEffect>(at, length, width, angle, life_time);
         effects2.addObject(std::move(new_effect));
         // effects[first_free_ind] =std::make_unique<ExplosionEffect2>(at, radius, textures.get(Textures::ID::Explosion));
         while (effects.count(first_free_ind) != 0)

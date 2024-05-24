@@ -37,7 +37,6 @@ Projection1D inline projectOnAxis(sf::Vector2f t, const std::vector<sf::Vector2f
 struct Polygon : sf::Transformable
 {
   std::vector<sf::Vector2f> points;
-  sf::Vector2f center;
 
   sf::Vector2f vel;
   float angle_vel = 0;
@@ -51,7 +50,7 @@ struct Polygon : sf::Transformable
   AABB getBoundingRect() const
   {
     auto r = getPosition();
-    return {r - 2.5f*getScale(), r + 2.5f*getScale()};
+    return {r - getScale(), r + getScale()};
   }
 
   sf::Vector2f getCenter();
@@ -88,74 +87,3 @@ struct Polygon : sf::Transformable
   }
 };
 
-// struct Shape{
-
-// };
-
-// struct CircleShape{
-//   sf::Vector2f r_center;
-//   float radius;  
-// };
-
-// struct RigidBody{
-//   float angle_vel;
-//   sf::Vector2f vel;
-//   float mass;
-//   float inertia;
-// };
-
-
-
-// struct Meteor : sf::Transformable, RigidBody, Collidable
-// {
-//   std::vector<sf::Vector2f> points;
-
-//   Meteor(int n_points = 3, sf::Vector2f at = {0, 0}, float radius = 10.f);
-
-//   AABB getBoundingRect() const
-//   {
-//     auto r = getPosition();
-//     return {r - 2.5f*getScale(), r + 2.5f*getScale()};
-//   }
-
-//   sf::Vector2f getCenter();
-
-//   std::vector<sf::Vector2f> getPointsInWorld() const;
-//   void move(sf::Vector2f by);
-//   void rotate(float by);
-//   void update(float dt);
-
-// };
-
-// struct PowerUp : Collidable, RigidBody,  CircleShape{
-
-
-//   void update(float dt){
-    
-//   }
-// };
-
-
-// struct RigidBodySystem{
-
-//   typedef std::pair<int, std::unique_ptr<RigidBody>> EntityAndData;
-
-//   ObjectPool<EntityAndData, 5000> bodies;
-
-//   void onEntityCreation(int entity_ind, RigidBody rb){
-//     bodies.a
-//   }
-
-//   void onEntityDestruction(int entity_ind){
-//     bodies.remove(entity_ind);
-//   }
-
-//   void onCollision(int entity1, int entity2, const CollisionData& c_data){
-//     auto& rb1 = bodies.at(entity1);
-//     auto& rb2 = bodies.at(entity2);
-
-
-    
-//   }
-
-// };

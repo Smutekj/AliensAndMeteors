@@ -129,7 +129,7 @@ void BulletSystem::update(float dt)
             continue;
         }
 
-        if (bullet.lifetime > 20) //! we check for collisions only after some time
+        if (bullet.lifetime > 60) //! we check for collisions only after some time
         {
             auto colliding_entity = findCollidingBoid(bullet_ind);
             if (colliding_entity != -1)
@@ -188,14 +188,14 @@ void BulletSystem::update(float dt)
 
 void BulletSystem::collideWithMeteors(int bullet_ind){
     auto& bullet = bullets.data.at(bullet_ind);
-    for(auto i : p_meteors->obstacles.active_inds)
+
+    auto nearest_meteors = p_meteors->getNearestObstacles(ObstacleType::METEOR, bullet.pos, bullet.radius);
+    
+    for(auto p_meteor : nearest_meteors)
     {       
-        auto& meteor = p_meteors->obstacles.at(i);
-        auto mvt = meteor.getMVTOfSphere(bullet.pos, bullet.radius);
-        float vel_in_mvt_dir = dot(bullet.vel, mvt);
-        if(norm2(mvt) > 0.001f && vel_in_mvt_dir < 0.f){
-            bullet.vel -= 2.f*vel_in_mvt_dir*mvt;
-            bullet.player = nullptr;; //! stop pursuing player
+        auto mvt = p_meteor->getMVTOfSphere(bullet.pos, bullet.radius);
+        if(norm2(mvt) > 0.001f){
+            bullet.lifetime = bullet.max_lifetime;
         }
     }
 }

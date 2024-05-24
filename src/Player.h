@@ -183,7 +183,7 @@ void inline darken(const sf::RenderTexture &input, sf::RenderTexture &result)
 
 struct LightSource
 {
-    std::vector<Edgef> arys;
+    std::vector<Edgef> rays;
 
     sf::Vector2f center;
 };

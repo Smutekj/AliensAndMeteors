@@ -1,4 +1,5 @@
 #pragma once
+
 #include <array>
 
 #include "core.h"
@@ -488,8 +489,8 @@ class PatrolAI : public BoidAI
     BoidSystem *p_boids;
 
 public:
-    PatrolAI(int entity_ind, Player *player, EntityData *data, GroupManager *p_groups, BoidSystem *p_boidsboids)
-        : p_groups(p_groups), p_boids(p_boids), BoidAI(entity_ind, player, data)
+    PatrolAI(int entity_ind, Player *player, EntityData *data, GroupManager *p_groups, BoidSystem *boids)
+        : p_groups(p_groups), p_boids(boids), BoidAI(entity_ind, player, data)
     {
         return_position = data->r;
     }
@@ -628,27 +629,5 @@ public:
         data->acc.y += y_max * omega_2 * omega_2 * std::sin(omega_2 * t + phase_shift / 180.f * M_PI);
 
         truncate(data->acc, 0.5f);
-    }
-};
-
-class AvoidMeteors : public BoidAI
-{
-
-    float vision_radius = 40.f;
-    float force_multiplier = 1.f;
-    sf::Vector2f return_position;
-    bool is_following = false;
-    bool is_returning = false;
-
-public:
-    AvoidMeteors(int entity_ind, Player *player, EntityData *data)
-        : BoidAI(entity_ind, player, data)
-    {
-    }
-
-    virtual ~AvoidMeteors() = default;
-
-    virtual void update()
-    {
     }
 };

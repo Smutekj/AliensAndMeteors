@@ -25,7 +25,11 @@ set_project_warnings(project_warnings)
 include(cmake/CompilerFlags.cmake)
 include(cmake/ExternalTools.cmake)
 
-
+# set(CMAKE_CXX_CLANG_TIDY
+#   clang-tidy-11;
+#   -format-style='file';
+#   -header-filter=${CMAKE_CURRENT_SOURCE_DIR};
+# )
 
 
 add_subdirectory(src)

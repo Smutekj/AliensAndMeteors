@@ -46,16 +46,16 @@ void BoidSystem::avoidMeteors()
 {
     auto avoid_multiplier = force_multipliers[Multiplier::AVOID];
 
+    float vision_radius = 30.f;
+
     int compvec_ind = 0;
     for (int i = 0; i < boids.size(); ++i)
     {
         auto &boid = boids.at(i);
         auto r = boid.r;
         auto &v = boid.vel;
-        auto state = entity2boid_data.at(boid.entity_ind).state;
 
-        auto nearest_meteors = polygons->getNearestMeteors(boid.r, boid.radius * 5.0f);
-        // auto wtf = polygons->collision_tree.rayCast(boid.r, boid.target_pos)
+        auto nearest_meteors = polygons->getNearestMeteors(boid.r, vision_radius);
         sf::Vector2f avoid_force = {0,0};
         for (auto *meteor : nearest_meteors)
         {
@@ -72,12 +72,11 @@ void BoidSystem::avoidMeteors()
             dr_to_target/=norm(dr_to_target);
             auto dr_to_meteor = (r_meteor - r) / norm(r - r_meteor);
             auto dv_rel = v - meteor->vel;
-            // sf::Vector2f dr_norm = {dr_to_target.y, -dr_to_target.x};
             sf::Vector2f dr_norm = {dr_to_meteor.y, -dr_to_meteor.x};
             dr_norm /= norm(dr_norm);
 
             auto dist_to_meteor = dist(r, r_meteor);
-            if (dist_to_meteor < radius_meteor * 2.f)
+            if (dist_to_meteor < vision_radius)
             {
                 const auto angle = angle_calculator.angleBetween(dr_to_meteor, dr_to_target);
                 const auto angle_b = std::asin(radius_meteor / dist_to_meteor) * 180.f / M_PIf;
@@ -85,7 +84,7 @@ void BoidSystem::avoidMeteors()
 
                 if (std::abs(angle) < 110)
                 {
-                    avoid_force += sign * dr_norm * radius_meteor*radius_meteor/ (dist_to_meteor + radius_meteor);
+                    avoid_force += sign * dr_norm * radius_meteor*radius_meteor/ (dist_to_meteor);
                     avoid_force *= avoid_multiplier ;
 
                 }
@@ -204,15 +203,8 @@ void BoidSystem::update(float dt)
         }
     }
 
-    auto delta_t = std::chrono::duration_cast<std::chrono::microseconds>(clock.now() - t_start);
-    std::cout << "moving grid took: " << delta_t.count() << " us\n";
-    t_start = clock.now();
-
     //! fill neighbour list
     fillNeighbourList();
-
-    delta_t = std::chrono::duration_cast<std::chrono::microseconds>(clock.now() - t_start);
-    std::cout << "finding_neighbours took: " << delta_t.count() << " us\n";
 
     for (int boid_ind = 0; boid_ind < boids.size(); ++boid_ind)
     {
