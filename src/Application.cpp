@@ -39,6 +39,7 @@ void Application::run()
     }
 }
 
+
 void Application::registerStates()
 {
     m_state_stack->registerState<EndScreenState>(States::Exit);

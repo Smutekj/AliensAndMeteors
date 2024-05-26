@@ -30,6 +30,8 @@ private:
     Menu m_menu;
 };
 
+
+//! \brief State 
 class EndScreenState : public State
 {
 
@@ -42,8 +44,8 @@ public:
     virtual void draw() override;
 
 private:
-    float m_timer = 600;
-    sf::Text m_goodbye_text;
+    float m_timer = 600; //! after this time, the app quits
+    sf::Text m_goodbye_text; 
 };
 
 class PlayerDiedState : public State

@@ -250,12 +250,127 @@ private:
         setTextureRect(getCurrentTextureRect());
     }
 
+public:
     sf::IntRect getCurrentTextureRect() const
     {
         return {{texture_rect_size.x * tex_x, texture_rect_size.y * tex_y},
                 {texture_rect_size.x, texture_rect_size.y}};
     }
 };
+
+class Animation{
+
+    int time = 0;
+    int frame_time = 5;
+    int life_time;
+    int tex_x;
+    int tex_y;
+    int n_sprites_x;
+    int n_sprites_y;
+
+    int n_repeats = -1;
+
+    int dx = -1;
+    int dy = -1;
+
+    bool inverted = false;
+
+    // sf::RectangleShape sprite;
+    sf::Vector2i texture_rect_size;
+
+public:
+    Animation(sf::Vector2i texture_size, int n_sprites_x, int n_sprites_y,
+                         int life_time, int n_repeats = 1,
+                         bool inverted = false)
+        : tex_x(n_sprites_x - 1), tex_y(n_sprites_y - 1),
+          n_sprites_x(n_sprites_x), n_sprites_y(n_sprites_y),
+          life_time(life_time), n_repeats(n_repeats), inverted(inverted)
+    {
+        if (inverted)
+        {
+            dx = 1;
+            dy = 1;
+            tex_x = 0;
+            tex_y = 0;
+        }
+        texture_rect_size = { texture_size.x /n_sprites_x , texture_size.y/n_sprites_y };
+        frame_time = life_time / (n_sprites_x*n_sprites_y);
+    }
+
+    void setFrameTime(int new_frame_time)
+    {
+        frame_time = new_frame_time;
+    }
+
+    void setLifeTime(int new_life_time)
+    {
+        life_time = new_life_time;
+        if (n_repeats == 1)
+        {
+            frame_time = new_life_time / (n_sprites_x * n_sprites_y);
+        }
+    }
+
+    void setTime(int new_time)
+    {
+        time = new_time;
+        auto frame_ind = (new_time / frame_time);
+        tex_x = frame_ind % n_sprites_x;
+        tex_y = frame_ind / n_sprites_x;
+    }
+
+    virtual bool isDone() const
+    {
+        return time > life_time || n_repeats == 0;
+    }
+
+    virtual void update()
+    {
+        time++;
+        if (time % frame_time == frame_time - 1)
+        {
+            animateSprite();
+        }
+    }
+
+private:
+    void animateSprite()
+    {
+        tex_x += dx;
+        if (tex_x >= n_sprites_x || tex_x < 0)
+        {
+            tex_y += dy;
+            tex_x = (tex_x + n_sprites_x) % n_sprites_x;
+        }
+        if (tex_y >= n_sprites_y || tex_y < 0)
+        {
+            tex_y = (tex_y + n_sprites_y) % n_sprites_y;
+        }
+
+        if (inverted)
+        {
+            if (tex_x == 0 && tex_y == 0)
+            {
+                n_repeats--;
+            }
+        }
+        else
+        {
+            if (tex_x == n_sprites_x - 1 && tex_y == n_sprites_y - 1)
+            {
+                n_repeats--;
+            }
+        }
+    }
+
+public:
+    sf::IntRect getCurrentTextureRect() const
+    {
+        return {{texture_rect_size.x * tex_x, texture_rect_size.y * tex_y},
+                {texture_rect_size.x, texture_rect_size.y}};
+    }
+};
+
 
 class Bloom
 {

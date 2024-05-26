@@ -10,3 +10,14 @@ dw 54
 w 30
 Retard 14
 GayLord 0
+-100 0
+w 0
+Aw 0
+w 0
+bbw 0
+aw 0
+dd 0
+bbw 0
+dw 0
+w 0
+w 0

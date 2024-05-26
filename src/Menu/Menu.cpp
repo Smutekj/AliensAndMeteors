@@ -41,7 +41,7 @@ void Menu::draw(sf::RenderWindow &window)
     for (int item_ind = 0; item_ind < m_items.size(); item_ind++)
     {
         auto &field = m_items.at(item_ind);
-        if (item_ind == selected_item_ind)
+        if (item_ind == m_selected_item_ind)
         {
             field->setScale({1.1f, 1.1f});
             field->setFillColor(sf::Color::Red);
@@ -72,20 +72,20 @@ void Menu::handleEvent(sf::Event event)
 {
     if (event.type == sf::Event::KeyReleased)
     {
-        if (event.key.code == sf::Keyboard::Up)
+        if (event.key.code == sf::Keyboard::Up) //! select item above
         {
-            m_items.at(selected_item_ind)->m_is_selected = false;
-            selected_item_ind = (selected_item_ind - 1 + m_items.size()) % m_items.size();
-            m_items.at(selected_item_ind)->m_is_selected = true;
+            m_items.at(m_selected_item_ind)->m_is_selected = false;
+            m_selected_item_ind = (m_selected_item_ind - 1 + m_items.size()) % m_items.size();
+            m_items.at(m_selected_item_ind)->m_is_selected = true;
         }
-        else if (event.key.code == sf::Keyboard::Down)
+        else if (event.key.code == sf::Keyboard::Down) //! select item below
         {
-            m_items.at(selected_item_ind)->m_is_selected = false;
-            selected_item_ind = (selected_item_ind + 1) % m_items.size();
-            m_items.at(selected_item_ind)->m_is_selected = true;
+            m_items.at(m_selected_item_ind)->m_is_selected = false;
+            m_selected_item_ind = (m_selected_item_ind + 1) % m_items.size();
+            m_items.at(m_selected_item_ind)->m_is_selected = true;
         }
 
-        m_items.at(selected_item_ind)->handleEvent(event);
+        m_items.at(m_selected_item_ind)->handleEvent(event); 
     }
 }
 

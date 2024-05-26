@@ -6,7 +6,6 @@
 #include "State.h"
 #include "../Commands.h"
 
-
 class MenuItem : public sf::Transformable
 {
 
@@ -27,6 +26,10 @@ public:
     virtual void draw(sf::RenderWindow &window) = 0;
 };
 
+
+//! \class item that pushes \memberof m_destination state on the stack, 
+//!         if the \memberof m_source is None, the current state is popped 
+//!         (therefore it won't be possible to return to him)  
 class ChangeStateItem : public MenuItem
 {
 
@@ -42,8 +45,11 @@ private:
 
 };
 
-class ChangeKeyItem : public MenuItem
-{
+
+//! \class item that changes key_bindings
+//!         if existing key is selected, the command bound to the key is unbound
+//! \todo   make it impossible to return back when a some key is unbound
+class ChangeKeyItem : public MenuItem{ 
 public:
 
     ChangeKeyItem(std::string command_name, PlayerControl command, State::Context &context);
@@ -61,6 +67,8 @@ private:
 
 };
 
+
+//! \class contains a list of MenuItems which can be navigated by up/down arrows
 class Menu
 {
 
@@ -73,7 +81,7 @@ public:
 
 private:
     sf::Font *p_font;
-    int selected_item_ind = 0;
+    int m_selected_item_ind = 0;
     sf::Text m_text;
     std::vector<std::unique_ptr<MenuItem>> m_items;
 };

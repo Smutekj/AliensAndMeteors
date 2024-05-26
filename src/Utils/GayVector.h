@@ -31,9 +31,9 @@ struct ObjectPool
 
   int addObject(DataType& obj)
   {
-    // static_assert(std::is_base_of<DataType, Type>::value);
-    
     auto new_entity_ind = *free_inds.begin();
+
+    assert(entity2ind.at(new_entity_ind) == -1);   
     assert(new_entity_ind < MAX_OBJECTS);
     free_inds.erase(free_inds.begin());
 
@@ -45,9 +45,9 @@ struct ObjectPool
   }
     int addObject(DataType&& obj)
   {
-    // static_assert(std::is_base_of<DataType, Type>::value);
-    
     auto new_entity_ind = *free_inds.begin();
+
+    assert(entity2ind.at(new_entity_ind) == -1);    
     assert(new_entity_ind < MAX_OBJECTS);
     free_inds.erase(free_inds.begin());
 
@@ -58,27 +58,12 @@ struct ObjectPool
     return new_entity_ind;
   }
 
-//   int addObject(DataType &&obj)
-//   {
-//     auto new_entity_ind = *free_inds.begin();
-//     free_inds.erase(free_inds.begin());
-
-//     objects.at(new_entity_ind) = std::move(obj);
-
-//     entity2ind.at(new_entity_ind) = active_inds.size();
-//     active_inds.push_back(new_entity_ind);
-//     return new_entity_ind;
-//   }
-
   void remove(int entity_ind)
   {
-    if(entity2ind.at(entity_ind) == -1){
-        return;
-    }
+    
     free_inds.insert(entity_ind);
-    // auto it = std::find(active_inds.begin(), active_inds.end(), entity2ind.at(entity_ind));
-    // assert(it != active_inds.end());
-    // active_inds.erase(it);
+    assert(entity2ind.at(entity_ind) != -1);
+
     auto vec_ind = entity2ind.at(entity_ind);
     active_inds.at(vec_ind) = active_inds.back();
     entity2ind.at(active_inds.back()) = vec_ind;

@@ -25,11 +25,16 @@ set_project_warnings(project_warnings)
 include(cmake/CompilerFlags.cmake)
 include(cmake/ExternalTools.cmake)
 
-# set(CMAKE_CXX_CLANG_TIDY
-#   clang-tidy-11;
-#   -format-style='file';
-#   -header-filter=${CMAKE_CURRENT_SOURCE_DIR};
-# )
+project(lua LANGUAGES C)
 
+add_library(lua STATIC lua/onelua.c)
+
+target_include_directories(lua
+                           PUBLIC
+                           $<INSTALL_INTERFACE:lua>
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../lua>
+                           )
+target_compile_definitions(lua PRIVATE MAKE_LIB)
+# add_subdirectory(lua)
 
 add_subdirectory(src)

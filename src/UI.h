@@ -6,8 +6,8 @@
 #include <unordered_map>
 #include <array>
 
-#include "BoidSystem.h"
-#include "SFML/Graphics.hpp"
+#include <SFML/Graphics.hpp>
+#include "GameObject.h"
 
 class Game;
 class VisionSystem;
@@ -69,13 +69,12 @@ class PhysicsWindow : public UIWindow
         MAX_SPEED,
     };
 
-    std::unordered_map<BoidSystem::Multiplier, float>& force_multipliers;
-    std::unordered_map<BoidSystem::Multiplier, std::pair<float, float>> mulitplier2slider_min_max;
-
-    std::unordered_map<BoidSystem::Multiplier, float>& force_ranges;
-
+    std::unordered_map<Multiplier, float>& m_force_multipliers;
+    std::unordered_map<Multiplier, float>& m_force_ranges;
+    std::unordered_map<Multiplier, std::pair<float, float>> mulitplier2slider_min_max;
+    
 public:
-    PhysicsWindow(BoidSystem &ps);
+    PhysicsWindow(std::unordered_map<Multiplier, float>&, std::unordered_map<Multiplier, float>&);
 
     ~PhysicsWindow();
 
@@ -149,8 +148,10 @@ class UI
 
     bool show_demo_window = true;
 
+
+    sf::Clock m_clock;
 public:
-    UI(sf::RenderWindow &window, Game &game);
+    UI(sf::RenderWindow &window);
 
     void showWindow();
     void draw(sf::RenderWindow &window);

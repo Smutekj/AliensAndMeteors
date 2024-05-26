@@ -8,14 +8,21 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 # ========== cpp and header files ==========
 
-set(objs Commands.cpp Application.cpp Particles.cpp
- ExplosionEffect.cpp UI.cpp ShaderManager.cpp BVH.cpp Selection.cpp  PolygonObstacleManager.h Polygon.h )
-set(hdrs Commands.h   Application.h Particles.h ExplosionEffect.h
- UI.h ShaderManager.h BVH.h core.h Selection.h PolygonObstacleManager.cpp Polygon.cpp)
+set(hdrs   UI.h BVH.h core.h Selection.h  Commands.h   Application.h Particles.h
+   ExplosionEffect.h Polygon.h )
+set(objs UI.cpp BVH.cpp Selection.cpp Polygon.cpp  Commands.cpp Application.cpp Particles.cpp
+    ExplosionEffect.cpp )
 
 ###### GAME ###### 
-set(game_objs BehaviourBase.h Behaviours.h Player.h BulletSystem.h BoidSystem.cpp Game.cpp SoundModule.cpp )
-set(game_hdrs Behaviours.cpp Player.cpp BulletSystem.cpp BoidSystem.h Game.h  SoundModule.h )
+set(game_objs ResourceManager.h BehaviourBase.h Behaviours.h Player.h
+   Game.cpp SoundModule.cpp GameObject.cpp GameWorld.cpp Entities.cpp)
+set(game_hdrs BehaviourBase.cpp Behaviours.cpp Player.cpp 
+   Game.h  SoundModule.h GameObject.h GameWorld.h Entities.h)
+
+###### COLLISIONS #####
+set(coll_objs CollisionSystem.cpp  CollisionResolver.cpp )
+set(coll_hdrs CollisionSystem.h CollisionResolver.h )
+
 
 ###### MENU #####
 set(menu_objs  ScoreBoard.cpp Menu.cpp SettingsState.cpp StateStack.cpp State.cpp PauseState.cpp MenuState.cpp GameState.cpp)
@@ -29,7 +36,7 @@ list(TRANSFORM utils_objs PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/Utils/ )
 list(TRANSFORM utils_hdrs PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/Utils/ )
 
 add_executable(Boids main.cpp
-         ${utils_objs} ${utils_hdrs} 
+         ${utils_objs} ${utils_hdrs} ${coll_hdrs} ${coll_objs}
           ${menu_objs} ${menu_hdrs}
         ${objs}  ${hdrs}  ${game_objs} ${game_hdrs} ${gui_objs} ${gui_hdrs}   )
 
@@ -37,7 +44,7 @@ add_executable(Boids main.cpp
 #### THIS IS FOR GOOGLE TEST
 # enable_testing()
 
-target_link_libraries(Boids PRIVATE sfml-graphics sfml-window sfml-system ImGui-SFML::ImGui-SFML)
+target_link_libraries(Boids PRIVATE sfml-graphics sfml-audio sfml-window sfml-system ImGui-SFML::ImGui-SFML)
 
 
 if(WIN32)

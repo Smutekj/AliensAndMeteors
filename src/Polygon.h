@@ -38,21 +38,14 @@ struct Polygon : sf::Transformable
 {
   std::vector<sf::Vector2f> points;
 
-  sf::Vector2f vel;
-  float angle_vel = 0;
-
-  float mass = 1;
-  float inertia = 1;
-  float radius;
-
-  Polygon(int n_points = 3, sf::Vector2f at = {0, 0}, float radius = 10.f);
+  Polygon(int n_points = 3, sf::Vector2f at = {0, 0});
 
   AABB getBoundingRect() const
   {
     auto r = getPosition();
     return {r - getScale(), r + getScale()};
   }
-
+ 
   sf::Vector2f getCenter();
 
   std::vector<sf::Vector2f> getPointsInWorld() const;
@@ -79,7 +72,7 @@ struct Polygon : sf::Transformable
     shape.setRotation(getRotation());
   }
 
-  void draw(sf::RenderWindow &window)
+  void draw(sf::RenderTarget &window)
   {
     sf::ConvexShape shape;
     makeShapeFromPolygon(shape);

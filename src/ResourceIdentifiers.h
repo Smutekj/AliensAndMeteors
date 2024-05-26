@@ -12,23 +12,25 @@ namespace sf
 
 namespace Textures
 {
-	enum ID
+	enum class ID
 	{
 		Explosion,
 		Explosion2,
 		Bomb,
-		Particle,
 		PlayerShip,
 		EnemyShip,
 		EnemyBomber,
 		Heart,
+		Station,
+		BoosterPurple,
+		BoosterYellow,
 		BackGround,
 	};
 }
 
 namespace Shaders
 {
-	enum ID
+	enum class ID
 	{
 		BrightnessPass,
 		DownSamplePass,
@@ -39,7 +41,7 @@ namespace Shaders
 
 namespace Fonts
 {
-	enum ID
+	enum class ID
 	{
 		Main,
 	};

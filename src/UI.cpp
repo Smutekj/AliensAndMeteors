@@ -11,6 +11,8 @@
 #include "Utils/magic_enum.hpp"
 #include "Utils/magic_enum_utility.hpp"
 
+#include "Entities.h"
+
 std::vector<std::string> separateLine(std::string line, char delimiter = ' ')
 {
     std::vector<std::string> result;
@@ -27,10 +29,9 @@ std::vector<std::string> separateLine(std::string line, char delimiter = ' ')
 
 UIWindow::UIWindow(std::string name) : name(name)
 {
-
 }
 
-UI::UI(sf::RenderWindow &window, Game &game)
+UI::UI(sf::RenderWindow &window)
 {
 
     // Setup Dear ImGui context
@@ -39,27 +40,22 @@ UI::UI(sf::RenderWindow &window, Game &game)
     ImGuiIO &io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
-    // io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;     // IF using Docking Branch
-    // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+                                                          // io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;     // IF using Docking Branch
+                                                          // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
     // // // Setup Platform/Renderer backends
 
+    auto physics = std::make_unique<PhysicsWindow>(Enemy::m_force_multipliers, Enemy::m_force_ranges);
 
-     auto physics = std::make_unique<PhysicsWindow>(game.boid_world);
-    
     windows[UIWindowType::PHYSICS] = std::move(physics);
     // windows[UIWindowType::SHADERS] = std::move(shaders_window);
 
     is_active[UIWindowType::PHYSICS] = true;
-    is_active[UIWindowType::SHADERS] = true;
+    // is_active[UIWindowType::SHADERS] = true;
 
     names[UIWindowType::PHYSICS] = "Physics";
-    names[UIWindowType::SHADERS] = "Shaders";
+    // names[UIWindowType::SHADERS] = "Shaders";
 }
-
-// void UI::update(){
-
-// }
 
 UIWindow::~UIWindow()
 {
@@ -72,7 +68,7 @@ void UI::showWindow()
 void UI::draw(sf::RenderWindow &window)
 {
 
-
+    ImGui::SFML::Update(window, m_clock.restart());
     ImGui::Begin("Control Panel"); // Create a window called "Hello, world!" and append into it.
     for (auto &[window_type, p_window] : windows)
     {
@@ -89,21 +85,17 @@ void UI::draw(sf::RenderWindow &window)
             p_window->draw();
         }
     }
-    ImGui::Render();
+    ImGui::SFML::Render(window);
 }
 
-PhysicsWindow::PhysicsWindow(BoidSystem &ps) :
-     force_multipliers(ps.force_multipliers), force_ranges(ps.force_ranges), UIWindow("Physics")
+PhysicsWindow::PhysicsWindow(std::unordered_map<Multiplier, float> &force_multipliers,
+                             std::unordered_map<Multiplier, float> &force_ranges) : m_force_multipliers(force_multipliers), m_force_ranges(force_ranges), UIWindow("Physics")
 {
- for (auto &[multiplier_type, value] : force_multipliers)
+    for (auto &[multiplier_type, value] : force_multipliers)
     {
         mulitplier2slider_min_max[multiplier_type] = {0.0f, 100.f};
     }
-
-    
 }
-
-
 
 PhysicsWindow::~PhysicsWindow() {}
 
@@ -111,10 +103,10 @@ void PhysicsWindow::draw()
 {
 
     ImGui::Begin(name.c_str());
-    
-    if(ImGui::BeginListBox("Force Multipliers"))
+
+    if (ImGui::BeginListBox("Force Multipliers"))
     {
-        for (auto &[multiplier_type, value] : force_multipliers)
+        for (auto &[multiplier_type, value] : m_force_multipliers)
         {
             auto multiplier_name = static_cast<std::string>(magic_enum::enum_name(multiplier_type));
             auto &min_value = mulitplier2slider_min_max[multiplier_type].first;
@@ -133,7 +125,7 @@ void PhysicsWindow::draw()
 
     if (ImGui::BeginListBox("Force Ranges"))
     {
-        for (auto &[multiplier_type, value] : force_ranges)
+        for (auto &[multiplier_type, value] : m_force_ranges)
         {
             auto multiplier_name = static_cast<std::string>(magic_enum::enum_name(multiplier_type));
 
@@ -185,8 +177,8 @@ static void drawStuff(sf::Color &color)
     ImGui::ColorPicker4("MyColor##4", (float *)&color, flags, ref_color ? &ref_color_v.x : NULL);
 }
 
-void setShaderVariableValue(sf::Shader& shader, 
-std::string fragment, std::string vertex, std::string var_name, sf::Color color)
+void setShaderVariableValue(sf::Shader &shader,
+                            std::string fragment, std::string vertex, std::string var_name, sf::Color color)
 {
 
     const auto filename = fragment;

@@ -1,5 +1,6 @@
 #include "BVH.h"
-#include "PolygonObstacleManager.h"
+
+#include "Polygon.h"
 
 #include <stack>
 #include <queue>
@@ -12,6 +13,9 @@ const BVHNode &BoundingVolumeTree::getNode(int node_index) const
 void BoundingVolumeTree::addRect(AABB rect, int object_index)
 {
 
+
+    assert(object2node_indices.count(object_index) == 0);
+    
     if (free_indices.empty())
     {
         for (int i = nodes.size(); i < 2 * nodes.size() + 1; ++i)
@@ -97,7 +101,10 @@ void BoundingVolumeTree::addRect(AABB rect, int object_index)
 
 void BoundingVolumeTree::removeObject(int object_index)
 {
+    assert(object2node_indices.count(object_index) > 0);
+
     auto leaf_index = object2node_indices.at(object_index);
+    
     removeLeaf(leaf_index);
     object2node_indices.erase(object_index);
     assert(!containsCycle());
@@ -468,10 +475,12 @@ void BoundingVolumeTree::moveNodeUp(int going_up_index)
 std::vector<int> BoundingVolumeTree::findIntersectingLeaves(AABB rect)
 {
     std::vector<int> intersecting_leaves;
-    if (root_ind == -1)
+    if(object2node_indices.empty())
     {
         return {};
     }
+
+
     std::stack<int> to_visit;
     auto &current_node = nodes.at(root_ind);
     to_visit.push(root_ind);
@@ -495,6 +504,7 @@ std::vector<int> BoundingVolumeTree::findIntersectingLeaves(AABB rect)
             if (current_node.isLeaf())
             {
                 assert(current_node.object_index != -1);
+                assert(object2node_indices.at(current_node.object_index) == current_index);
                 intersecting_leaves.push_back(current_node.object_index);
             }
         }

@@ -1,121 +1,144 @@
 #pragma once
 
+#include "core.h"
 #include <memory>
-
+#include "ResourceIdentifiers.h"
 #include "Polygon.h"
-#include "Utils/GayVector.h"
-#include "BehaviourBase.h"
+
+class GameWorld;
+
+enum class Multiplier
+{
+    SCATTER,
+    ALIGN,
+    SEEK,
+    VELOCITY,
+    AVOID
+};
+
+
+
+struct CollisionData
+{
+    sf::Vector2f separation_axis;
+    float minimum_translation = -1;
+    bool belongs_to_a = true;
+    sf::Vector2f contact_point;
+};
+
 
 enum class ObjectType
 {
     Enemy,
     Bullet,
-
+    Missile,
+    Bomb,
+    Laser,
+    Meteor,
+    Heart,
+    SpaceStation,
+    Explosion,
+    Player,
+    Flag,
+    Count
 };
 
+struct RigidBody
+{
+    float mass;
+    float inertia;
+    float angle_vel;
+};
 
 class GameObject
 {
 
-    std::shared_ptr<Polygon> m_collision_shape;
-    bool m_does_physics = true;
+    ObjectType m_type;
 
-    virtual void update() = 0;
-    virtual void onDeath() = 0;
-    virtual void onSpawn() = 0;
+protected:
 
-};
+    TextureHolder& m_textures;
 
-class Enemy : public GameObject
-{
-    Player* p_player;
-    std::unique_ptr<BoidAI> p_behaviour;
-    CollisionSystem* p_collider; //! this is needed because meteor avoidance 
+    sf::Vector2f m_pos;
+    GameWorld* m_world; //! won't be needed once I implement messenger class
 
 
-    virtual void update() override
+    float m_life_time = 10.f; //! if this is set to a negative number the object
+    bool m_is_dead = false;
+    bool m_is_bloomy = false;
+
+    sf::Vector2f m_size = {1,1};
+
+public:
+    GameObject(GameWorld* world, TextureHolder& textures, ObjectType type);
+
+    std::unique_ptr<Polygon> m_collision_shape = nullptr;
+    std::unique_ptr<RigidBody> m_rigid_body = nullptr;
+
+    float m_angle = 0;
+    int m_id;
+    sf::Vector2f m_vel = {0,0};
+
+    virtual void update(float dt) = 0;
+    virtual void onCreation() = 0;
+    virtual void onDestruction() = 0;
+    virtual void draw(sf::RenderTarget &target) = 0;
+    virtual void onCollisionWith(GameObject& obj, CollisionData& c_data) = 0;
+    virtual ~GameObject() {}
+
+    void removeCollider()
     {
-        p_behaviour->update();
-    }
-};
-
-
-class Projectile : public GameObject
-{
-
-};
-
-class Laser : public GameObject
-{
-
-};
-
-class SeekingMissile : public Projectile
-{
-
-};
-
-
-class BulletMissile : public Projectile
-{
-
-};
-
-
-
-
-class CollisionResolver
-{
-
-    public:
-
-        void resolve(GameObject& object1, GameObject& object2 )
+        if(m_collision_shape)
         {
-
+            m_collision_shape = nullptr;
         }
-};
-
-class CollisionSystem
-{
-    struct CollisionData
-    {
-        GameObject* p_shape;
-        int entity_id = -1;
-    };
-
-    ObjectPool<CollisionData, 5000> m_colliders;
-
-    CollisionSystem* p_resolver; 
-
-
-    void update(){
-
-    }
-};
-
-class BoidGrid
-{
-    std::vector<Boid> boids;
-    std::vector<GridInds> boid2grid;
-    std::vector<std::vector<int>> boid2neighbour_inds;
-
-    ObjectPool<Boid> m_boids;
-
-    std::unique_ptr<SearchGrid> p_grid;
-    std::vector<std::vector<int>> grid2boid_inds;
-
-    void update()
-    {
-
     }
 
-    std::vector<> 
+    bool isBloomy()const
+    {
+        return m_is_bloomy;
+    }
 
-};
+    void kill()
+    {
+        m_is_dead = true;
+    }
 
-class GameWorld
-{
-    CollisionSystem m_collision_system;
-    CollisionResolver
+    bool isDead()const
+    {
+        return m_is_dead;
+    }
 
+    void updateAll(float dt);
+
+    void move(sf::Vector2f by);
+    bool collides() const;
+    float getAngle() const;
+    Polygon &getCollisionShape();
+    int getId() const;
+    ObjectType getType() const;
+
+    const sf::Vector2f &getPosition() const;
+    void setPosition(sf::Vector2f new_position)
+    {
+        m_pos = new_position;
+        if(m_collision_shape)
+        {
+            m_collision_shape->setPosition(new_position);
+        }
+    }
+
+    void setSize(sf::Vector2f size)
+    {
+        if(m_collision_shape)
+        {
+            m_collision_shape->setScale(size);
+        }
+        m_size = size;
+    }
+
+    void setAngle(float angle)
+    {
+        m_angle = angle;
+    }
 };

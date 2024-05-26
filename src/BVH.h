@@ -44,6 +44,27 @@ public:
     
     void removeObject(int object_index);
     
+    const auto& getObjects()const
+    {
+        return object2node_indices;
+    }
+    
+    std::vector<std::pair<int, int>> findClosePairsWith(BoundingVolumeTree& tree)
+    {
+        std::vector<std::pair<int, int>> close_pairs;
+
+        for(auto& [object_ind, node_ind] : object2node_indices)
+        {
+            auto nearest_objects_inds = tree.findIntersectingLeaves(nodes.at(node_ind).rect);
+            for(auto i : nearest_objects_inds)
+            {
+                if(i == object_ind){continue;}
+                close_pairs.push_back({std::min(object_ind, i), std::max(object_ind, i)});
+            }
+        }
+        return close_pairs;
+    }   
+
     std::vector<int> findIntersectingLeaves(AABB rect);
     
     void clear();

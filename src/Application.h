@@ -21,13 +21,13 @@ public:
 
 private:
     std::unique_ptr<sf::RenderWindow> m_window;
-    std::unique_ptr<StateStack> m_state_stack;
+    std::unique_ptr<StateStack> m_state_stack; //! state stack for menu navigation
 
     ResourceHolder<sf::Texture, Textures::ID> m_textures;
-    float m_dt;
+    float m_dt; //!time step 
 
-    KeyBindings m_bindings;
-    ScoreBoard m_score;
+    KeyBindings m_bindings; //! defines key->command bindings
+    ScoreBoard m_score; //! keeps score;
     sf::Font m_font;
 
     void registerStates();
