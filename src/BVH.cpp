@@ -10,12 +10,17 @@ const BVHNode &BoundingVolumeTree::getNode(int node_index) const
     return nodes.at(node_index);
 }
 
+//! \brief adds new leaf node holding object with index \p object_index 
+//! \brief which is bound by rectangle \p rect
+//! \brief the object with that index must not exist in the tree!
+//! \brief finds suitable place for the new node so as to minimize tree volume increase
+//! \brief (unless tree is empty) creates 2 new nodes (one leaf for the object and one internal)
+//! \brief in the new tree each internal node has exactly two children!
 void BoundingVolumeTree::addRect(AABB rect, int object_index)
 {
-
-
     assert(object2node_indices.count(object_index) == 0);
     
+    //! we ran out of free node spots, so we increase node spots 
     if (free_indices.empty())
     {
         for (int i = nodes.size(); i < 2 * nodes.size() + 1; ++i)
@@ -79,26 +84,15 @@ void BoundingVolumeTree::addRect(AABB rect, int object_index)
     nodes.at(new_parent).rect = makeUnion(nodes.at(best_index).rect, rect);
 
     //! refit bounding volumes
-    int current_index = nodes.at(new_leaf).parent_index;
-    while (current_index != -1)
-    {
-        //! for some reason balancning makes collision detection slower :(
-        // current_index = balance(current_index);
-
-        auto &current_node = nodes.at(current_index);
-        const auto &child_1 = nodes.at(current_node.child_index_1);
-        const auto &child_2 = nodes.at(current_node.child_index_2);
-        current_node.rect = makeUnion(child_1.rect, child_2.rect);
-        current_node.height = 1 + std::max(child_1.height, child_2.height);
-
-        current_index = nodes.at(current_index).parent_index;
-    }
+    refitFrom(nodes.at(new_leaf).parent_index);
 
     assert(!containsCycle());
     assert(isConsistent());
     //! profit
 }
 
+//! \brief removes object with \p object_index from the tree
+//! \brief the object must be present in the tree!  
 void BoundingVolumeTree::removeObject(int object_index)
 {
     assert(object2node_indices.count(object_index) > 0);
@@ -112,11 +106,13 @@ void BoundingVolumeTree::removeObject(int object_index)
     // std::cout << "max balance is: " << calcMaxDepth() << "\n";
 }
 
+//! \brief removes leaf with node index \p leaf index
+//! \brief does necessary bookeeping and refits the bounding volumes 
 void BoundingVolumeTree::removeLeaf(int leaf_index)
 {
 
     assert(nodes.at(leaf_index).isLeaf());
-    if (leaf_index == root_ind)
+    if (leaf_index == root_ind) //! there is just one leaf thus it is root
     {
         free_indices.insert(leaf_index);
         return;
@@ -160,6 +156,7 @@ void BoundingVolumeTree::removeLeaf(int leaf_index)
         root_ind = sibling_index;
     }
 
+    //! deactivate removed node
     free_indices.insert(leaf_index);
     free_indices.insert(removed_internal_index);
     nodes.at(leaf_index).child_index_1 = -1;
@@ -174,7 +171,14 @@ void BoundingVolumeTree::removeLeaf(int leaf_index)
         nodes.at(removed_internal_index).height = 0;
     }
 
-    int current_index = sibling_node.parent_index;
+    refitFrom(sibling_node.parent_index);
+}
+
+//! \brief refits bounding volumes of all parent nodes nodes
+//! \brief  from \p starting_node_index towards root
+void BoundingVolumeTree::refitFrom(int starting_node_index)
+{
+    int current_index = starting_node_index;
     while (current_index != -1)
     {
         current_index = balance(current_index);
@@ -189,6 +193,10 @@ void BoundingVolumeTree::removeLeaf(int leaf_index)
     }
 }
 
+
+//! \brief finds best sibling for the new_rect 
+//! \brief so as to minimize increase in tree volume upon addition
+//! \brief should find the best option and thus makes higher quality trees but slower
 int BoundingVolumeTree::findBestSibling(const AABB &new_rect)
 {
     auto calcCostChange = [&new_rect, this](int node_index)
@@ -243,6 +251,9 @@ int BoundingVolumeTree::findBestSibling(const AABB &new_rect)
     return best_index;
 }
 
+//! \brief tries to find best sibling for the new_rect 
+//! \brief so as to minimize increase in tree volume upon addition
+//! \brief does not necessarily find the best option, but is faster and generally good enough
 int BoundingVolumeTree::findBestSiblingGreedy(const AABB &new_rect)
 {
     auto calcCostChange = [&new_rect, this](int node_index)
@@ -309,6 +320,8 @@ bool BoundingVolumeTree::isLeaf(int node_index) const
     return nodes.at(node_index).child_index_1 == -1 && nodes.at(node_index).child_index_2 == -1;
 }
 
+
+//! \brief checks if tree contains cycles thus not being a tree (good for debugging :D)
 bool BoundingVolumeTree::containsCycle() const
 {
     std::vector<bool> visited(nodes.size(), false);
@@ -332,6 +345,7 @@ bool BoundingVolumeTree::containsCycle() const
     return false;
 }
 
+//! \brief for every node checks if the child of the node has parent that is the node
 bool BoundingVolumeTree::isConsistent() const
 {
     std::vector<bool> visited(nodes.size(), false);
@@ -358,6 +372,10 @@ bool BoundingVolumeTree::isConsistent() const
     return true;
 }
 
+
+//! \brief does tree rotation on subtree at node_index \p index_a
+//! \brief in order to make it more balanced 
+//! \returns index of the node that moved at position of node at \p index_a
 int BoundingVolumeTree::balance(int index_a)
 {
 
@@ -376,8 +394,8 @@ int BoundingVolumeTree::balance(int index_a)
 
     auto root_node_height = nodes.at(root_ind).height;
     auto height_diff = node_c.height - node_b.height;
-    if (height_diff > 1) //! C needs to go up
-    {
+    if (height_diff > 1)
+    {    //! C is higher so it needs to move closer to root
         moveNodeUp(index_c);
         return index_c;
     }
@@ -389,6 +407,28 @@ int BoundingVolumeTree::balance(int index_a)
     return index_a;
 }
 
+//! \brief does a subtree rotation of subtree rooted at \p going_up_index  to reduce tree depth
+//! \brief node C is put on As place, node A moves to Bs place and his new parent is C 
+//! \brief Cs children are thus A and higher node from C1 and C2 (has larger node.height)
+//! \brief As children are thus B and lower node from C1 and C2 (has smaller node.height)       
+//! \brief Bs parent is A and his children stay the same     
+//! \brief     Example, old tree:  
+//! \brief            
+//! \brief           A
+//! \brief       /       \
+//! \brief      B         C
+//! \brief    /   \     /   \  
+//! \brief   B1   B2   C1   C2
+//! \brief  
+//! \brief          assuming C2.height > C1.height, new tree is
+//! \brief  
+//! \brief          C
+//! \brief       /     \
+//! \brief      A       C2
+//! \brief     / \                                      
+//! \brief    B   C1       
+//! \brief   / \      
+//! \brief  B1  B2   
 void BoundingVolumeTree::moveNodeUp(int going_up_index)
 {
 
@@ -431,7 +471,7 @@ void BoundingVolumeTree::moveNodeUp(int going_up_index)
         root_ind = going_up_index;
     }
 
-    if (node_c1.height > node_c2.height) //! c2 becomes child of a
+    if (node_c1.height > node_c2.height) //! c2 becomes child of A
     {
         node_c.child_index_2 = index_c1;
         node_c2.parent_index = index_a;
@@ -449,7 +489,7 @@ void BoundingVolumeTree::moveNodeUp(int going_up_index)
         node_a.rect = makeUnion(node_b.rect, node_c2.rect);
         node_c.rect = makeUnion(node_a.rect, node_c1.rect);
     }
-    else //! c1 becomes child of a
+    else //! c1 becomes child of A
     {
         node_c.child_index_2 = index_c2;
         node_c1.parent_index = index_a;
@@ -472,14 +512,14 @@ void BoundingVolumeTree::moveNodeUp(int going_up_index)
 
 
 
+//! \brief finds object indices that intersect a given \p rect
 std::vector<int> BoundingVolumeTree::findIntersectingLeaves(AABB rect)
 {
     std::vector<int> intersecting_leaves;
-    if(object2node_indices.empty())
+    if(object2node_indices.empty()) //! if there are no objects there can be no intersections
     {
         return {};
     }
-
 
     std::stack<int> to_visit;
     auto &current_node = nodes.at(root_ind);
@@ -529,7 +569,6 @@ int BoundingVolumeTree::calcMaxDepth() const
             max_lvl = lvl;
         }
         auto &current = nodes.at(current_index);
-        // assert(lvl == current.height);
         if (!current.isLeaf())
         {
             auto &child1 = nodes.at(current.child_index_1);
@@ -542,6 +581,11 @@ int BoundingVolumeTree::calcMaxDepth() const
     return max_lvl;
 }
 
+//! \brief finds if segment intersects given rectangle
+//! \param from starting point of the segment
+//! \param to end point of the segment
+//! \param rect 
+//! \returns true if there is an intersection
 bool BoundingVolumeTree::intersectsLine(sf::Vector2f from, sf::Vector2f to, AABB rect)
 {
 
@@ -560,6 +604,11 @@ bool BoundingVolumeTree::intersectsLine(sf::Vector2f from, sf::Vector2f to, AABB
     return overlap1D(proj, proj2);
 }
 
+//! \brief finds objects whose bounding rects intersect given a segment
+//! \param from starting point of the segment
+//! \param dir direction vector of the line
+//! \param length of the segment
+//! \returns list of object indices  
 std::vector<int> BoundingVolumeTree::rayCast(sf::Vector2f from, sf::Vector2f dir, float length)
 {
 
@@ -623,3 +672,23 @@ void BoundingVolumeTree::clear()
         }
         return max_balance;
     }
+
+
+
+    //! \brief finds intersectings bounding rectangles accross this and \p tree
+    //! \returns list of object indices whose bounding rects intersect 
+    std::vector<std::pair<int, int>> BoundingVolumeTree::findClosePairsWith(BoundingVolumeTree& tree)
+    {
+        std::vector<std::pair<int, int>> close_pairs;
+
+        for(auto& [object_ind, node_ind] : object2node_indices)
+        {
+            auto nearest_objects_inds = tree.findIntersectingLeaves(nodes.at(node_ind).rect);
+            for(auto i : nearest_objects_inds)
+            {
+                if(i == object_ind){continue;}
+                close_pairs.push_back({std::min(object_ind, i), std::max(object_ind, i)});
+            }
+        }
+        return close_pairs;
+    }   
