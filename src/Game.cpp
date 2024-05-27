@@ -270,7 +270,7 @@ void Game::drawUI(sf::RenderWindow &window)
     sf::Vector2f score_comp_uisize = {(float)window.getSize().x * 1.f / 6.f, (float)window.getSize().y * 1.f / 10.f};
     sf::Vector2f score_comp_min = {(float)window.getSize().x / 2.f - score_comp_uisize.x / 2.f,
                                    (float)window.getSize().y * 1.f / 20.f};
-    health_text.setString("Score: " + std::to_string(score));
+    health_text.setString("Score: " + std::to_string(m_score));
     health_text.setPosition(score_comp_min.x - health_text.getLocalBounds().width / 2.f, score_comp_min.y);
 
     window.draw(health_text);

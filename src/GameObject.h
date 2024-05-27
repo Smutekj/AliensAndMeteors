@@ -62,8 +62,6 @@ protected:
     sf::Vector2f m_pos;
     GameWorld* m_world; //! won't be needed once I implement messenger class
 
-
-    float m_life_time = 10.f; //! if this is set to a negative number the object
     bool m_is_dead = false;
     bool m_is_bloomy = false;
 
@@ -86,29 +84,10 @@ public:
     virtual void onCollisionWith(GameObject& obj, CollisionData& c_data) = 0;
     virtual ~GameObject() {}
 
-    void removeCollider()
-    {
-        if(m_collision_shape)
-        {
-            m_collision_shape = nullptr;
-        }
-    }
-
-    bool isBloomy()const
-    {
-        return m_is_bloomy;
-    }
-
-    void kill()
-    {
-        m_is_dead = true;
-    }
-
-    bool isDead()const
-    {
-        return m_is_dead;
-    }
-
+    void removeCollider();
+    bool isBloomy()const;
+    void kill();
+    bool isDead()const;
     void updateAll(float dt);
 
     void move(sf::Vector2f by);
@@ -119,26 +98,7 @@ public:
     ObjectType getType() const;
 
     const sf::Vector2f &getPosition() const;
-    void setPosition(sf::Vector2f new_position)
-    {
-        m_pos = new_position;
-        if(m_collision_shape)
-        {
-            m_collision_shape->setPosition(new_position);
-        }
-    }
-
-    void setSize(sf::Vector2f size)
-    {
-        if(m_collision_shape)
-        {
-            m_collision_shape->setScale(size);
-        }
-        m_size = size;
-    }
-
-    void setAngle(float angle)
-    {
-        m_angle = angle;
-    }
+    void setPosition(sf::Vector2f new_position);
+    void setSize(sf::Vector2f size);
+    void setAngle(float angle);
 };

@@ -10,14 +10,6 @@
 #include "UI.h"
 #include "Bloom.h"
 
-enum class Context
-{
-  MAINMENU,
-  SETTINGS,
-  HIGHSCORE,
-  GAME
-};
-
 
 class GameWorld;
 
@@ -25,7 +17,7 @@ class Game
 {
 
 public:
-  int score = 0;
+  int m_score = 0;
 
   enum class GameState
   {
