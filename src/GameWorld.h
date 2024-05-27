@@ -2,7 +2,7 @@
 
 #include "Geometry.h"
 #include "Utils/Grid.h"
-#include "Utils/GayVector.h"
+#include "Utils/ObjectPool.h"
 
 #include <unordered_map>
 #include <functional>
@@ -18,17 +18,12 @@ class GameWorld
     ObjectPool<std::shared_ptr<GameObject>> m_entities;
 
     std::unique_ptr<GridNeighbourSearcher> m_neighbour_searcher;
-
     Collisions::CollisionSystem m_collision_system;
 
     PlayerEntity* m_player;
 
     std::queue<std::shared_ptr<GameObject>> to_add;
     std::queue<std::shared_ptr<GameObject>> to_destroy;
-
-    // Messenger m_messenger;
-
-    std::unordered_set<int> free_ids; 
 
     TextureHolder m_textures;
 
@@ -45,3 +40,4 @@ private:
     void addQueuedEntities();
     void removeQueuedEntities();
 };
+

@@ -8,7 +8,7 @@
 #include "Commands.h"
 #include "GameWorld.h"
 #include "UI.h"
-
+#include "Bloom.h"
 
 enum class Context
 {
@@ -62,8 +62,6 @@ private:
   KeyBindings &key_binding;
 
   PlayerEntity* m_player;
-
-  EffectsManager effects;
 
   std::unique_ptr<GameWorld> m_world;
 

@@ -4,11 +4,12 @@
 
 #include <memory>
 #include <deque>
+#include <unordered_map>
 
 #include "GameObject.h"
 #include "Polygon.h"
 
-#include "ExplosionEffect.h"
+#include "Animation.h"
 
 class BoidAI2;
 class PlayerEntity;
@@ -71,8 +72,8 @@ class Bullet2 : public GameObject
 {
 
     sf::Vector2f m_acc;
-    const float max_vel = 1000.f;
-    const float max_acc = 100.f;
+    const float max_vel = 500.f;
+    const float max_acc = 70.f;
 
     PlayerEntity *m_player = nullptr;
 
@@ -90,6 +91,11 @@ public:
     virtual void onDestruction() override;
     virtual void draw(sf::RenderTarget &target) override;
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
+
+    float getTime()const
+    {
+        return m_time;
+    }
 };
 
 class Bomb2 : public GameObject

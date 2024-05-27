@@ -11,7 +11,6 @@
 
 #include "ResourceManager.h"
 
-
 Enemy::Enemy(GameWorld *world, TextureHolder &textures,
              Collisions::CollisionSystem &collider, GridNeighbourSearcher &m_ns, PlayerEntity *player)
     : m_collision_system(&collider), m_neighbour_searcher(&m_ns), m_player(player), GameObject(world, textures, ObjectType::Enemy)
@@ -37,7 +36,7 @@ void Enemy::update(float dt)
 
     truncate(m_vel, max_vel);
     m_pos += (m_vel + m_impulse) * dt;
-    if(m_health < 0.f)
+    if (m_health < 0.f)
     {
         kill();
     }
@@ -50,11 +49,17 @@ void Enemy::onCollisionWith(GameObject &obj, CollisionData &c_data)
     switch (obj.getType())
     {
     case ObjectType::Bullet:
-        // m_health--;
+    {
+        auto &bullet = static_cast<Bullet2 &>(obj);
+        if (bullet.getTime() > 1.5f)
+        {
+            m_health--;
+        }
         break;
+    }
     case ObjectType::Meteor:
     {
-        // m_health--;
+        m_health--;
         auto mvt = c_data.separation_axis;
         if (dot(mvt, m_vel) < 0.f)
         {
@@ -64,6 +69,7 @@ void Enemy::onCollisionWith(GameObject &obj, CollisionData &c_data)
     }
     case ObjectType::Explosion:
     {
+
         auto dr_to_center = m_pos - obj.getPosition();
         auto dist_to_center = norm(dr_to_center);
         auto impulse_dir = dr_to_center / dist_to_center;
@@ -89,7 +95,7 @@ void Enemy::onDestruction()
 {
     m_neighbour_searcher->removeEntity(m_id);
 
-    auto& new_explosion = static_cast<Explosion&>(m_world->addObject(ObjectType::Explosion));
+    auto &new_explosion = static_cast<Explosion &>(m_world->addObject(ObjectType::Explosion));
     new_explosion.removeCollider();
     new_explosion.setPosition(m_pos);
     new_explosion.m_explosion_radius = 4.f;
@@ -108,8 +114,8 @@ void Enemy::draw(sf::RenderTarget &target)
     rect.setPosition(m_pos);
     rect.setRotation(dir2angle(m_vel));
     rect.setSize({3, 3});
-    if(m_is_avoiding){ rect.setFillColor(sf::Color::Red);}
-    
+    // if(m_is_avoiding){ rect.setFillColor(sf::Color::Red);}
+
     target.draw(rect);
 
     sf::RectangleShape booster;
@@ -117,24 +123,24 @@ void Enemy::draw(sf::RenderTarget &target)
 
     booster.setTexture(&m_textures.get(Textures::ID::BoosterPurple));
     booster.setSize(booster_size);
-    booster.setOrigin(booster_size/2.f);
-    booster.setPosition(m_pos - m_vel/norm(m_vel) * rect.getSize().y);
+    booster.setOrigin(booster_size / 2.f);
+    booster.setPosition(m_pos - m_vel / norm(m_vel) * rect.getSize().y);
     booster.setRotation(rect.getRotation());
     target.draw(booster);
 
-    sf::RectangleShape line;
-    line.setFillColor(sf::Color::Green);
-    
-    for(auto pos : m_cm)
-    {
-        auto dr = pos - m_pos;
+    // sf::RectangleShape line;
+    // line.setFillColor(sf::Color::Green);
 
-        line.setPosition(m_pos);
-        line.setRotation(dir2angle(dr));
-        line.setSize({norm(dr), 1.f});
-        line.setOrigin({0, 0.5f });
-        target.draw(line);
-    }
+    // for(auto pos : m_cm)
+    // {
+    //     auto dr = pos - m_pos;
+
+    //     line.setPosition(m_pos);
+    //     line.setRotation(dir2angle(dr));
+    //     line.setSize({norm(dr), 1.f});
+    //     line.setOrigin({0, 0.5f });
+    //     target.draw(line);
+    // }
 }
 
 void Enemy::avoidMeteors()
@@ -154,14 +160,12 @@ void Enemy::avoidMeteors()
 
         auto r_meteor = meteor_shape.getPosition();
         auto radius_meteor = meteor_shape.getScale().x;
-        auto dr_to_target =  m_target_pos - m_pos;
+        auto dr_to_target = m_target_pos - m_pos;
         dr_to_target /= norm(dr_to_target);
 
         auto dr_to_meteor = (r_meteor - r) / norm(r - r_meteor);
         sf::Vector2f dr_norm = {dr_to_meteor.y, -dr_to_meteor.x};
         dr_norm /= norm(dr_norm);
-
-
 
         auto dist_to_meteor = dist(r, r_meteor);
         if (dist_to_meteor < 2. * radius_meteor)
@@ -173,7 +177,7 @@ void Enemy::avoidMeteors()
             if (std::abs(angle) < 110)
             {
                 m_cm.push_back(r_meteor);
-                avoid_force += sign * dr_norm / (dist_to_meteor - radius_meteor/2.f);
+                avoid_force += sign * dr_norm / (dist_to_meteor - radius_meteor / 2.f);
                 avoid_force *= m_force_multipliers[Multiplier::AVOID];
             }
         }
@@ -182,19 +186,16 @@ void Enemy::avoidMeteors()
     m_acc += avoid_force;
 }
 
-std::unordered_map<Multiplier, float>  Enemy::m_force_multipliers = {
+std::unordered_map<Multiplier, float> Enemy::m_force_multipliers = {
     {Multiplier::ALIGN, 0.f},
-    {Multiplier::AVOID, 25000.f}, 
-    {Multiplier::SCATTER, 10.f}, 
-    {Multiplier::SEEK, 10.f}
-     };
-std::unordered_map<Multiplier, float>  Enemy::m_force_ranges =  {
+    {Multiplier::AVOID, 25000.f},
+    {Multiplier::SCATTER, 10.f},
+    {Multiplier::SEEK, 10.f}};
+std::unordered_map<Multiplier, float> Enemy::m_force_ranges = {
     {Multiplier::ALIGN, 20.f},
-    {Multiplier::AVOID, 30.f}, 
-    {Multiplier::SCATTER, 30.f}, 
-    {Multiplier::SEEK, 10.f}
-     };
-
+    {Multiplier::AVOID, 30.f},
+    {Multiplier::SCATTER, 30.f},
+    {Multiplier::SEEK, 10.f}};
 
 void Enemy::boidSteering()
 {
@@ -218,7 +219,8 @@ void Enemy::boidSteering()
     const float seek_multiplier = Enemy::m_force_multipliers[Multiplier::SEEK];
 
     auto range_align = std::pow(Enemy::m_force_ranges[Multiplier::ALIGN], 2);
-    auto range_scatter = std::pow(Enemy::m_force_ranges[Multiplier::SCATTER], 2);;
+    auto range_scatter = std::pow(Enemy::m_force_ranges[Multiplier::SCATTER], 2);
+    ;
 
     for (auto p_neighbour : neighbours)
     {
@@ -630,7 +632,6 @@ Laser2::Laser2(GameWorld *world, TextureHolder &textures,
     : m_neighbour_searcher(&neighbour_searcher), GameObject(world, textures, ObjectType::Laser)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
-    
 
     m_is_bloomy = true;
 }
@@ -653,7 +654,7 @@ void Laser2::update(float dt)
     m_length = dist(hit, m_pos);
     setSize({m_length, m_width});
     //! m_pos of laser is special, it is starting position not center so we set it manually
-    m_collision_shape->setPosition(m_pos + m_length/2.f*angle2dir(m_angle)); 
+    m_collision_shape->setPosition(m_pos + m_length / 2.f * angle2dir(m_angle));
 
     if (m_life_time < 0.f)
     {
@@ -738,8 +739,6 @@ void Explosion::draw(sf::RenderTarget &target)
     target.draw(rect);
 }
 
-
-
 ExplosionAnimation::ExplosionAnimation(GameWorld *world, TextureHolder &textures)
     : GameObject(world, textures, ObjectType::Explosion)
 {
@@ -794,7 +793,6 @@ void ExplosionAnimation::draw(sf::RenderTarget &target)
     target.draw(rect);
 }
 
-
 Heart::Heart(GameWorld *world, TextureHolder &textures)
     : GameObject(world, textures, ObjectType::Heart)
 {
@@ -836,12 +834,8 @@ void Heart::draw(sf::RenderTarget &target)
     rect.setPosition(m_pos);
     rect.setRotation(dir2angle(m_vel));
     rect.setSize({3., 3.});
-    rect.setFillColor(sf::Color::Red);
     target.draw(rect);
 }
-
-
-
 
 SpaceStation::SpaceStation(GameWorld *world, TextureHolder &textures)
     : GameObject(world, textures, ObjectType::SpaceStation)
@@ -853,7 +847,6 @@ SpaceStation::SpaceStation(GameWorld *world, TextureHolder &textures)
     m_rigid_body->mass = 5000000.f;
     m_rigid_body->inertia = 50000000.f;
     m_rigid_body->angle_vel = 0;
-    
 }
 
 SpaceStation::~SpaceStation() {}
@@ -865,15 +858,15 @@ void SpaceStation::update(float dt)
     if (m_time > m_spawn_timer)
     {
         m_time = 0.f;
-        auto& new_enemy = m_world->addObject(ObjectType::Enemy);
+        auto &new_enemy = m_world->addObject(ObjectType::Enemy);
 
         float rand_angle = randf(-180, 180);
 
-        new_enemy.setPosition(m_pos + 10.f*angle2dir(rand_angle));
-        new_enemy.m_vel = 200.f*angle2dir(rand_angle);
+        new_enemy.setPosition(m_pos + 10.f * angle2dir(rand_angle));
+        new_enemy.m_vel = 200.f * angle2dir(rand_angle);
     }
 
-    if(m_health < 0.f)
+    if (m_health < 0.f)
     {
         kill();
     }
@@ -891,12 +884,12 @@ void SpaceStation::onCollisionWith(GameObject &obj, CollisionData &c_data)
     }
     case ObjectType::Meteor:
     {
-        
+
         break;
     }
     case ObjectType::Player:
     {
-        
+
         break;
     }
     case ObjectType::Explosion:
@@ -927,20 +920,20 @@ void SpaceStation::draw(sf::RenderTarget &target)
 {
 
     sf::RectangleShape rect;
-    rect.setOrigin(m_size/2.f);
+    rect.setOrigin(m_size / 2.f);
     rect.setPosition(m_pos);
     rect.setRotation(dir2angle(m_vel));
     rect.setTexture(&m_textures.get(Textures::ID::Station));
     rect.setSize(m_size);
-    rect.setFillColor(sf::Color::Red);
+    // rect.setFillColor(sf::Color::Red);
     target.draw(rect);
 
     sf::RectangleShape health_rect;
 
-    float alpha_health = m_health/m_max_health;
+    float alpha_health = m_health / m_max_health;
     float h_rect_size = m_size.x * alpha_health;
 
-    health_rect.setPosition(m_pos + sf::Vector2f(-m_size.x/2.f, -m_size.y/2.f*3.f));
+    health_rect.setPosition(m_pos + sf::Vector2f(-m_size.x / 2.f, -m_size.y / 2.f * 3.f));
     health_rect.setFillColor(sf::Color::Red);
 
     health_rect.setSize({h_rect_size, 1.f});

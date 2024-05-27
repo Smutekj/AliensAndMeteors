@@ -8,20 +8,20 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 # ========== cpp and header files ==========
 
-set(hdrs   UI.h BVH.h core.h Selection.h  Commands.h   Application.h Particles.h
-   ExplosionEffect.h Polygon.h )
-set(objs UI.cpp BVH.cpp Selection.cpp Polygon.cpp  Commands.cpp Application.cpp Particles.cpp
-    ExplosionEffect.cpp )
+set(hdrs   UI.h BVH.h core.h Commands.h   Application.h Particles.h
+   Bloom.h Polygon.h )
+set(objs UI.cpp BVH.cpp  Polygon.cpp  Commands.cpp Application.cpp Particles.cpp
+    Bloom.cpp )
 
 ###### GAME ###### 
-set(game_objs ResourceManager.h BehaviourBase.h Behaviours.h Player.h
-   Game.cpp SoundModule.cpp GameObject.cpp GameWorld.cpp Entities.cpp)
-set(game_hdrs BehaviourBase.cpp Behaviours.cpp Player.cpp 
-   Game.h  SoundModule.h GameObject.h GameWorld.h Entities.h)
+set(game_objs  BehaviourBase.cpp Behaviours.cpp Player.cpp
+   Game.cpp SoundModule.cpp GameObject.cpp GameWorld.cpp Entities.cpp Animation.cpp)
+set(game_hdrs ResourceManager.h BehaviourBase.h Behaviours.h Player.h
+   Game.h  SoundModule.h GameObject.h GameWorld.h Entities.h Animation.h)
 
 ###### COLLISIONS #####
-set(coll_objs CollisionSystem.cpp  CollisionResolver.cpp )
-set(coll_hdrs CollisionSystem.h CollisionResolver.h )
+set(coll_objs CollisionSystem.cpp GridNeighbourSearcher.h )
+set(coll_hdrs CollisionSystem.h GridNeighbourSearcher.cpp )
 
 
 ###### MENU #####
@@ -30,8 +30,8 @@ set(menu_hdrs  ScoreBoard.h   Menu.h   SettingsState.h   StateStack.h   State.h 
 list(TRANSFORM menu_objs PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/Menu/ )
 list(TRANSFORM menu_hdrs PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/Menu/ )
 
-set(utils_objs  Grid.h GayVector.h  RandomTools.h ) 
-set(utils_hdrs Grid.cpp GayVector.cpp  ) 
+set(utils_objs  Grid.h ObjectPool.h  RandomTools.h ) 
+set(utils_hdrs Grid.cpp ObjectPool.cpp  ) 
 list(TRANSFORM utils_objs PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/Utils/ )
 list(TRANSFORM utils_hdrs PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/Utils/ )
 

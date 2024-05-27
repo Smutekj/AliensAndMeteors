@@ -25,16 +25,16 @@ set_project_warnings(project_warnings)
 include(cmake/CompilerFlags.cmake)
 include(cmake/ExternalTools.cmake)
 
-project(lua LANGUAGES C)
+# project(lua LANGUAGES C)
 
-add_library(lua STATIC lua/onelua.c)
+# add_library(lua STATIC lua/onelua.c)
 
-target_include_directories(lua
-                           PUBLIC
-                           $<INSTALL_INTERFACE:lua>
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../lua>
-                           )
-target_compile_definitions(lua PRIVATE MAKE_LIB)
-# add_subdirectory(lua)
+# target_include_directories(lua
+#                            PUBLIC
+#                            $<INSTALL_INTERFACE:lua>
+#                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../lua>
+#                            )
+# target_compile_definitions(lua PRIVATE MAKE_LIB)
+# # add_subdirectory(lua)
 
 add_subdirectory(src)

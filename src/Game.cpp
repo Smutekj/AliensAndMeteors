@@ -189,9 +189,7 @@ void Game::update(const float dt, sf::RenderWindow &window)
     moveView(window);
     parseInput(window);
 
-    effects.update();
-
-    if (m_player->health == 0)
+    if (m_player->health < 0)
     {
         state = GameState::PLAYER_DIED;
     }
@@ -200,7 +198,7 @@ void Game::update(const float dt, sf::RenderWindow &window)
     m_world->update(dt);
     std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(
                      tic - std::chrono::high_resolution_clock::now())
-              << " ms";
+              << " ms\n";
 }
 
 void Game::draw(sf::RenderWindow &window)
