@@ -66,6 +66,8 @@ private:
     float m_dash_visibility_cooldown = 60;
     std::string m_entered_name;
     sf::Text m_text;
+
+    Menu m_menu;
 };
 
 class ScoreBoardState : public State

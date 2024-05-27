@@ -8,8 +8,8 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 # ========== cpp and header files ==========
 
-set(hdrs   UI.h BVH.h core.h Commands.h   Application.h Particles.h
-   Bloom.h Polygon.h )
+set(hdrs   UI.h BVH.h core.h Polygon.h Commands.h   Application.h Particles.h
+   Bloom.h )
 set(objs UI.cpp BVH.cpp  Polygon.cpp  Commands.cpp Application.cpp Particles.cpp
     Bloom.cpp )
 

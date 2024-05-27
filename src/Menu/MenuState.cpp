@@ -8,12 +8,9 @@
 #include "ScoreBoard.h"
 #include "StateStack.h"
 
-
 MenuState::MenuState(StateStack &stack, Context &context)
     : State(stack, context), m_menu(context.font)
 {
-  m_is_final_state = true;
-
   background_texture.loadFromFile("../Resources/Starbasesnow.png");
   background_texture.setRepeated(true);
   background_texture.setSmooth(true);
@@ -24,13 +21,10 @@ MenuState::MenuState(StateStack &stack, Context &context)
   background_rect.setTexture(&background_texture);
   background_rect.setTextureRect({0, 0, (int)background_texture.getSize().x / 2, (int)background_texture.getSize().y / 2});
 
-  auto new_game_button = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Game);
-  new_game_button->m_text = "New Game";
+  auto new_game_button = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Game, States::ID::None, "New Game");
   auto settings_button = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Settings, States::ID::Menu);
   auto exit_button = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Exit);
-  auto score_button = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Score, States::ID::Menu);
-
-  exit_button->m_text = "Exit";
+  auto score_button = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Score, States::ID::Menu, "High Scores");
 
   m_menu.addItem(std::move(new_game_button));
   m_menu.addItem(std::move(settings_button));
@@ -38,7 +32,6 @@ MenuState::MenuState(StateStack &stack, Context &context)
   m_menu.addItem(std::move(exit_button));
 
   m_context.window->setView(m_context.window->getDefaultView());
-
 }
 
 MenuState::~MenuState() {}
@@ -98,10 +91,11 @@ void EndScreenState::handleEvent(const sf::Event &event)
   }
 }
 
+
 void EndScreenState::draw()
 {
 
-  auto &window = *getContext().window;
+  auto &window = *m_context.window;
   window.setView(window.getDefaultView());
 
   sf::Vector2f window_size = {static_cast<float>(window.getSize().x), static_cast<float>(window.getSize().y)};
@@ -109,15 +103,17 @@ void EndScreenState::draw()
   m_goodbye_text.setString("Good Bye!");
   m_goodbye_text.setFillColor(sf::Color::Blue);
   m_goodbye_text.setScale({2.f, 2.f});
-  m_goodbye_text.setPosition({window_size.x / 2.f - m_goodbye_text.getGlobalBounds().width / 2.f, window_size.y / 2.f});
-
+  Menu::centerTextInWindow(window, m_goodbye_text, window.getSize().y/2.f) ;
   window.draw(m_goodbye_text);
 }
 
 PlayerDiedState::PlayerDiedState(StateStack &stack, Context &context)
-    : State(stack, context)
+    : State(stack, context), m_menu(context.font)
 {
   m_text.setFont(*context.font);
+
+  auto enter_name = std::make_unique<EnterTextItem>(context, m_entered_name, "Enter Your Name:");
+  m_menu.addItem(std::move(enter_name));
 }
 
 PlayerDiedState::~PlayerDiedState() {}
@@ -138,6 +134,9 @@ void PlayerDiedState::handleEvent(const sf::Event &event)
     m_stack->popState();
     m_stack->pushState(States::ID::Menu);
   }
+
+  // m_menu.handleEvent(event);
+
   if (m_is_entering_text)
   {
     if (event.type == sf::Event::KeyReleased)
@@ -165,8 +164,10 @@ void PlayerDiedState::handleEvent(const sf::Event &event)
 
 void PlayerDiedState::draw()
 {
-  auto &window = *getContext().window;
+  auto &window = *m_context.window;
   window.setView(window.getDefaultView());
+
+  // m_menu.draw(window);
 
   sf::Vector2f window_size = {static_cast<float>(window.getSize().x), static_cast<float>(window.getSize().y)};
 
@@ -247,16 +248,17 @@ void ScoreBoardState::draw()
   m_right_text.setScale({1.1f, 1.1f});
   drawScoreLine(window, "Player", "Score", item_width, y_pos);
   y_pos += m_left_text.getGlobalBounds().height * 1.55f;
-  m_left_text.setScale({1,1});
+  m_left_text.setScale({1, 1});
   m_right_text.setScale({1, 1});
 
+  float line_height = m_context.font->getLineSpacing(m_left_text.getCharacterSize()) * 1.05f;
 
   for (auto &[score, player_names] : scores.getAllScores())
   {
     for (auto &player_name : player_names)
     {
       drawScoreLine(window, player_name, std::to_string(score), item_width, y_pos);
-      y_pos += m_left_text.getGlobalBounds().height * 1.05f;
+      y_pos += line_height;
     }
   }
 

@@ -11,7 +11,6 @@
 GameState::GameState(StateStack &stack, State::Context context)
     : State(stack, context)
 {
-    m_is_final_state = true;
     mp_game = std::make_unique<Game>(*m_context.window, *context.bindings);
 
 
@@ -24,13 +23,13 @@ GameState::~GameState() {}
 
 void GameState::update(float dt)
 {
-    auto &window = *getContext().window;
+    auto &window = *m_context.window;
 
     mp_game->update(dt, window);
 
     if(mp_game->getState() == Game::GameState::PLAYER_DIED)
     {
-        m_context.score->m_current_score = mp_game->score;
+        m_context.score->m_current_score = mp_game->m_score;
         m_stack->popState();
         m_stack->pushState(States::ID::Player_Died);
     }
@@ -39,7 +38,7 @@ void GameState::update(float dt)
 
 void GameState::handleEvent(const sf::Event &event)
 {
-    auto &window = *getContext().window;
+    auto &window = *m_context.window;
 
     if (event.type == sf::Event::KeyReleased)
     {

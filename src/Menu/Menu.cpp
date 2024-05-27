@@ -10,11 +10,17 @@
 
 MenuItem::MenuItem(sf::Font *font) : p_font(font)
 {
+    m_text.setFont(*font);
 }
 
 void MenuItem::setFillColor(sf::Color color)
 {
     m_text_color = color;
+}
+
+void MenuItem::setString(std::string new_string)
+{
+    m_text.setString(new_string);
 }
 
 sf::Vector2f MenuItem::getSize() const
@@ -52,12 +58,10 @@ void Menu::draw(sf::RenderWindow &window)
             field->setScale({1.f, 1.f});
         }
 
-        m_text.setString(field->m_text);
         field->setPosition({window_size.x / 2.f, field_y_pos});
         field->draw(window);
 
         field_y_pos += field->getSize().y;
-        // window.draw(m_text);
     }
 
     window.setView(old_view);
@@ -85,15 +89,24 @@ void Menu::handleEvent(sf::Event event)
             m_items.at(m_selected_item_ind)->m_is_selected = true;
         }
 
-        m_items.at(m_selected_item_ind)->handleEvent(event); 
+        m_items.at(m_selected_item_ind)->handleEvent(event);
     }
 }
 
-ChangeStateItem::ChangeStateItem(State::Context &context, StateStack *stack, States::ID destination, States::ID source)
+ChangeStateItem::ChangeStateItem(State::Context &context, StateStack *stack,
+                                 States::ID destination, States::ID source, std::string button_text)
     : m_source(source), m_destination(destination), p_stack(stack), MenuItem(context.font)
 {
-    std::string destination_name = static_cast<std::string>(magic_enum::enum_name(m_destination));
-    m_text = (destination_name);
+
+    if (button_text.empty())
+    {
+        std::string destination_name = static_cast<std::string>(magic_enum::enum_name(m_destination));
+        m_text.setString(destination_name);
+    }
+    else
+    {
+        m_text.setString(button_text);
+    }
 }
 
 void ChangeStateItem::handleEvent(sf::Event event)
@@ -142,13 +155,10 @@ void ChangeKeyItem::handleEvent(sf::Event event)
 
 void ChangeStateItem::draw(sf::RenderWindow &window)
 {
-    sf::Text text;
-    text.setFont(*p_font);
-    text.setString(m_text);
-    text.setPosition({getPosition().x - text.getLocalBounds().width / 2.f, getPosition().y});
-    text.setFillColor(m_text_color);
+    Menu::centerTextInWindow(window, m_text, getPosition().y);
+    m_text.setFillColor(m_text_color);
 
-    window.draw(text);
+    window.draw(m_text);
 }
 
 void ChangeKeyItem::draw(sf::RenderWindow &window)
@@ -163,11 +173,6 @@ void ChangeKeyItem::draw(sf::RenderWindow &window)
     left_text.setFillColor(m_text_color);
     sf::Text right_text;
     right_text.setFont(*p_font);
-
-    // if(p_bindings->commandNotSet(m_command))
-    // {
-    //     m_is_changing_key = true;
-    // }
 
     if (m_is_changing_key)
     {
@@ -188,4 +193,105 @@ void ChangeKeyItem::draw(sf::RenderWindow &window)
 
     window.draw(left_text);
     window.draw(right_text);
+}
+
+void Menu::centerTextInWindow(const sf::Window &window, sf::Text &m_text, float y_coord)
+{
+    sf::Vector2f window_size = {static_cast<float>(window.getSize().x), static_cast<float>(window.getSize().y)};
+    m_text.setPosition({window_size.x / 2.f - m_text.getGlobalBounds().width / 2.f, y_coord});
+}
+
+EnterTextItem::EnterTextItem(State::Context &context, std::string &text, std::string left_text)
+    : MenuItem(context.font), m_entered_text(text), m_left_text(left_text)
+{
+}
+
+void EnterTextItem::handleEvent(sf::Event event)
+{
+
+    if (event.type == sf::Event::KeyReleased)
+
+    {
+        if (event.key.code == sf::Keyboard::Enter)
+        {
+            m_is_changing_key = !m_is_changing_key;
+        }
+        else
+        {
+            if (event.key.code == sf::Keyboard::BackSpace && m_entered_text.size() > 0)
+            {
+                m_entered_text.pop_back();
+            }
+            if (event.key.code == sf::Keyboard::Period)
+            {
+                m_entered_text.push_back('.');
+            }
+        }
+    }
+    else if (event.type == sf::Event::TextEntered && m_is_changing_key)
+    {
+        if (event.text.unicode >= '0' && event.text.unicode <= '9')
+        {
+            sf::String a(event.text.unicode);
+            m_entered_text = m_entered_text + a.toAnsiString();
+        }
+    }
+
+    if (event.key.code == sf::Keyboard::Escape)
+    {
+        m_is_changing_key = false;
+    }
+}
+
+void EnterTextItem::draw(sf::RenderWindow &window)
+{
+
+    sf::Text left_text;
+    left_text.setFont(*p_font);
+    sf::Vector2f left_text_pos = {
+        getPosition().x - m_item_size.x,
+        getPosition().y};
+    left_text.setPosition(left_text_pos);
+    left_text.setFillColor(m_text_color);
+    left_text.setString(m_left_text);
+
+    sf::Text right_text;
+    right_text.setFont(*p_font);
+    sf::Vector2f right_text_pos = {
+        getPosition().x + m_item_size.x - right_text.getGlobalBounds().width,
+        getPosition().y};
+    right_text.setPosition(right_text_pos);
+    right_text.setString(m_entered_text);
+
+    window.draw(left_text);
+    window.draw(right_text);
+}
+
+CallBackItem::CallBackItem(State::Context &context, std::function<void()> callback)
+    : MenuItem(context.font), m_callback(callback)
+{
+}
+
+void CallBackItem::handleEvent(sf::Event event)
+{
+
+    if (event.type == sf::Event::KeyReleased)
+
+    {
+        if (event.key.code == sf::Keyboard::Enter)
+        {
+            m_callback();
+        }
+    }
+}
+
+void CallBackItem::draw(sf::RenderWindow &window)
+{
+
+    sf::Vector2f left_text_pos = {
+        window.getSize().x / 2.f - m_text.getLocalBounds().width / 2.f,
+        getPosition().y};
+    m_text.setPosition(left_text_pos);
+
+    window.draw(m_text);
 }

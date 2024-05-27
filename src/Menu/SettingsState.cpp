@@ -9,7 +9,6 @@
 
 SettingsState::SettingsState(StateStack &stack, Context &context) : State(stack, context), m_menu(context.font)
 {
-    m_is_final_state = true;
 
     auto change_key_1 = std::make_unique<ChangeKeyItem>("Forward", PlayerControl::MOVE_FORWARD, context);
     auto change_key_2 = std::make_unique<ChangeKeyItem>("Back", PlayerControl::MOVE_BACK, context);
@@ -26,7 +25,7 @@ SettingsState::SettingsState(StateStack &stack, Context &context) : State(stack,
     m_menu.addItem(std::move(change_key_6));
     m_menu.addItem(std::move(change_key_7));
 
-    auto back = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::None, States::ID::None);
+    auto back = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::None, States::ID::None, "Back");
     m_menu.addItem(std::move(back));
 
 }
@@ -42,7 +41,7 @@ void SettingsState::handleEvent(const sf::Event &event)
 
 void SettingsState::draw()
 {
-    auto &window = *getContext().window;
+    auto &window = *m_context.window;
     m_menu.draw(window);
 }
 

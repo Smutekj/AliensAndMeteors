@@ -3,7 +3,8 @@
 #include <SFML/System/NonCopyable.hpp>
 #include <SFML/System/Time.hpp>
 
-#include <vector>
+#include <queue>
+#include <stack>
 #include <utility>
 #include <functional>
 #include <map>
@@ -61,26 +62,26 @@ private:
     };
 
 private:
-    std::vector<std::unique_ptr<State>> mStack;
-    std::vector<PendingChange> mPendingList;
+    std::stack<std::unique_ptr<State>> m_stack;
+    std::queue<PendingChange> m_pending_changes;
 
-    State::Context mContext;
-    std::map<States::ID, std::function<std::unique_ptr<State>()>> mFactories;
+    State::Context m_context;
+    std::map<States::ID, std::function<std::unique_ptr<State>()>> m_factories;
 };
 
 template <typename T>
 void StateStack::registerState(States::ID stateID)
 {
-    mFactories[stateID] = [this]()
+    m_factories[stateID] = [this]()
     {
-        return std::make_unique<T>(*this, mContext);
+        return std::make_unique<T>(*this, m_context);
     };
 }
 
 template <class T, class... Args>
 void StateStack::pushState2(Args... arguments)
 {
-    mStack.push_back(std::make_unique<T>(*this, mContext, arguments...));
+    m_stack.push(std::make_unique<T>(*this, m_context, arguments...));
 }
 
 

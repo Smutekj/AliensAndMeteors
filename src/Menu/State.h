@@ -62,25 +62,15 @@ public:
 	virtual void draw() = 0;
 	virtual void update(float dt) = 0;
 	virtual void handleEvent(const sf::Event &event) = 0;
-	bool isFinalState() const
-	{
-		return m_is_final_state;
-	}
 
 protected:
 	void requestStackPush(States::ID stateID);
 	void requestStackPop();
 	void requestStateClear();
 
-	Context getContext() const
-	{
-		return m_context;
-	}
-
 protected:
 	StateStack *m_stack;
 	Context m_context;
-	bool m_is_final_state = false; //! if true no state below this one gets updated
 };
 
 
