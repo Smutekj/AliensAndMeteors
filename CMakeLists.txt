@@ -38,3 +38,11 @@ include(cmake/ExternalTools.cmake)
 # # add_subdirectory(lua)
 
 add_subdirectory(src)
+
+
+set(CMAKE_BINARY_DIR ${PROJECT_SOURCE_DIR})
+
+set_target_properties(Boids 
+    PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+)
