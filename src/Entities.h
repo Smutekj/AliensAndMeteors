@@ -189,6 +189,7 @@ class Explosion : public GameObject
     const float max_vel = 100.f;
     const float max_acc = 20.f;
 
+    float m_time = 0.f;
     float m_life_time = 1.;
 
 public:
@@ -212,6 +213,11 @@ public:
 
     explicit Explosion(GameWorld *world, TextureHolder &textures);
     virtual ~Explosion() override;
+
+    float getTimeLeftFraciton()const
+    {
+        return (m_life_time - m_time)/m_life_time; 
+    }
 
     virtual void update(float dt) override;
     virtual void onCreation() override;

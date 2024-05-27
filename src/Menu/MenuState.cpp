@@ -36,6 +36,9 @@ MenuState::MenuState(StateStack &stack, Context &context)
   m_menu.addItem(std::move(settings_button));
   m_menu.addItem(std::move(score_button));
   m_menu.addItem(std::move(exit_button));
+
+  m_context.window->setView(m_context.window->getDefaultView());
+
 }
 
 MenuState::~MenuState() {}
@@ -99,6 +102,7 @@ void EndScreenState::draw()
 {
 
   auto &window = *getContext().window;
+  window.setView(window.getDefaultView());
 
   sf::Vector2f window_size = {static_cast<float>(window.getSize().x), static_cast<float>(window.getSize().y)};
 

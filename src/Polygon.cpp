@@ -6,8 +6,8 @@
     for (int i = 0; i < n_points; ++i)
     {
       sf::Vector2f new_pos;
-      new_pos.x = std::cos(i * 2.f * M_PI / n_points);
-      new_pos.y = std::sin(i * 2.f * M_PI / n_points);
+      new_pos.x = std::cos(i * 2.f * M_PI / n_points + M_PI/4.f);
+      new_pos.y = std::sin(i * 2.f * M_PI / n_points + M_PI/4.f);
       points[i] = new_pos;
     }
 

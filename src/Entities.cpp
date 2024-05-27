@@ -69,15 +69,17 @@ void Enemy::onCollisionWith(GameObject &obj, CollisionData &c_data)
     }
     case ObjectType::Explosion:
     {
-
+        auto& explosion = static_cast<Explosion&>(obj);
         auto dr_to_center = m_pos - obj.getPosition();
         auto dist_to_center = norm(dr_to_center);
         auto impulse_dir = dr_to_center / dist_to_center;
 
-        auto alpha = 1 - dist_to_center / obj.m_collision_shape->getScale().x;
-        if (alpha > 0)
+        auto time_factor = explosion.getTimeLeftFraciton();
+        auto distance_factor = 1 - dist_to_center / obj.m_collision_shape->getScale().x;
+        if (distance_factor > 0)
         {
-            m_impulse += impulse_dir * (alpha * 300.f);
+            m_impulse += time_factor * distance_factor  *impulse_dir * 100.f;
+            m_health -= distance_factor*time_factor;
         }
         break;
     }
@@ -592,18 +594,6 @@ void Bomb2::onCreation()
 void Bomb2::onDestruction()
 {
 
-    auto intersecting_boids = m_neighbour_searcher->findNearestObjects(ObjectType::Enemy, m_pos, m_explosion_radius);
-    for (auto p_enemy : intersecting_boids)
-    {
-        auto &enemy = static_cast<Enemy &>(*p_enemy);
-        auto dr_to_center = (enemy.getPosition() - m_pos);
-        auto center_dist = norm(dr_to_center);
-
-        auto dmg = (m_max_dmg - m_min_dmg) * (1.f - center_dist / m_explosion_radius) + m_min_dmg; //! interpolates dmg -> highest in the cneter
-        enemy.m_health -= dmg;
-        enemy.m_impulse += 35.f * (dr_to_center) / center_dist;
-    }
-
     auto meteors = m_neighbour_searcher->findNearestObjects(ObjectType::Meteor, m_pos, m_explosion_radius);
     for (auto p_meteor : meteors)
     {
@@ -701,9 +691,9 @@ Explosion::~Explosion() {}
 
 void Explosion::update(float dt)
 {
-    m_life_time -= dt;
+    m_time += dt;
 
-    if (m_life_time < 0.f)
+    if (m_time > m_life_time)
     {
         kill();
     }
