@@ -79,7 +79,7 @@ void Game::moveView(sf::RenderWindow &window)
 
     //! look from higher distance when boosting
     float booster_ratio = m_player->speed / m_player->max_speed;
-    // view.setSize(default_view.getSize()*(1 + booster_ratio/3.f));
+    view.setSize(default_view.getSize()*(1 + booster_ratio/3.f));
 
     window.setView(view);
 }
