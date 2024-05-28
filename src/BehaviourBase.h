@@ -3,26 +3,7 @@
 #include "core.h"
 #include "Player.h"
 
-
-
-class BoidAI
-{
-
-
-protected:
-    Player *player;
-    // Game *game;
-    int entity_ind;
-public:
-    EntityData *data;
-
-    BoidAI(int entity_ind, Player *player, EntityData *data)
-        : entity_ind(entity_ind), player(player), data(data) {}
-
-    virtual ~BoidAI() = default;
-
-    virtual void update() =0;
-};
+#include <functional>
 
 
 class Enemy;
@@ -83,3 +64,56 @@ public:
 };
 
 
+class BomberAI : public BoidAI2
+{
+
+    int cool_down = 100;
+    int frames_since_shot = 0;
+    float vision_radius = 60.f;
+    bool player_spotted = false;
+    bool following_player = true;
+    bool shooting_laser = true;
+    int laser_timer = 0;
+    float orig_max_vel;
+
+    enum class State
+    {
+        FOLLOWING,
+        SHOOTING,
+        BOMBING,
+    };
+
+    State state;
+    State previous_state;
+
+public:
+    BomberAI(PlayerEntity *player, Enemy *owner, GameWorld *world);
+
+    virtual ~BomberAI() = default;
+
+    virtual void update();
+};
+
+
+enum class AIType
+{
+    SHOOTER,
+    BOMBER,
+    LASER,
+};
+
+class AIFactory
+{
+
+    std::unordered_map<AIType, std::function<std::unique_ptr<BoidAI2>(PlayerEntity*, Enemy*, GameWorld*)>> m_factories;
+
+    std::unique_ptr<BoidAI2> createAI(AIType type, PlayerEntity* p, Enemy* e, GameWorld* world)
+    {
+        return  m_factories.at(type)(p,e,world);
+    }
+
+    // void registerAIs()
+    // {
+    //     m_factories[] = 
+    // }
+};

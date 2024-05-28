@@ -19,6 +19,7 @@ namespace Textures
 		Bomb,
 		PlayerShip,
 		EnemyShip,
+		BossShip,
 		EnemyBomber,
 		Heart,
 		Station,

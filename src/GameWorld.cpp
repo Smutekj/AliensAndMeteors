@@ -14,6 +14,7 @@ GameWorld::GameWorld()
 
     m_textures.load(Textures::ID::Bomb, "../Resources/bomb.png");
     m_textures.load(Textures::ID::EnemyShip, "../Resources/EnemyShip.png");
+    m_textures.load(Textures::ID::BossShip, "../Resources/BossShip.png");
     m_textures.load(Textures::ID::Explosion2, "../Resources/explosion2.png");
     m_textures.load(Textures::ID::Explosion, "../Resources/explosion.png");
     m_textures.load(Textures::ID::PlayerShip, "../Resources/playerShip.png");
@@ -58,6 +59,9 @@ GameObject &GameWorld::addObject(ObjectType type)
         break;
     case ObjectType::SpaceStation:
         new_object = std::make_shared<SpaceStation>(this, m_textures);
+        break;
+    case ObjectType::Boss:
+        new_object = std::make_shared<Boss>(this, m_textures, m_player);
         break;
     }
 

@@ -136,7 +136,7 @@ void Game::handleEvent(const sf::Event &event)
     {
         if (event.mouseButton.button == sf::Mouse::Right)
         {
-            auto &station = m_world->addObject(ObjectType::SpaceStation);
+            auto &station = m_world->addObject(ObjectType::Boss);
             station.setPosition(mouse_position);
         }
     }

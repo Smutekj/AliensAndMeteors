@@ -69,7 +69,7 @@ void Enemy::onCollisionWith(GameObject &obj, CollisionData &c_data)
     }
     case ObjectType::Explosion:
     {
-        auto& explosion = static_cast<Explosion&>(obj);
+        auto &explosion = static_cast<Explosion &>(obj);
         auto dr_to_center = m_pos - obj.getPosition();
         auto dist_to_center = norm(dr_to_center);
         auto impulse_dir = dr_to_center / dist_to_center;
@@ -78,8 +78,8 @@ void Enemy::onCollisionWith(GameObject &obj, CollisionData &c_data)
         auto distance_factor = 1 - dist_to_center / obj.m_collision_shape->getScale().x;
         if (distance_factor > 0)
         {
-            m_impulse += time_factor * distance_factor  *impulse_dir * 100.f;
-            m_health -= distance_factor*time_factor;
+            m_impulse += time_factor * distance_factor * impulse_dir * 100.f;
+            m_health -= distance_factor * time_factor;
         }
         break;
     }
@@ -449,7 +449,19 @@ void Meteor::initializeRandomMeteor()
 
 void Enemy::setBehaviour()
 {
-    m_behaviour = std::make_unique<FollowAndShootAI2>(m_player, this, m_world);
+    auto dice_roll = rand() % 6;
+    if (dice_roll < 2)
+    {
+        m_behaviour = std::make_unique<FollowAndShootAI2>(m_player, this, m_world);
+    }
+    else if (dice_roll <= 3)
+    {
+        m_behaviour = std::make_unique<BomberAI>(m_player, this, m_world);
+    }
+    else
+    {
+        m_behaviour = std::make_unique<FollowAndShootLasersAI>(m_player, this, m_world);
+    }
 }
 
 Bullet2::Bullet2(GameWorld *world, TextureHolder &textures,
@@ -848,8 +860,8 @@ void SpaceStation::update(float dt)
     if (m_time > m_spawn_timer)
     {
         m_time = 0.f;
-        auto &new_enemy = m_world->addObject(ObjectType::Enemy);
-
+        auto &new_enemy = static_cast<Enemy &>(m_world->addObject(ObjectType::Enemy));
+        new_enemy.setBehaviour();
         float rand_angle = randf(-180, 180);
 
         new_enemy.setPosition(m_pos + 10.f * angle2dir(rand_angle));
@@ -928,4 +940,205 @@ void SpaceStation::draw(sf::RenderTarget &target)
 
     health_rect.setSize({h_rect_size, 1.f});
     target.draw(health_rect);
+}
+
+Boss::Boss(GameWorld *world, TextureHolder &textures, PlayerEntity *player)
+    : m_player(player), 
+      GameObject(world, textures, ObjectType::Boss)
+{
+    m_collision_shape = std::make_unique<Polygon>(4);
+    m_collision_shape->setScale({10, 10});
+}
+
+Boss::~Boss() {}
+
+void Boss::update(float dt)
+{
+
+    if (dist(m_pos, m_target_pos) < m_vision_radius / 10.f)
+    {
+        m_target_pos = m_pos + angle2dir(randf(0, 360)) * 30.f;
+    }
+
+    if (m_state == State::Patroling)
+    {
+        if (dist(m_pos, m_player->getPosition()) < m_vision_radius)
+        {
+            m_state = State::Shooting;
+        }
+    }
+    else if (m_state == State::Shooting)
+    {
+        m_shooting_timer += dt;
+        if (m_shooting_timer > m_shooting_cooldown)
+        {
+            m_shooting_timer = 0;
+            shootAtPlayer();
+            m_state = State::ThrowingBombs;
+
+        }
+    }
+    else if (m_state == State::ThrowingBombs)
+    {
+        m_shooting_timer += dt;
+        if (m_shooting_timer > m_bombing_cooldown)
+        {
+            m_shooting_timer = 0;
+            throwBombsAtPlayer();
+            m_bomb_count++;
+        }
+        if(m_bomb_count > 6)
+        {
+            m_bomb_count = 0;
+            m_state = State::ShootingLasers;
+            max_vel = 60.f;
+        }
+    }
+    else if (m_state == State::ShootingLasers)
+    {
+        m_shooting_timer += dt;
+        if (m_shooting_timer > m_lasering_cooldown)
+        {
+            m_shooting_timer = 0;
+            shootLasers();
+            m_state = State::Shooting;
+            max_vel = 30.f;
+            m_acc *= 0.f;
+            m_vel *= 0.f;
+        }
+    }
+
+    if (m_state != State::Patroling && dist(m_pos, m_player->getPosition()) > 1.5f * m_vision_radius)
+    {
+        m_state = State::Patroling;
+    }
+
+    auto dr_to_target = m_target_pos - m_pos;
+    m_acc = max_vel * dr_to_target;
+
+    truncate(m_acc, max_vel);
+    m_vel += m_acc * dt;
+
+    truncate(m_vel, max_vel);
+    m_pos += (m_vel + m_impulse) * dt;
+    if (m_health < 0.f)
+    {
+        kill();
+    }
+    m_impulse *= 0.f;
+    m_acc *= 0.f;
+}
+
+void Boss::shootAtPlayer()
+{
+
+    float bullet_angle = dir2angle(m_pos - m_player->getPosition());
+    for (int i = -2; i <= 2; ++i)
+    {
+        auto angle = bullet_angle + i * (30.f);
+        auto &bullet = m_world->addObject(ObjectType::Bullet);
+        auto dir = angle2dir(angle);
+        bullet.setPosition(m_pos + 12.f * dir);
+        bullet.m_vel = dir * 30.f;
+    }
+}
+void Boss::throwBombsAtPlayer()
+{
+    float bullet_angle = dir2angle(m_pos - m_player->getPosition());
+
+    auto angle = bullet_angle + m_bomb_count * (30.f);
+    auto &bomb = m_world->addObject(ObjectType::Bomb);
+    auto dir = angle2dir(angle);
+    bomb.setPosition(m_pos + 12.f * dir);
+    bomb.m_vel = dir * 100.f;
+    m_bomb_count++;
+    
+}
+void Boss::shootLasers()
+{
+    for (int i = 0; i <= 10; ++i)
+    {
+        auto angle = i / 10.f * 360.f;
+        auto &laser = m_world->addObject(ObjectType::Laser);
+        auto dir = angle2dir(angle);
+        laser.setPosition(m_pos + 12.f * dir);
+        laser.setAngle(angle);
+    }
+}
+
+void Boss::onCollisionWith(GameObject &obj, CollisionData &c_data)
+{
+    switch (obj.getType())
+    {
+    case ObjectType::Bullet:
+    {
+        auto &bullet = static_cast<Bullet2 &>(obj);
+        // m_health--;
+        break;
+    }
+    case ObjectType::Meteor:
+    {
+        // m_health--;
+
+        break;
+    }
+    case ObjectType::Explosion:
+    {
+        auto &explosion = static_cast<Explosion &>(obj);
+        auto dr_to_center = m_pos - obj.getPosition();
+        auto dist_to_center = norm(dr_to_center);
+        auto impulse_dir = dr_to_center / dist_to_center;
+
+        auto time_factor = explosion.getTimeLeftFraciton();
+        auto distance_factor = 1 - dist_to_center / obj.m_collision_shape->getScale().x;
+        if (distance_factor > 0)
+        {
+            // m_impulse += time_factor * distance_factor * impulse_dir * 100.f;
+            // m_health -= distance_factor * time_factor;
+        }
+        break;
+    }
+    case ObjectType::Laser:
+        // m_health -= 0.1f;
+        break;
+    }
+}
+
+void Boss::onCreation()
+{
+    m_target_pos = m_pos;
+}
+void Boss::onDestruction()
+{
+    auto &new_explosion = static_cast<Explosion &>(m_world->addObject(ObjectType::Explosion));
+    new_explosion.removeCollider();
+    new_explosion.setPosition(m_pos);
+    new_explosion.m_explosion_radius = 10.f;
+    new_explosion.setType(Textures::ID::Explosion2);
+
+    SoundManager::play(0);
+}
+
+void Boss::draw(sf::RenderTarget &target)
+{
+    sf::RectangleShape rect;
+
+    rect.setTexture(&m_textures.get(Textures::ID::BossShip));
+
+    rect.setOrigin({5.f, 5.f});
+    rect.setPosition(m_pos);
+    rect.setRotation(dir2angle(m_vel));
+    rect.setSize({10, 10});
+
+    target.draw(rect);
+
+    sf::RectangleShape booster;
+    sf::Vector2f booster_size = {4, 2};
+
+    booster.setTexture(&m_textures.get(Textures::ID::BoosterPurple));
+    booster.setSize(booster_size);
+    booster.setOrigin(booster_size / 2.f);
+    booster.setPosition(m_pos - m_vel / norm(m_vel) * rect.getSize().y);
+    booster.setRotation(rect.getRotation());
+    target.draw(booster);
 }

@@ -40,6 +40,7 @@ enum class ObjectType
     Explosion,
     Player,
     Flag,
+    Boss,
     Count
 };
 
