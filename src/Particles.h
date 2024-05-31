@@ -32,9 +32,10 @@ class Particles
 
     float particle_size = 0.5;
 
-
-
+    float m_vel = 3; 
 public:
+
+    sf::Color m_color;
     bool is_active = true;
 
     Particles(sf::Vector2f spawn_pos, int n_max_particles);
@@ -42,4 +43,9 @@ public:
     void setSpawnPos(sf::Vector2f pos);
     void update(float dt);
     void draw(sf::RenderTarget &target);
+
+    void setVel(float vel)
+    {
+        m_vel = vel;
+    }
 };

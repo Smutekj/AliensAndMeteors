@@ -31,8 +31,20 @@ void Enemy::update(float dt)
     boidSteering();
     avoidMeteors();
 
+    if (m_deactivated)
+    {
+        m_deactivated_time -= dt;
+        if (m_deactivated_time < 0)
+        {
+            m_deactivated = false;
+        }
+    }
+
     truncate(m_acc, max_acc);
-    m_vel += m_acc * dt;
+    if (!m_deactivated)
+    {
+        m_vel += m_acc * dt;
+    }
 
     truncate(m_vel, max_vel);
     m_pos += (m_vel + m_impulse) * dt;
@@ -201,7 +213,9 @@ std::unordered_map<Multiplier, float> Enemy::m_force_ranges = {
 
 void Enemy::boidSteering()
 {
-    auto neighbours = m_neighbour_searcher->getNeighboursOfExcept(m_pos, m_boid_radius, m_id);
+    // auto neighbours = m_neighbour_searcher->getNeighboursOfExcept(m_pos, m_boid_radius, m_id);
+
+    auto neighbours = m_collision_system->findNearestObjects(ObjectType::Enemy, m_pos, m_boid_radius);
 
     sf::Vector2f repulsion_force(0, 0);
     sf::Vector2f push_force(0, 0);
@@ -226,6 +240,10 @@ void Enemy::boidSteering()
 
     for (auto p_neighbour : neighbours)
     {
+        if (p_neighbour == this)
+        {
+            continue;
+        }
         auto &neighbour_boid = *p_neighbour;
         // if(ind_j == boid_ind){continue;}
         const auto dr = neighbour_boid.getPosition() - m_pos;
@@ -574,7 +592,7 @@ Bomb2::Bomb2(GameWorld *world, TextureHolder &textures,
     auto texture_size = static_cast<sf::Vector2i>(m_textures.get(Textures::ID::Bomb).getSize());
 
     m_animation = std::make_unique<Animation>(texture_size,
-                                              7, 2, m_life_time / 0.016f);
+                                              7, 2, m_life_time);
 }
 
 Bomb2::~Bomb2() {}
@@ -590,7 +608,7 @@ void Bomb2::update(float dt)
         kill();
     }
 
-    m_animation->update();
+    m_animation->update(dt);
 
     m_pos += m_vel * dt;
 }
@@ -691,12 +709,11 @@ Explosion::Explosion(GameWorld *world, TextureHolder &textures)
     : GameObject(world, textures, ObjectType::Explosion)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
-    m_collision_shape->setScale({2 * m_explosion_radius, 2 * m_explosion_radius});
 
     auto texture_size = static_cast<sf::Vector2i>(m_textures.get(Textures::ID::Explosion2).getSize());
 
     m_animation = std::make_unique<Animation>(texture_size,
-                                              12, 1, m_life_time / 0.016f, 1, true);
+                                              12, 1, m_life_time, 1, true);
 }
 
 Explosion::~Explosion() {}
@@ -704,13 +721,16 @@ Explosion::~Explosion() {}
 void Explosion::update(float dt)
 {
     m_time += dt;
-
     if (m_time > m_life_time)
     {
         kill();
     }
-
-    m_animation->update();
+    m_explosion_radius = m_time / m_life_time * m_max_explosion_radius;
+    if (m_collision_shape)
+    {
+        m_collision_shape->setScale({2 * m_explosion_radius, 2 * m_explosion_radius});
+    }
+    m_animation->update(dt);
 
     m_pos += m_vel * dt;
 }
@@ -732,13 +752,113 @@ void Explosion::draw(sf::RenderTarget &target)
     sf::RectangleShape rect;
     rect.setTexture(&m_textures.get(Textures::ID::Explosion2));
     rect.setTextureRect(m_animation->getCurrentTextureRect());
-    rect.setFillColor(sf::Color(255, 255, 255, 155));
+    rect.setFillColor(sf::Color(255, 255, 255, 255));
 
     rect.setOrigin({m_explosion_radius, m_explosion_radius});
     rect.setPosition(m_pos);
     rect.setRotation(m_angle);
     rect.setSize({2 * m_explosion_radius, 2 * m_explosion_radius});
     target.draw(rect);
+}
+
+EMP::EMP(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider)
+    : m_collider(collider), GameObject(world, textures, ObjectType::EMP)
+{
+    m_collision_shape = std::make_unique<Polygon>(8);
+    m_collision_shape->setScale(2,2);
+    auto texture_size = static_cast<sf::Vector2i>(m_textures.get(Textures::ID::Bomb).getSize());
+
+    m_animation = std::make_unique<Animation>(texture_size,
+                                              7, 2, m_life_time, 0);
+
+    m_texture_rect.setTexture(&m_textures.get(Textures::ID::Bomb));
+    m_texture_rect.setOrigin({1, 1});
+    m_texture_rect.setSize({2, 2});
+}
+
+EMP::~EMP() {}
+
+void EMP::update(float dt)
+{
+    if (m_is_ticking)
+    {
+        m_vel -= 0.05f * m_vel;
+
+        m_time += dt;
+        if (m_time > m_life_time)
+        {
+            m_time = 0;
+            m_is_ticking = false;
+            m_collision_shape = nullptr;
+            m_collider->removeObject(*this);
+
+
+            auto texture_size = static_cast<sf::Vector2i>(m_textures.get(Textures::ID::Emp).getSize());
+            m_texture_rect.setTexture(&m_textures.get(Textures::ID::Emp));
+            m_animation = std::make_unique<Animation>(texture_size,
+                                                      8, 1, m_life_time, 0, true);
+
+            onExplosion();
+        }
+    }
+
+    if (!m_is_ticking)
+    {
+        m_time += dt;
+        if(m_time > m_life_time)
+        {
+            kill();
+        }
+
+        // m_explosion_radius = m_time / m_life_time * m_max_explosion_radius;
+        // m_collision_shape->setScale({2 * m_explosion_radius, 2 * m_explosion_radius});
+    }
+    m_animation->update(dt);
+
+    m_pos += m_vel * dt;
+}
+
+void EMP::onCollisionWith(GameObject &obj, CollisionData &c_data)
+{
+}
+
+void EMP::onCreation()
+{
+}
+
+void EMP::onDestruction()
+{
+
+}
+
+void EMP::onExplosion()
+{
+    auto enemies = m_collider->findNearestObjects(ObjectType::Enemy, m_pos, m_explosion_radius);
+    for (auto enemy : enemies)
+    {
+        static_cast<Enemy *>(enemy)->m_deactivated = true;
+        static_cast<Enemy *>(enemy)->m_deactivated_time = 2.0f;
+    }
+    auto players = m_collider->findNearestObjects(ObjectType::Player, m_pos, m_explosion_radius);
+    for(auto player : players)
+    {
+        static_cast<PlayerEntity*>(player)->m_deactivated_time = 2.0f;
+    }
+}
+
+void EMP::draw(sf::RenderTarget &target)
+{
+
+    m_texture_rect.setTextureRect(m_animation->getCurrentTextureRect());
+
+    if(!m_is_ticking){
+
+        m_texture_rect.setOrigin({m_explosion_radius, m_explosion_radius});
+        m_texture_rect.setSize({2 * m_explosion_radius, 2 * m_explosion_radius});
+    }
+    m_texture_rect.setPosition(m_pos);
+    m_texture_rect.setRotation(m_angle);
+    target.draw(m_texture_rect);
 }
 
 ExplosionAnimation::ExplosionAnimation(GameWorld *world, TextureHolder &textures)
@@ -750,7 +870,7 @@ ExplosionAnimation::ExplosionAnimation(GameWorld *world, TextureHolder &textures
     auto texture_size = static_cast<sf::Vector2i>(m_textures.get(Textures::ID::Explosion).getSize());
 
     m_animation = std::make_unique<Animation>(texture_size,
-                                              4, 4, m_life_time / 0.016f, 1, false);
+                                              4, 4, m_life_time, 1, false);
 }
 
 ExplosionAnimation::~ExplosionAnimation() {}
@@ -764,7 +884,7 @@ void ExplosionAnimation::update(float dt)
         kill();
     }
 
-    m_animation->update();
+    m_animation->update(dt);
 
     m_pos += m_vel * dt;
 }
@@ -857,7 +977,7 @@ void SpaceStation::update(float dt)
 {
 
     m_time += dt;
-    if (m_time > m_spawn_timer)
+    if (m_time > m_spawn_timer && m_produced_ships.size() < 3)
     {
         m_time = 0.f;
         auto &new_enemy = static_cast<Enemy &>(m_world->addObject(ObjectType::Enemy));
@@ -866,6 +986,24 @@ void SpaceStation::update(float dt)
 
         new_enemy.setPosition(m_pos + 10.f * angle2dir(rand_angle));
         new_enemy.m_vel = 200.f * angle2dir(rand_angle);
+        m_produced_ships.push_back(&new_enemy);
+    }
+
+    std::vector<int> to_remove;
+    int i = 0;
+    for (auto &ship : m_produced_ships)
+    {
+        if (ship->isDead())
+        {
+            to_remove.push_back(i);
+        }
+        i++;
+        // if()
+    }
+    while (!to_remove.empty())
+    {
+        m_produced_ships.erase(m_produced_ships.begin() + to_remove.back());
+        to_remove.pop_back();
     }
 
     if (m_health < 0.f)
@@ -943,7 +1081,7 @@ void SpaceStation::draw(sf::RenderTarget &target)
 }
 
 Boss::Boss(GameWorld *world, TextureHolder &textures, PlayerEntity *player)
-    : m_player(player), 
+    : m_player(player),
       GameObject(world, textures, ObjectType::Boss)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
@@ -975,7 +1113,6 @@ void Boss::update(float dt)
             m_shooting_timer = 0;
             shootAtPlayer();
             m_state = State::ThrowingBombs;
-
         }
     }
     else if (m_state == State::ThrowingBombs)
@@ -987,7 +1124,7 @@ void Boss::update(float dt)
             throwBombsAtPlayer();
             m_bomb_count++;
         }
-        if(m_bomb_count > 6)
+        if (m_bomb_count > 6)
         {
             m_bomb_count = 0;
             m_state = State::ShootingLasers;
@@ -1052,7 +1189,6 @@ void Boss::throwBombsAtPlayer()
     bomb.setPosition(m_pos + 12.f * dir);
     bomb.m_vel = dir * 100.f;
     m_bomb_count++;
-    
 }
 void Boss::shootLasers()
 {
@@ -1141,4 +1277,65 @@ void Boss::draw(sf::RenderTarget &target)
     booster.setPosition(m_pos - m_vel / norm(m_vel) * rect.getSize().y);
     booster.setRotation(rect.getRotation());
     target.draw(booster);
+}
+
+DestroyObjective::DestroyObjective(GameWorld *world, TextureHolder &textures, PlayerEntity *player)
+    : GameObject(world, textures, ObjectType::Objective)
+{
+    m_text.setString("Destroy");
+}
+DestroyObjective::~DestroyObjective() {}
+
+void DestroyObjective::onCreation()
+{
+}
+void DestroyObjective::onDestruction()
+{
+}
+void DestroyObjective::draw(sf::RenderTarget &target)
+{
+}
+void DestroyObjective::onCollisionWith(GameObject &obj, CollisionData &c_data)
+{
+}
+void DestroyObjective::update(float dt)
+{
+    if (m_to_destroy->isDead())
+    {
+        kill();
+    }
+}
+
+ReachPlace::ReachPlace(GameWorld *world, TextureHolder &textures, PlayerEntity *player)
+    : GameObject(world, textures, ObjectType::Objective)
+{
+    m_text.setString("Destroy");
+    m_collision_shape = std::make_unique<Polygon>(10);
+    m_collision_shape->setScale(4, 4);
+}
+ReachPlace::~ReachPlace() {}
+
+void ReachPlace::onCreation()
+{
+}
+void ReachPlace::onDestruction()
+{
+}
+void ReachPlace::update(float dt) {}
+void ReachPlace::draw(sf::RenderTarget &target)
+{
+    sf::CircleShape spot;
+    spot.setRadius(10);
+    spot.setFillColor(sf::Color(125, 125, 0, 125));
+    spot.setOrigin({5, 5});
+    spot.setPosition(m_pos);
+
+    target.draw(spot);
+}
+void ReachPlace::onCollisionWith(GameObject &obj, CollisionData &c_data)
+{
+    if (obj.getType() == ObjectType::Player)
+    {
+        kill();
+    }
 }

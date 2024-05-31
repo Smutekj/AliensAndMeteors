@@ -22,6 +22,70 @@ namespace Collisions
 
 class GridNeighbourSearcher;
 
+class Objective
+{
+    // friend ObjectiveSystem;
+
+public:
+    sf::Text m_text;
+};
+
+class DestroyObjective : public GameObject, public Objective
+{
+
+    GameObject *m_to_destroy;
+
+public:
+    DestroyObjective(GameWorld *world, TextureHolder &textures, PlayerEntity *player);
+    virtual ~DestroyObjective() override;
+
+    virtual void onCreation() override;
+    virtual void onDestruction() override;
+    virtual void draw(sf::RenderTarget &target) override;
+    virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
+    virtual void update(float dt) override;
+};
+
+class ReachPlace : public GameObject, public Objective
+{
+
+public:
+    ReachPlace(GameWorld *world, TextureHolder &textures, PlayerEntity *player);
+    virtual ~ReachPlace() override;
+
+    virtual void onCreation() override;
+    virtual void onDestruction() override;
+    virtual void draw(sf::RenderTarget &target) override;
+    virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
+    virtual void update(float dt) override;
+};
+
+// #include <unordered_set>
+// class ObjectiveSystem
+// {
+//     std::unordered_set<Objective*> m_objectives;
+
+//     sf::Font& m_font;
+
+//     ObjectiveSystem(sf::Font& font) : m_font(font)
+//     {
+//     }
+
+//     void draw(sf::RenderWindow& window)
+//     {
+//         auto old_view = window.getView();
+//         window.setView(window.getDefaultView());
+//         float y_pos = 50.f;
+//         for(auto& objective : m_objectives)
+//         {
+//             objective->m_text.setPosition({20.f, y_pos});
+
+//             y_pos += 20.f;
+//         }
+//     }
+
+// };
+
 class Enemy : public GameObject
 {
 
@@ -41,6 +105,9 @@ class Enemy : public GameObject
 public:
     static std::unordered_map<Multiplier, float> m_force_multipliers;
     static std::unordered_map<Multiplier, float> m_force_ranges;
+
+    bool m_deactivated = false;
+    float m_deactivated_time = 1.f;
 
     float max_vel = 30.f;
     const float max_acc = 100.f;
@@ -68,15 +135,13 @@ private:
     void boidSteering();
 };
 
-
 class Boss : public GameObject
 {
-
 
     enum class State
     {
 
-        Patroling, 
+        Patroling,
         Shooting,
         ShootingLasers,
         ThrowingBombs,
@@ -93,10 +158,10 @@ class Boss : public GameObject
     float m_shooting_cooldown = 3.f;
     float m_bombing_cooldown = 0.5f;
     float m_lasering_cooldown = 10.f;
-    
+
     int m_bomb_count = 0;
     float m_shooting_timer = 0.f;
-    
+
 public:
     float max_vel = 30.f;
     const float max_acc = 100.f;
@@ -115,16 +180,11 @@ public:
     virtual void draw(sf::RenderTarget &target) override;
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
 
-
 private:
-
     void shootAtPlayer();
     void throwBombsAtPlayer();
     void shootLasers();
-
 };
-
-
 
 class Bullet2 : public GameObject
 {
@@ -150,7 +210,7 @@ public:
     virtual void draw(sf::RenderTarget &target) override;
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
 
-    float getTime()const
+    float getTime() const
     {
         return m_time;
     }
@@ -172,7 +232,7 @@ class Bomb2 : public GameObject
 
 public:
     float m_life_time = 1.;
-    
+
     Bomb2(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem &collider);
     virtual ~Bomb2() override;
 
@@ -252,7 +312,8 @@ class Explosion : public GameObject
     float m_life_time = 1.;
 
 public:
-    float m_explosion_radius = 25.f;
+    float m_explosion_radius = 5.f;
+    float m_max_explosion_radius = 25.f;
 
     void setType(Textures::ID type)
     {
@@ -273,9 +334,9 @@ public:
     explicit Explosion(GameWorld *world, TextureHolder &textures);
     virtual ~Explosion() override;
 
-    float getTimeLeftFraciton()const
+    float getTimeLeftFraciton() const
     {
-        return (m_life_time - m_time)/m_life_time; 
+        return (m_life_time - m_time) / m_life_time;
     }
 
     virtual void update(float dt) override;
@@ -285,6 +346,43 @@ public:
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
 
 private:
+};
+
+class EMP : public GameObject
+{
+
+    std::unique_ptr<Animation> m_animation;
+
+    float m_min_dmg = 0.f;
+    float m_max_dmg = 5.f;
+
+    const float max_vel = 100.f;
+    const float max_acc = 20.f;
+
+    float m_time = 0.f;
+    float m_life_time = 1.;
+
+    Collisions::CollisionSystem *m_collider;
+
+    bool m_is_ticking = true;
+
+    sf::RectangleShape m_texture_rect;
+
+public:
+    float m_explosion_radius = 10.f;
+    float m_max_explosion_radius = 20.f;
+
+    EMP(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider);
+    virtual ~EMP() override;
+
+    virtual void update(float dt) override;
+    virtual void onCreation() override;
+    virtual void onDestruction() override;
+    virtual void draw(sf::RenderTarget &target) override;
+    virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
+
+private:
+    void onExplosion();
 };
 
 class ExplosionAnimation : public GameObject
@@ -338,6 +436,8 @@ public:
 
 class SpaceStation : public GameObject
 {
+
+    std::vector<Enemy *> m_produced_ships;
 
     float m_time = 0.f;
     float m_spawn_timer = 2.f;

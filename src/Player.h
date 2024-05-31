@@ -8,6 +8,26 @@
 
 class GameWorld;
 
+
+
+struct Timer
+{
+    float m_cooldown = 5.f;
+    float m_time = 0;
+
+    bool update(float dt)
+    {
+        m_time+=dt;
+        if(m_time > m_cooldown)
+        {
+            m_time = 0;
+            return true;
+        }
+        return false;
+    }
+};
+
+
 struct PlayerEntity : public GameObject
 {
     float speed = 0.f;
@@ -25,8 +45,10 @@ struct PlayerEntity : public GameObject
 
     float m_radius = 3.f;
 
-    int health = 100;
-    int max_health = 100;
+    float health = 100;
+    float max_health = 100;
+
+    float m_deactivated_time = -1.f;
 
     sf::RectangleShape m_player_shape;
     std::unique_ptr<Particles> m_particles_left;

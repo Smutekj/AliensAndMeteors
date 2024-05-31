@@ -41,6 +41,16 @@ enum class ObjectType
     Player,
     Flag,
     Boss,
+    Objective,
+    EMP,
+    Count
+};
+
+
+enum class ObjectiveType
+{
+    ReachSpot,
+    DestroyEnemy,
     Count
 };
 

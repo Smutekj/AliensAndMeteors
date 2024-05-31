@@ -17,13 +17,20 @@ void PlayerEntity::update(float dt)
     fixAngle();
     boost();
 
+    
     speed += acceleration;
-    float real_max_speed = max_speed * (1 + boost_factor * is_boosting);
     speed += boost_factor * is_boosting;
     speed -= speed * slowing_factor;
 
     m_vel = speed * angle2dir(m_angle);
+
+    if(m_deactivated_time > 0){
+        m_deactivated_time -= dt;
+        m_vel /= 2.f;
+        is_boosting = false;
+    }
     m_pos += m_vel * dt;
+
 
     m_particles_left->update(dt);
     m_particles_left->setSpawnPos(m_pos - m_radius * angle2dir(m_angle + 40));
@@ -46,9 +53,14 @@ void PlayerEntity::onCollisionWith(GameObject &obj, CollisionData &c_data)
         }
         break;
     }
+    case ObjectType::Explosion:
+    {
+        health -= 0.1f;
+        break;
+    }
     case ObjectType::Bullet:
     {
-        // health--;
+        health--;
         break;
     }
     case ObjectType::Heart:
@@ -69,6 +81,20 @@ void PlayerEntity::draw(sf::RenderTarget &target)
     m_player_shape.setTexture(&m_textures.get(Textures::ID::PlayerShip));
 
     target.draw(m_player_shape);
+
+    if(is_boosting)
+    {
+        m_particles_left->m_color = {255, 128, 0};
+        m_particles_right->m_color = {255, 128, 0};
+        m_particles_left->setVel(5);
+        m_particles_right->setVel(5);
+    }else{
+        m_particles_left->m_color = {255, 255, 255};
+        m_particles_right->m_color = {255, 255, 255};
+        m_particles_left->setVel(3);
+        m_particles_right->setVel(3);
+    }
+
     m_particles_left->draw(target);
     m_particles_right->draw(target);
 }

@@ -25,6 +25,7 @@ namespace Textures
 		Station,
 		BoosterPurple,
 		BoosterYellow,
+		Emp,
 		BackGround,
 	};
 }

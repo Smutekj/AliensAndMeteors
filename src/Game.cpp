@@ -35,6 +35,9 @@ Game::Game(sf::RenderWindow &window, KeyBindings &bindings)
     m_player = &static_cast<PlayerEntity &>(m_world->addObject(ObjectType::Player));
     m_player->setPosition({box_size.x / 2.f, box_size.y / 2.f});
 
+    auto& obj = m_world->addObject(ObjectType::Objective);
+    obj.setPosition(m_player->getPosition() + 100.f*angle2dir(randf(0,150)));
+
     auto view = window.getView();
     view.setCenter(m_player->getPosition());
     view.setSize({100.f, 100.f * window.getSize().y / window.getSize().x});
@@ -116,27 +119,35 @@ void Game::handleEvent(const sf::Event &event)
             bomb.m_vel = (50.f + m_player->speed) * angle2dir(m_player->m_angle);
             bomb.setAngle(m_player->m_angle);
         }
+        if (event.key.code == sf::Keyboard::E)//key_binding[PlayerControl::THROW_EMP])
+        {
+            auto dir = angle2dir(m_player->m_angle);
+
+            auto &bomb = m_world->addObject(ObjectType::EMP);
+            bomb.setPosition(m_player->getPosition());
+            bomb.m_vel = (50.f + m_player->speed) * angle2dir(m_player->m_angle);
+            bomb.setAngle(m_player->m_angle);
+        }
         if (event.key.code == key_binding[PlayerControl::BOOST])
         {
             m_player->is_boosting = false;
         }
     }
-    // if (event.type == sf::Event::MouseButtonPressed)
-    // {
+    if (event.type == sf::Event::MouseButtonReleased && sf::Keyboard::isKeyPressed(sf::Keyboard::LControl))
+    {
 
-    //     if (event.mouseButton.button == sf::Mouse::Right &&
-    //         sf::Mouse::isButtonPressed(sf::Mouse::Right))
-    //     {
-    //         auto &new_enemy = m_world->addObject(ObjectType::Enemy);
-    //         new_enemy.setPosition(mouse_position);
-    //     }
+        if (event.mouseButton.button == sf::Mouse::Right)
+        {
+            auto &new_enemy = m_world->addObject(ObjectType::Boss);
+            new_enemy.setPosition(mouse_position);
+        }
 
-    // }
+    }
     if (event.type == sf::Event::MouseButtonReleased)
     {
         if (event.mouseButton.button == sf::Mouse::Right)
         {
-            auto &station = m_world->addObject(ObjectType::Boss);
+            auto &station = m_world->addObject(ObjectType::SpaceStation);
             station.setPosition(mouse_position);
         }
     }
@@ -224,7 +235,7 @@ void Game::drawUI(sf::RenderWindow &window)
     auto old_view = window.getView();
     window.setView(window.getDefaultView());
 
-    std::string hp_text = "HP: " + std::to_string(m_player->health);
+    std::string hp_text = "HP: " + std::to_string(static_cast<int>(m_player->health));
 
     sf::RectangleShape health_rect;
 

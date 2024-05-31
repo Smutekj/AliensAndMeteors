@@ -12,6 +12,11 @@
 #include "Player.h"
 
 
+class ObjectiveSystem
+{
+
+};
+
 class GameWorld
 {
 
@@ -20,18 +25,20 @@ class GameWorld
     std::unique_ptr<GridNeighbourSearcher> m_neighbour_searcher;
     Collisions::CollisionSystem m_collision_system;
 
-    PlayerEntity* m_player;
-
-    std::queue<std::shared_ptr<GameObject>> to_add;
-    std::queue<std::shared_ptr<GameObject>> to_destroy;
+    std::queue<std::shared_ptr<GameObject>> m_to_add;
+    std::queue<std::shared_ptr<GameObject>> m_to_destroy;
 
     TextureHolder m_textures;
 
+    Timer m_heart_timer;
+
 public:
+    PlayerEntity* m_player;
     GameWorld();
 
     void destroyObject(int entity_id);
     GameObject &addObject(ObjectType type);
+    GameObject &addObjective(ObjectiveType type);
     void update(float dt);
     void draw(sf::RenderTarget &bloomy_target, sf::RenderTarget& window);
 

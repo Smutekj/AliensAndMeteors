@@ -28,11 +28,8 @@
         if (spawn_timer >= spawn_cooldown)
         {
             spawn_timer = 0;
-            sf::Vector2f rand_vel(randf(-3, 3), randf(-3, 3));
-            float rand_angle = randf(-45, 45) + randf(-45, 45);
-            sf::Color color;
-            color.r = 255;
-            color.a = 255;
+            sf::Vector2f rand_vel = randf(0, m_vel)*angle2dir(randf(0,360));
+            sf::Color color = {m_color.r, m_color.g, m_color.b, 150};
             Particle new_particle(spawn_pos, rand_vel, {0., 0.}, color);
             particle_pool.insert(new_particle);
         }
@@ -45,10 +42,7 @@
             particle.vel += particle.acc * dt;
             particle.pos += particle.vel * dt;
             auto alpha = (particle.time / (float)particle.life_time) ;
-            particle.color.r = (1-alpha)*255.;
-            particle.color.g = 2*alpha * 255.;
-            particle.color.a = (1 - alpha)*255;
-            particle.color = {255,255,255, 150};
+            particle.color.a = 150*(1-alpha);
             if (particle.time++ > particle.life_time)
             {
                 to_destroy.push_back(particle_pool.data2entity_ind.at(p_ind));
