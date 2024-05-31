@@ -1,7 +1,7 @@
 #include "Animation.h"
 
     Animation::Animation(sf::Vector2i texture_size, int sprites_x, int sprites_y,
-                         int life_time, int repeats_count, bool inverted )
+                         float life_time, int repeats_count, bool inverted )
         : m_tex_x(sprites_x - 1), m_tex_y(sprites_y - 1),
           m_sprites_x(sprites_x), m_sprites_y(sprites_y),
           m_life_time(life_time), m_repeats_count(repeats_count), m_inverted(inverted)
@@ -34,7 +34,7 @@
     void Animation::setTime(int new_time)
     {
         m_time = new_time;
-        auto frame_ind = (new_time / m_frame_time);
+        int frame_ind = (new_time / m_frame_time);
         m_tex_x = frame_ind % m_sprites_x;
         m_tex_y = frame_ind / m_sprites_x;
     }
@@ -44,11 +44,12 @@
         return m_time > m_life_time || m_repeats_count == 0;
     }
 
-    void Animation::update()
+    void Animation::update(float dt)
     {
-        m_time++;
-        if (m_time % m_frame_time == m_frame_time - 1)
+        m_time += dt;
+        if (m_time >= m_frame_time)
         {
+            m_time = 0.f;
             animateSprite();
         }
     }

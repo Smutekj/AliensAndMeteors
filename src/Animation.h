@@ -4,9 +4,9 @@
 
 class Animation{
 
-    int m_time = 0;
-    int m_frame_time = 5;
-    int m_life_time;
+    float m_time = 0;
+    float m_frame_time = 5;
+    float m_life_time;
 
     int m_tex_x;
     int m_tex_y;
@@ -25,7 +25,7 @@ class Animation{
 
 public:
     Animation(sf::Vector2i texture_size, int n_sprites_x, int n_sprites_y,
-                         int life_time, int n_repeats = 1,
+                         float life_time, int n_repeats = 1,
                          bool inverted = false);
 
     void setFrameTime(int new_frame_time);
@@ -33,7 +33,7 @@ public:
 
     void setTime(int new_time);
     bool isDone() const;
-    void update();
+    void update(float dt);
     sf::IntRect getCurrentTextureRect() const;
 
 private:
