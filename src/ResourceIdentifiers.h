@@ -2,7 +2,6 @@
 
 #include "ResourceHolder.h"
 
-// Forward declaration of SFML classes
 namespace sf
 {
 	class Texture;
@@ -16,6 +15,7 @@ namespace Textures
 	{
 		Explosion,
 		Explosion2,
+		Star,
 		Bomb,
 		PlayerShip,
 		EnemyShip,
@@ -26,6 +26,7 @@ namespace Textures
 		BoosterPurple,
 		BoosterYellow,
 		Emp,
+		Arrow,
 		BackGround,
 	};
 }
@@ -36,8 +37,10 @@ namespace Shaders
 	{
 		BrightnessPass,
 		DownSamplePass,
-		GaussianBlurPass,
+		GaussianVertPass,
+		GaussianHorizPass,
 		AddPass,
+		FullPass,
 	};
 }
 

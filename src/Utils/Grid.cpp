@@ -10,14 +10,14 @@
 //! \param x 
 //! \param y
 //! \returns cell index
-size_t Grid::coordToCell(const float x, const float y) const { return coordToCell({x, y}); }
+int Grid::coordToCell(const float x, const float y) const { return coordToCell({x, y}); }
 
 //! \brief computes cell_index of the cell containing given point
 //! \param r_coords given point 
 //! \returns cell index
-size_t Grid::coordToCell(const sf::Vector2f r_coord) const {
-    const size_t ix = static_cast<size_t>(std::floor(r_coord.x / cell_size_.x)) % n_cells_.x;
-    const size_t iy = static_cast<size_t>(std::floor(r_coord.y / cell_size_.y)) % n_cells_.y;
+int Grid::coordToCell(const sf::Vector2f r_coord) const {
+    const int ix = static_cast<int>(std::floor(r_coord.x / cell_size_.x)) % n_cells_.x;
+    const int iy = static_cast<int>(std::floor(r_coord.y / cell_size_.y)) % n_cells_.y;
 
     assert(ix + iy * n_cells_.x < n_cells_.x * n_cells_.y);
     return ix + iy * n_cells_.x;
@@ -27,39 +27,39 @@ size_t Grid::coordToCell(const sf::Vector2f r_coord) const {
 //! \param ix
 //! \param iy 
 //! \returns cell index
-[[nodiscard]] size_t Grid::cellIndex(const int ix, const int iy) const { return cellIndex({ix, iy}); }
+[[nodiscard]] int Grid::cellIndex(const int ix, const int iy) const { return cellIndex({ix, iy}); }
 
 //! \brief computes cell_index of the cell corresponding to given 2D cell coordinates
 //! \param ixy given 2D cell coordinates
 //! \returns cell index
-[[nodiscard]] size_t Grid::cellIndex(sf::Vector2i ixy) const { return ixy.x + ixy.y * n_cells_.x; }
+[[nodiscard]] int Grid::cellIndex(sf::Vector2i ixy) const { return ixy.x + ixy.y * n_cells_.x; }
 
 //! \brief computes the x component of 2D cell coordinates 
 //! \param cell_index
 //! \returns x component of 2D cell coordinates
-size_t Grid::cellCoordX(const size_t cell_index) const { return cell_index % n_cells_.x; }
+int Grid::cellCoordX(const int cell_index) const { return cell_index % n_cells_.x; }
 
 //! \brief computes the y component of 2D cell coordinates 
 //! \param cell_index
 //! \returns y component of 2D cell coordinates
-size_t Grid::cellCoordY(const size_t cell_index) const { return (cell_index / n_cells_.x) % n_cells_.y; }
+int Grid::cellCoordY(const int cell_index) const { return (cell_index / n_cells_.x) % n_cells_.y; }
 
 //! \brief computes the 2D cell coordinates of a given cell 
 //! \param cell_index
 //! \returns 2D cell coordinates
-sf::Vector2i Grid::cellCoords(const size_t cell_index) const {
+sf::Vector2i Grid::cellCoords(const int cell_index) const {
     return {static_cast<int>(cellCoordX(cell_index)), static_cast<int>(cellCoordY(cell_index))};
 }
 
 //! \brief computes the 2D cell coordinates of cell containing the given point 
 //! \param r_coord given point
 //! \returns x component of 2D cell coordinates
-size_t Grid::cellCoordX(const sf::Vector2f r_coord) const { return static_cast<size_t>(r_coord.x / cell_size_.x); }
+int Grid::cellCoordX(const sf::Vector2f r_coord) const { return static_cast<int>(r_coord.x / cell_size_.x); }
 
 //! \brief computes the 2D cell coordinates of cell containing the given point 
 //! \param r_coord given point
 //! \returns y component of 2D cell coordinates
-size_t Grid::cellCoordY(const sf::Vector2f r_coord) const { return static_cast<size_t>(r_coord.y / cell_size_.y); }
+int Grid::cellCoordY(const sf::Vector2f r_coord) const { return static_cast<int>(r_coord.y / cell_size_.y); }
 
 //! \brief computes the 2D cell coordinates of cell containing the given point 
 //! \param r_coord given point
@@ -100,7 +100,7 @@ SearchGrid::SearchGrid(sf::Vector2i n_cells, sf::Vector2f cell_size)
 //! \param cell_ind
 //! \param nearest_cells array containing cell_indices of closest cells (right now only looking at 9 nearest cells)
 //! \param n_nearest_cells number of nearest cells
-void SearchGrid::calcNearestCells(const size_t cell_ind, std::array<int, 9>& nearest_cells, int& n_nearest_cells) const {
+void SearchGrid::calcNearestCells(const int cell_ind, std::array<int, 9>& nearest_cells, int& n_nearest_cells) const {
 
     const auto cell_coords = cellCoords(cell_ind);
     n_nearest_cells = 0;
@@ -123,7 +123,7 @@ void SearchGrid::calcNearestCells(const size_t cell_ind, std::array<int, 9>& nea
 //! \param cell_ind
 //! \param nearest_cells array containing cell_indices of closest cells (right now only looking at 9 nearest cells)
 //! \param n_nearest_cells number of nearest cells
-void SearchGrid::calcNearestCells2(const size_t cell_ind, std::array<int, 9>& nearest_cells, int& n_nearest_cells) const {
+void SearchGrid::calcNearestCells2(const int cell_ind, std::array<int, 9>& nearest_cells, int& n_nearest_cells) const {
 
     const auto cell_coords = cellCoords(cell_ind);
     n_nearest_cells = 0;
@@ -141,6 +141,6 @@ void SearchGrid::calcNearestCells2(const size_t cell_ind, std::array<int, 9>& ne
 }
 
 
-size_t Grid::getNCells() const{
+int Grid::getNCells() const{
     return n_cells_.x*n_cells_.y;
 }

@@ -15,22 +15,13 @@
 
 class SettingsState : public State
 {
-
-
-    sf::Font menu_font;
-    sf::Text field_text;
-
 public:
     SettingsState(StateStack &stack, Context &context);
-
     virtual ~SettingsState() override {}
-
     virtual void update(float dt) override;
     virtual void handleEvent(const sf::Event &event) override;
-
     virtual void draw() override;
 
 private:
     Menu m_menu;
-
 };

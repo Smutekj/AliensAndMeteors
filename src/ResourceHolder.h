@@ -1,82 +1,65 @@
 #pragma once
 
-
-#include <map>
+#include <unordered_map>
 #include <string>
 #include <memory>
 #include <stdexcept>
 #include <cassert>
 
-
-template <typename Resource, typename Identifier>
+template <class ResourceType, class Identifier>
 class ResourceHolder
 {
-	public:
-		void						load(Identifier id, const std::string& filename);
+public:
+	
+	void load(Identifier id, const std::string &filename);
+	
+	template <class ...Args>
+	void load(Identifier id, const Args... names);
+	
+	ResourceType &get(Identifier id);
 
-		template <typename Parameter>
-		void						load(Identifier id, const std::string& filename, const Parameter& secondParam);
+private:
+	void insertResource(Identifier id, std::unique_ptr<ResourceType> resource);
 
-		Resource&					get(Identifier id);
-		const Resource&				get(Identifier id) const;
-
-
-	private:
-		void						insertResource(Identifier id, std::unique_ptr<Resource> resource);
-
-
-	private:
-		std::map<Identifier, std::unique_ptr<Resource>>	mResourceMap;
+private:
+	std::unordered_map<Identifier, std::unique_ptr<ResourceType>> m_id2resource;
 };
 
-
-template <typename Resource, typename Identifier>
-void ResourceHolder<Resource, Identifier>::load(Identifier id, const std::string& filename)
+template <typename ResourceType, typename Identifier>
+template <class ...Args>
+void ResourceHolder<ResourceType, Identifier>::load(Identifier id, const Args... names)
 {
-	// Create and load resource
-	std::unique_ptr<Resource> resource(new Resource());
+	std::unique_ptr<ResourceType> resource(new ResourceType());
+	if (!resource->loadFromFile(names...))
+	{
+		throw std::runtime_error("ResourceHolder::load - Failed to load!");
+	}
+	insertResource(id, std::move(resource));
+}
+
+template <typename ResourceType, typename Identifier>
+void ResourceHolder<ResourceType, Identifier>::load(Identifier id, const std::string &filename)
+{
+	std::unique_ptr<ResourceType> resource(new ResourceType());
 	if (!resource->loadFromFile(filename))
+	{
 		throw std::runtime_error("ResourceHolder::load - Failed to load " + filename);
-
-	// If loading successful, insert resource to map
+	}
 	insertResource(id, std::move(resource));
 }
 
-template <typename Resource, typename Identifier>
-template <typename Parameter>
-void ResourceHolder<Resource, Identifier>::load(Identifier id, const std::string& filename, const Parameter& secondParam)
-{
-	// Create and load resource
-	std::unique_ptr<Resource> resource(new Resource());
-	if (!resource->loadFromFile(filename, secondParam))
-		throw std::runtime_error("ResourceHolder::load - Failed to load " + filename);
 
-	// If loading successful, insert resource to map
-	insertResource(id, std::move(resource));
+template <typename ResourceType, typename Identifier>
+ResourceType &ResourceHolder<ResourceType, Identifier>::get(Identifier id)
+{
+	assert(m_id2resource.count(id) > 0);
+	return *m_id2resource.at(id);
 }
 
 template <typename Resource, typename Identifier>
-Resource& ResourceHolder<Resource, Identifier>::get(Identifier id)
-{
-	auto found = mResourceMap.find(id);
-	assert(found != mResourceMap.end());
-
-	return *found->second;
-}
-
-template <typename Resource, typename Identifier>
-const Resource& ResourceHolder<Resource, Identifier>::get(Identifier id) const
-{
-	auto found = mResourceMap.find(id);
-	assert(found != mResourceMap.end());
-
-	return *found->second;
-}
-
-template <typename Resource, typename Identifier>
-void ResourceHolder<Resource, Identifier>::insertResource(Identifier id, std::unique_ptr<Resource> resource) 
+void ResourceHolder<Resource, Identifier>::insertResource(Identifier id, std::unique_ptr<Resource> resource)
 {
 	// Insert and check success
-	auto inserted = mResourceMap.insert(std::make_pair(id, std::move(resource)));
+	auto inserted = m_id2resource.insert(std::make_pair(id, std::move(resource)));
 	assert(inserted.second);
 }

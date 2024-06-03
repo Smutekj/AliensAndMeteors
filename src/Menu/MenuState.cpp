@@ -11,15 +11,15 @@
 MenuState::MenuState(StateStack &stack, Context &context)
     : State(stack, context), m_menu(context.font)
 {
-  background_texture.loadFromFile("../Resources/Starbasesnow.png");
-  background_texture.setRepeated(true);
-  background_texture.setSmooth(true);
+  m_background_texture.loadFromFile("../Resources/Starbasesnow.png");
+  m_background_texture.setRepeated(true);
+  m_background_texture.setSmooth(true);
 
   sf::Vector2f window_size = {static_cast<float>(context.window->getSize().x),
                               static_cast<float>(context.window->getSize().y)};
-  background_rect.setSize(window_size);
-  background_rect.setTexture(&background_texture);
-  background_rect.setTextureRect({0, 0, (int)background_texture.getSize().x / 2, (int)background_texture.getSize().y / 2});
+  m_background_rect.setSize(window_size);
+  m_background_rect.setTexture(&m_background_texture);
+  m_background_rect.setTextureRect({0, 0, (int)m_background_texture.getSize().x / 2, (int)m_background_texture.getSize().y / 2});
 
   auto new_game_button = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Game, States::ID::None, "New Game");
   auto settings_button = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Settings, States::ID::Menu);
@@ -39,14 +39,14 @@ MenuState::~MenuState() {}
 void MenuState::update(float dt)
 {
   //! animate background
-  background_animation_time += 1;
-  int texture_size_x = background_texture.getSize().x;
-  auto texture_rect = background_rect.getTextureRect();
+  m_background_animation_time += 1;
+  int texture_size_x = m_background_texture.getSize().x;
+  auto texture_rect = m_background_rect.getTextureRect();
 
   //! make texture rect go from left to right and then back
-  texture_rect.left = (-std::abs(background_animation_time - texture_size_x / 2) + texture_size_x / 2) % texture_size_x;
-  texture_rect.top = 100 * std::sin(background_animation_time / 200.f);
-  background_rect.setTextureRect(texture_rect);
+  texture_rect.left = (-std::abs(m_background_animation_time - texture_size_x / 2) + texture_size_x / 2) % texture_size_x;
+  texture_rect.top = 100 * std::sin(m_background_animation_time / 200.f);
+  m_background_rect.setTextureRect(texture_rect);
 }
 
 void MenuState::handleEvent(const sf::Event &event)
@@ -62,7 +62,7 @@ void MenuState::draw()
 
   auto &window = *m_context.window;
 
-  window.draw(background_rect);
+  window.draw(m_background_rect);
   m_menu.draw(window);
 }
 
@@ -91,7 +91,6 @@ void EndScreenState::handleEvent(const sf::Event &event)
   }
 }
 
-
 void EndScreenState::draw()
 {
 
@@ -103,7 +102,7 @@ void EndScreenState::draw()
   m_goodbye_text.setString("Good Bye!");
   m_goodbye_text.setFillColor(sf::Color::Blue);
   m_goodbye_text.setScale({2.f, 2.f});
-  Menu::centerTextInWindow(window, m_goodbye_text, window.getSize().y/2.f) ;
+  Menu::centerTextInWindow(window, m_goodbye_text, window.getSize().y / 2.f);
   window.draw(m_goodbye_text);
 }
 
@@ -114,52 +113,31 @@ PlayerDiedState::PlayerDiedState(StateStack &stack, Context &context)
 
   auto enter_name = std::make_unique<EnterTextItem>(context, m_entered_name, "Enter Your Name:");
   m_menu.addItem(std::move(enter_name));
+
+  sf::Vector2f window_size = {static_cast<float>(context.window->getSize().x),
+                              static_cast<float>(context.window->getSize().y)};
+  m_menu.setYPos(window_size.y * 7. / 10.);
 }
 
 PlayerDiedState::~PlayerDiedState() {}
 
 void PlayerDiedState::update(float dt)
 {
-  if (m_dash_visibility_time-- <= 0)
-  {
-    m_dash_visibility_time = m_dash_visibility_cooldown;
-    m_dash_is_visible = !m_dash_is_visible;
-  }
 }
 
 void PlayerDiedState::handleEvent(const sf::Event &event)
 {
-  if (event.type == sf::Event::KeyReleased && event.key.code == sf::Keyboard::Escape && !m_is_entering_text)
+  if (event.type == sf::Event::KeyReleased && event.key.code == sf::Keyboard::Enter)
   {
-    m_stack->popState();
-    m_stack->pushState(States::ID::Menu);
-  }
-
-  // m_menu.handleEvent(event);
-
-  if (m_is_entering_text)
-  {
-    if (event.type == sf::Event::KeyReleased)
+    if (m_entered_name.length() != 0)
     {
-      m_dash_visibility_time = m_dash_visibility_cooldown;
-      m_dash_is_visible = true;
-      if (event.key.code >= sf::Keyboard::A && event.key.code <= sf::Keyboard::Z)
-      {
-        char character = event.key.shift ? 'A' : 'a';
-        character += static_cast<int>(event.key.code);
-        m_entered_name.push_back(character);
-      }
-      if (event.key.code == sf::Keyboard::BackSpace && m_entered_name.size() > 0)
-      {
-        m_entered_name.pop_back();
-      }
-      if (event.key.code == sf::Keyboard::Enter)
-      {
-        m_context.score->setScore(m_entered_name, m_context.score->getCurrentScore());
-        m_is_entering_text = false;
-      }
+      m_context.score->setScore(m_entered_name, m_context.score->getCurrentScore());
+      m_stack->popState();
+      m_stack->pushState(States::ID::Menu);
     }
   }
+
+  m_menu.handleEvent(event);
 }
 
 void PlayerDiedState::draw()
@@ -167,7 +145,7 @@ void PlayerDiedState::draw()
   auto &window = *m_context.window;
   window.setView(window.getDefaultView());
 
-  // m_menu.draw(window);
+  m_menu.draw(window);
 
   sf::Vector2f window_size = {static_cast<float>(window.getSize().x), static_cast<float>(window.getSize().y)};
 
@@ -178,27 +156,6 @@ void PlayerDiedState::draw()
                       window_size.y / 4.f});
   window.draw(m_text);
 
-  if (m_is_entering_text)
-  {
-    m_text.setString("Enter your name!");
-    m_text.setFillColor(sf::Color::Blue);
-    m_text.setScale({2.f, 2.f});
-    m_text.setPosition({window_size.x / 2.f - m_text.getGlobalBounds().width / 2.f,
-                        window_size.y / 2.f - m_text.getGlobalBounds().height});
-    window.draw(m_text);
-
-    m_text.setFillColor(sf::Color::Red);
-    m_text.setScale({2.f, 2.f});
-    m_text.setPosition({window_size.x / 2.f - m_text.getGlobalBounds().width / 2.f,
-                        window_size.y / 2.f + m_text.getGlobalBounds().height});
-
-    m_dash_is_visible ? m_text.setString(m_entered_name + "_") : m_text.setString(m_entered_name);
-    window.draw(m_text);
-
-    return;
-  }
-
-  window.draw(m_text);
   m_text.setString("Your score was: " + std::to_string(m_context.score->getCurrentScore()));
   m_text.setFillColor(sf::Color::Blue);
   m_text.setScale({2.f, 2.f});

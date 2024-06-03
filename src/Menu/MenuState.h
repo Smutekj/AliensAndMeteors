@@ -23,10 +23,10 @@ public:
     virtual void draw() override;
 
 private:
-    sf::Texture background_texture;
-    sf::RectangleShape background_rect;
-    sf::Vector2f background_center;
-    int background_animation_time = 0;
+    sf::Texture m_background_texture;
+    sf::RectangleShape m_background_rect;
+    sf::Vector2f m_background_center;
+    int m_background_animation_time = 0;
     Menu m_menu;
 };
 
@@ -60,13 +60,8 @@ public:
     virtual void draw() override;
 
 private:
-    bool m_is_entering_text = true;
-    bool m_dash_is_visible = true;
-    float m_dash_visibility_time = 0;
-    float m_dash_visibility_cooldown = 60;
     std::string m_entered_name;
     sf::Text m_text;
-
     Menu m_menu;
 };
 
@@ -74,9 +69,8 @@ class ScoreBoardState : public State
 {
 
 public:
-    virtual ~ScoreBoardState() override;
-
     ScoreBoardState(StateStack &stack, Context &context);
+    virtual ~ScoreBoardState() override;
     virtual void update(float dt) override;
     virtual void handleEvent(const sf::Event &event) override;
     virtual void draw() override;

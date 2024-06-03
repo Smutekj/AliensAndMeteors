@@ -1,5 +1,12 @@
 #include "Polygon.h"
 
+#include <SFML/Graphics/ConvexShape.hpp>
+#include <SFML/Graphics/RenderTarget.hpp>
+#include <SFML/Graphics/Color.hpp>
+
+#include <cmath>
+
+#include "Geometry.h"
 
   Polygon::Polygon(int n_points, sf::Vector2f at) : points(n_points)
   {
@@ -34,7 +41,7 @@
 
   void Polygon::rotate(float by)
   {
-    setRotation(getRotation() + by * 180. / M_PI);
+    setRotation(getRotation() + by * 180.f / M_PIf);
   }
 
 
@@ -77,4 +84,32 @@
       }
     }
     return min_axis;
+  }
+
+
+  AABB Polygon::getBoundingRect() const
+  {
+    auto r = getPosition();
+    return {r - getScale(), r + getScale()};
+  }
+ 
+
+  void Polygon::makeShapeFromPolygon(sf::ConvexShape &shape)
+  {
+    shape.setPointCount(points.size());
+    for (int i = 0; i < points.size(); ++i)
+    {
+      shape.setPoint(i, points[i]);
+    }
+    shape.setFillColor(sf::Color::Yellow);
+    shape.setScale(getScale());
+    shape.setPosition(getPosition());
+    shape.setRotation(getRotation());
+  }
+
+  void Polygon::draw(sf::RenderTarget &window)
+  {
+    sf::ConvexShape shape;
+    makeShapeFromPolygon(shape);
+    window.draw(shape);
   }

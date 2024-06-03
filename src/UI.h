@@ -21,7 +21,6 @@ enum class UIWindowType
 {
     PHYSICS = 0,
     PATHFINDING,
-    DEBUG,
     SHADERS,
     GRAPHICS,
     UNIT_MAKER,

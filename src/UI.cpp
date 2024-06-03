@@ -11,7 +11,7 @@
 #include "Utils/magic_enum.hpp"
 #include "Utils/magic_enum_utility.hpp"
 
-#include "Entities.h"
+#include "Entities/Enemy.h"
 
 std::vector<std::string> separateLine(std::string line, char delimiter = ' ')
 {

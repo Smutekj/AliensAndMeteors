@@ -1,5 +1,38 @@
 #pragma once
-#include "core.h"
+
+#include <limits>
+#include <cassert>
+#include <vector>
+
+#include <SFML/Graphics/Transformable.hpp>
+
+#include "AABB.h"
+#include "Geometry.h"
+
+namespace sf
+{
+  class ConvexShape;
+  class RenderTarget;
+}
+
+struct Polygon : sf::Transformable
+{
+  std::vector<sf::Vector2f> points;
+
+  Polygon(int n_points = 3, sf::Vector2f at = {0, 0});
+  
+  AABB getBoundingRect() const;
+  sf::Vector2f getCenter();
+  std::vector<sf::Vector2f> getPointsInWorld() const;
+  void move(sf::Vector2f by);
+  void rotate(float by);
+
+  sf::Vector2f getMVTOfSphere(sf::Vector2f center, float radius);
+  void makeShapeFromPolygon(sf::ConvexShape &shape);
+  void draw(sf::RenderTarget &window);
+};
+
+
 
 struct Projection1D
 {
@@ -33,50 +66,3 @@ Projection1D inline projectOnAxis(sf::Vector2f t, const std::vector<sf::Vector2f
   }
   return projection;
 }
-
-struct Polygon : sf::Transformable
-{
-  std::vector<sf::Vector2f> points;
-
-  Polygon(int n_points = 3, sf::Vector2f at = {0, 0});
-
-  AABB getBoundingRect() const
-  {
-    auto r = getPosition();
-    return {r - getScale(), r + getScale()};
-  }
- 
-  sf::Vector2f getCenter();
-
-  std::vector<sf::Vector2f> getPointsInWorld() const;
-  void move(sf::Vector2f by);
-  void rotate(float by);
-  void update(float dt);
-
-  bool isCircle()const{
-    return points.size() < 3;
-  }
-
-  sf::Vector2f getMVTOfSphere(sf::Vector2f center, float radius);
-
-  void makeShapeFromPolygon(sf::ConvexShape &shape)
-  {
-    shape.setPointCount(points.size());
-    for (int i = 0; i < points.size(); ++i)
-    {
-      shape.setPoint(i, points[i]);
-    }
-    shape.setFillColor(sf::Color::Green);
-    shape.setScale(getScale());
-    shape.setPosition(getPosition());
-    shape.setRotation(getRotation());
-  }
-
-  void draw(sf::RenderTarget &window)
-  {
-    sf::ConvexShape shape;
-    makeShapeFromPolygon(shape);
-    window.draw(shape);
-  }
-};
-

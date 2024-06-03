@@ -13,7 +13,6 @@ GameState::GameState(StateStack &stack, State::Context context)
 {
     mp_game = std::make_unique<Game>(*m_context.window, *context.bindings);
 
-
     auto& background_texture = context.textures->get(Textures::ID::BackGround);
     background_texture.setRepeated(true);
     background_texture.setSmooth(true);
@@ -29,7 +28,7 @@ void GameState::update(float dt)
 
     if(mp_game->getState() == Game::GameState::PLAYER_DIED)
     {
-        m_context.score->m_current_score = mp_game->m_score;
+        m_context.score->setCurrentScore(mp_game->getScore());
         m_stack->popState();
         m_stack->pushState(States::ID::Player_Died);
     }
@@ -54,12 +53,11 @@ void GameState::draw()
 {
     auto& background_texture = m_context.textures->get(Textures::ID::BackGround);
     auto& window = *m_context.window;
+    
     sf::RectangleShape background;
-
-
     background.setSize({Geometry::BOX[0], Geometry::BOX[1]});
     background.setTexture(&background_texture);
-    background.setTextureRect({0, 0, 2 * (int)background_texture.getSize().x, 2 * (int)background_texture.getSize().y});
+    background.setTextureRect({0, 0, 8 * (int)background_texture.getSize().x, 8 * (int)background_texture.getSize().y});
     window.draw(background);
 
     mp_game->draw(window);

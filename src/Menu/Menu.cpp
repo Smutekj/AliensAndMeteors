@@ -33,6 +33,11 @@ Menu::Menu(sf::Font *font) : p_font(font)
     m_text.setFont(*p_font);
 }
 
+void Menu::setYPos(float y_pos)
+{
+    m_y_pos = y_pos;
+}
+
 void Menu::draw(sf::RenderWindow &window)
 {
     auto old_view = window.getView();
@@ -41,7 +46,7 @@ void Menu::draw(sf::RenderWindow &window)
     sf::Vector2f size = {static_cast<float>(window.getSize().x), static_cast<float>(window.getSize().y)};
 
     auto window_size = window.getSize();
-    float field_y_pos = 100;
+    float field_y_pos = m_y_pos;
     m_text.setFillColor(sf::Color::Red);
 
     for (int item_ind = 0; item_ind < m_items.size(); item_ind++)
@@ -88,9 +93,8 @@ void Menu::handleEvent(sf::Event event)
             m_selected_item_ind = (m_selected_item_ind + 1) % m_items.size();
             m_items.at(m_selected_item_ind)->m_is_selected = true;
         }
-
-        m_items.at(m_selected_item_ind)->handleEvent(event);
     }
+    m_items.at(m_selected_item_ind)->handleEvent(event);
 }
 
 ChangeStateItem::ChangeStateItem(State::Context &context, StateStack *stack,
@@ -124,12 +128,8 @@ void ChangeStateItem::handleEvent(sf::Event event)
 ChangeKeyItem::ChangeKeyItem(std::string command_name, PlayerControl command, State::Context &context)
     : m_command(command), m_command_name(command_name), p_bindings(context.bindings), MenuItem(context.font)
 {
-    key_name = static_cast<std::string>(magic_enum::enum_name((*p_bindings)[m_command]));
     m_item_size.x = 200.f;
-    sf::Text text;
-    text.setFont(*context.font);
-    text.setString("KEK");
-    m_item_size.y = text.getGlobalBounds().width * 1.1f;
+    m_item_size.y = context.font->getLineSpacing(32) * 1.1f;
 }
 
 void ChangeKeyItem::handleEvent(sf::Event event)
@@ -147,7 +147,6 @@ void ChangeKeyItem::handleEvent(sf::Event event)
     {
         if (p_bindings->setBinding(m_command, event.key.code)) //! if we succesfully changed key
         {
-            key_name = static_cast<std::string>(magic_enum::enum_name(event.key.code));
             m_is_changing_key = false;
         }
     }
@@ -180,7 +179,7 @@ void ChangeKeyItem::draw(sf::RenderWindow &window)
     }
     else
     {
-        key_name = static_cast<std::string>(magic_enum::enum_name((*p_bindings)[m_command]));
+        auto key_name = static_cast<std::string>(magic_enum::enum_name((*p_bindings)[m_command]));
         right_text.setString(key_name);
     }
 
@@ -210,36 +209,24 @@ void EnterTextItem::handleEvent(sf::Event event)
 {
 
     if (event.type == sf::Event::KeyReleased)
-
     {
-        if (event.key.code == sf::Keyboard::Enter)
+
+        if (event.key.code == sf::Keyboard::BackSpace && m_entered_text.size() > 0)
         {
-            m_is_changing_key = !m_is_changing_key;
+            m_entered_text.pop_back();
         }
-        else
+        if (event.key.code == sf::Keyboard::Period)
         {
-            if (event.key.code == sf::Keyboard::BackSpace && m_entered_text.size() > 0)
-            {
-                m_entered_text.pop_back();
-            }
-            if (event.key.code == sf::Keyboard::Period)
-            {
-                m_entered_text.push_back('.');
-            }
+            m_entered_text.push_back('.');
         }
     }
-    else if (event.type == sf::Event::TextEntered && m_is_changing_key)
+    else if (event.type == sf::Event::TextEntered)
     {
-        if (event.text.unicode >= '0' && event.text.unicode <= '9')
+        if (isLetter(event.text.unicode))
         {
             sf::String a(event.text.unicode);
             m_entered_text = m_entered_text + a.toAnsiString();
         }
-    }
-
-    if (event.key.code == sf::Keyboard::Escape)
-    {
-        m_is_changing_key = false;
     }
 }
 
@@ -265,6 +252,11 @@ void EnterTextItem::draw(sf::RenderWindow &window)
 
     window.draw(left_text);
     window.draw(right_text);
+}
+
+bool EnterTextItem::isLetter(sf::Uint32 code)
+{
+    return (code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
 }
 
 CallBackItem::CallBackItem(State::Context &context, std::function<void()> callback)
