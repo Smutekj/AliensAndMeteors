@@ -2,8 +2,24 @@
 
 #include <SFML/Graphics/Rect.hpp>
 
-class Animation{
+class Animation
+{
 
+public:
+    Animation(sf::Vector2i texture_size, int n_sprites_x, int n_sprites_y,
+              float life_time, int n_repeats = 1,
+              bool inverted = false);
+
+    void setFrameTime(int new_frame_time);
+    void setLifeTime(int new_life_time);
+    void setTime(int new_time);
+    void update(float dt);
+    sf::IntRect getCurrentTextureRect() const;
+
+private:
+    void animateSprite();
+
+private:
     float m_time = 0;
     float m_frame_time = 5;
     float m_life_time;
@@ -17,26 +33,9 @@ class Animation{
     int m_repeats_count = -1;
 
     int m_dx = -1;
-    int m_dy = -1; 
+    int m_dy = -1;
 
     bool m_inverted = false;
 
     sf::Vector2i m_texture_rect_size;
-
-public:
-    Animation(sf::Vector2i texture_size, int n_sprites_x, int n_sprites_y,
-                         float life_time, int n_repeats = 1,
-                         bool inverted = false);
-
-    void setFrameTime(int new_frame_time);
-    void setLifeTime(int new_life_time);
-
-    void setTime(int new_time);
-    bool isDone() const;
-    void update(float dt);
-    sf::IntRect getCurrentTextureRect() const;
-
-private:
-    void animateSprite();
-
 };

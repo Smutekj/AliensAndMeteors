@@ -1,7 +1,8 @@
 #pragma once
 
-#include "core.h"
 #include <memory>
+#include <functional>
+
 #include "ResourceIdentifiers.h"
 #include "Polygon.h"
 
@@ -16,8 +17,6 @@ enum class Multiplier
     AVOID
 };
 
-
-
 struct CollisionData
 {
     sf::Vector2f separation_axis;
@@ -25,7 +24,6 @@ struct CollisionData
     bool belongs_to_a = true;
     sf::Vector2f contact_point;
 };
-
 
 enum class ObjectType
 {
@@ -41,11 +39,17 @@ enum class ObjectType
     Player,
     Flag,
     Boss,
-    Objective,
+    Trigger,
     EMP,
     Count
 };
 
+enum class EffectType
+{
+    ParticleEmiter,
+    AnimatedSprite,
+
+};
 
 enum class ObjectiveType
 {
@@ -64,52 +68,69 @@ struct RigidBody
 class GameObject
 {
 
-    ObjectType m_type;
-
-protected:
-
-    TextureHolder& m_textures;
-
-    sf::Vector2f m_pos;
-    GameWorld* m_world; //! won't be needed once I implement messenger class
-
-    bool m_is_dead = false;
-    bool m_is_bloomy = false;
-
-    sf::Vector2f m_size = {1,1};
-
 public:
-    GameObject(GameWorld* world, TextureHolder& textures, ObjectType type);
-
-    std::unique_ptr<Polygon> m_collision_shape = nullptr;
-    std::unique_ptr<RigidBody> m_rigid_body = nullptr;
-
-    float m_angle = 0;
-    int m_id;
-    sf::Vector2f m_vel = {0,0};
+    GameObject(GameWorld *world, TextureHolder &textures, ObjectType type);
 
     virtual void update(float dt) = 0;
     virtual void onCreation() = 0;
-    virtual void onDestruction() = 0;
+    virtual void onDestruction() {m_on_destruction_callback(m_id, m_type);}
     virtual void draw(sf::RenderTarget &target) = 0;
-    virtual void onCollisionWith(GameObject& obj, CollisionData& c_data) = 0;
+    virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) = 0;
     virtual ~GameObject() {}
 
     void removeCollider();
-    bool isBloomy()const;
+    bool isBloomy() const;
     void kill();
-    bool isDead()const;
+    bool isDead() const;
     void updateAll(float dt);
-
-    void move(sf::Vector2f by);
-    bool collides() const;
-    float getAngle() const;
-    Polygon &getCollisionShape();
-    int getId() const;
-    ObjectType getType() const;
 
     const sf::Vector2f &getPosition() const;
     void setPosition(sf::Vector2f new_position);
-    void setSize(sf::Vector2f size);
+    void move(sf::Vector2f by);
+
+    float getAngle() const;
     void setAngle(float angle);
+    
+    bool collides() const;
+    Polygon &getCollisionShape();
+    
+    bool doesPhysics()const;
+    RigidBody &getRigidBody();
+    
+    int getId() const;
+    ObjectType getType() const;
+
+
+    void setSize(sf::Vector2f size);
+
+    void setDestructionCallback(std::function<void(int, ObjectType)> callback)
+    {
+        m_on_destruction_callback = callback;
+    }
+
+public:
+
+    sf::Vector2f m_vel = {0, 0};
+    int m_id;
+
+protected:
+    TextureHolder &m_textures;
+    
+    std::unique_ptr<Polygon> m_collision_shape = nullptr;
+    std::unique_ptr<RigidBody> m_rigid_body = nullptr;
+    
+    sf::Vector2f m_pos;
+    float m_angle = 0;
+    
+    GameWorld *m_world;
+    
+    bool m_is_dead = false;
+    bool m_is_bloomy = false;
+    
+    sf::Vector2f m_size = {1, 1};
+
+private:
+    std::function<void(int, ObjectType)> m_on_destruction_callback = [](int, ObjectType){};
+
+    ObjectType m_type;
 };

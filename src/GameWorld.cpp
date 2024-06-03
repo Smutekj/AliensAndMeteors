@@ -1,28 +1,29 @@
 #include "GameWorld.h"
 
-#include "Entities.h"
+#include <chrono>
+
+#include <SFML/Graphics/Texture.hpp>
+
+#include "Entities/Entities.h"
+#include "Entities/Enemy.h"
+#include "Entities/Player.h"
+#include "Entities/Attacks.h"
 
 GameWorld::GameWorld()
 {
 
-    for (int i = 0; i < 300; ++i)
+    for (int i = 0; i < 500; ++i)
     {
         auto &meteor = addObject(ObjectType::Meteor);
     }
 
-    m_textures.load(Textures::ID::Bomb, "../Resources/bomb.png");
-    m_textures.load(Textures::ID::EnemyShip, "../Resources/EnemyShip.png");
-    m_textures.load(Textures::ID::BossShip, "../Resources/BossShip.png");
-    m_textures.load(Textures::ID::Explosion2, "../Resources/explosion2.png");
-    m_textures.load(Textures::ID::Explosion, "../Resources/explosion.png");
-    m_textures.load(Textures::ID::PlayerShip, "../Resources/playerShip.png");
-    m_textures.load(Textures::ID::Heart, "../Resources/Heart.png");
-    m_textures.load(Textures::ID::Station, "../Resources/Station.png");
-    m_textures.load(Textures::ID::BoosterYellow, "../Resources/effectYellow.png");
-    m_textures.load(Textures::ID::BoosterPurple, "../Resources/effectPurple.png");
-    m_textures.load(Textures::ID::Emp, "../Resources/emp.png");
-
+    loadTextures();
+   
     m_neighbour_searcher = std::make_unique<GridNeighbourSearcher>();
+
+    m_effect_factories[EffectType::ParticleEmiter] =
+        [this]()
+    { return std::make_shared<StarEmitter>(this, m_textures); };
 }
 
 GameObject &GameWorld::addObject(ObjectType type)
@@ -38,23 +39,25 @@ GameObject &GameWorld::addObject(ObjectType type)
         new_object = std::make_shared<Meteor>(this, m_textures);
         break;
     case ObjectType::Bullet:
-        new_object = std::make_shared<Bullet2>(this, m_textures, m_player);
+        new_object = std::make_shared<Bullet>(this, m_textures, m_player);
         break;
     case ObjectType::Laser:
-        new_object = std::make_shared<Laser2>(this, m_textures, m_collision_system);
+        new_object = std::make_shared<Laser>(this, m_textures, m_collision_system);
         break;
     case ObjectType::Bomb:
-        new_object = std::make_shared<Bomb2>(this, m_textures, m_collision_system);
+        new_object = std::make_shared<Bomb>(this, m_textures, m_collision_system);
         break;
     case ObjectType::Explosion:
         new_object = std::make_shared<Explosion>(this, m_textures);
         break;
-    case ObjectType::Heart:
-        new_object = std::make_shared<Heart>(this, m_textures);
-        break;
     case ObjectType::Player:
+    {
         new_object = std::make_shared<PlayerEntity>(this, m_textures);
         m_player = &static_cast<PlayerEntity &>(*new_object);
+        break;
+    }
+    case ObjectType::Heart:
+        new_object = std::make_shared<Heart>(this, m_textures);
         break;
     case ObjectType::SpaceStation:
         new_object = std::make_shared<SpaceStation>(this, m_textures);
@@ -62,19 +65,15 @@ GameObject &GameWorld::addObject(ObjectType type)
     case ObjectType::Boss:
         new_object = std::make_shared<Boss>(this, m_textures, m_player);
         break;
-    case ObjectType::Objective:
+    case ObjectType::Trigger:
         new_object = std::make_shared<ReachPlace>(this, m_textures, m_player);
         break;
     case ObjectType::EMP:
         new_object = std::make_shared<EMP>(this, m_textures, &m_collision_system);
         break;
     default:
-        throw std::runtime_error("You forgot to add the new object here, you donkey!");
+        throw std::runtime_error("You forgot to add the new object here!");
     }
-
-    // auto new_id = *free_ids.begin();
-    // free_ids.erase(free_ids.begin());
-    // new_object->m_id = new_id;
 
     m_to_add.push(new_object);
     return *m_to_add.back();
@@ -89,7 +88,7 @@ void GameWorld::addQueuedEntities()
         m_entities.at(new_id)->m_id = new_id;
         if (m_entities.at(new_id)->collides())
         {
-            m_collision_system.insertObject(*m_entities.at(new_id));
+            m_collision_system.insertObject(m_entities.at(new_id));
         }
 
         m_entities.at(new_id)->onCreation();
@@ -103,6 +102,13 @@ void GameWorld::removeQueuedEntities()
     {
         auto object = m_to_destroy.front();
         object->onDestruction();
+
+        //! notify observers that entity got destroyed
+        for (auto callback_id : m_entitydestroyed_events.getEntityIds())
+        {
+            m_entitydestroyed_events.at(callback_id)(object->getType(), object->getId());
+        }
+
         if (object->collides())
         {
             m_collision_system.removeObject(*object);
@@ -119,39 +125,71 @@ void GameWorld::destroyObject(int entity_id)
 
 void GameWorld::update(float dt)
 {
-    for (auto ind : m_entities.active_inds)
+
+    m_collision_system.update();
+
+    for (auto &obj : m_entities.getObjects())
     {
-        m_entities.at(ind)->updateAll(dt);
-        if (m_entities.at(ind)->isDead())
+        obj->updateAll(dt);
+        if (obj->isDead())
         {
-            destroyObject(ind);
+            destroyObject(obj->getId());
         }
     }
 
-    if (m_heart_timer.update(dt))
-    {
-        auto spawn_pos = m_player->getPosition() + randf(20, 200) * angle2dir(randf(0, 360));
-        auto &heart = addObject(ObjectType::Heart);
-        heart.setPosition(spawn_pos);
-    }
-
-    m_collision_system.update();
     addQueuedEntities();
     removeQueuedEntities();
 }
 
 void GameWorld::draw(sf::RenderTarget &bloomy_target, sf::RenderTarget &window)
 {
-
-    for (auto ind : m_entities.active_inds)
+    for (auto &obj : m_entities.getObjects())
     {
-        if (m_entities.at(ind)->isBloomy())
+        if (obj->isBloomy())
         {
-            m_entities.at(ind)->draw(bloomy_target);
+            obj->draw(bloomy_target);
         }
         else
         {
-            m_entities.at(ind)->draw(window);
+            obj->draw(window);
         }
     }
+}
+
+
+VisualEffect &GameWorld::addVisualEffect(EffectType type)
+{
+    assert(m_effect_factories.count(type) > 0);
+
+    auto new_effect = m_effect_factories.at(type)();
+    m_to_add.push(new_effect);
+    return *new_effect;
+}
+
+int GameWorld::addEntityDestroyedCallback(std::function<void(ObjectType, int)> callback)
+{
+    return m_entitydestroyed_events.addObject(callback);
+}
+
+void GameWorld::removeEntityDestroyedCallback(int callback_id)
+{
+    m_entitydestroyed_events.remove(callback_id);
+}
+
+void GameWorld::loadTextures()
+{
+     m_textures.load(Textures::ID::Bomb, "../Resources/bomb.png");
+    m_textures.load(Textures::ID::EnemyShip, "../Resources/EnemyShip.png");
+    m_textures.load(Textures::ID::BossShip, "../Resources/BossShip.png");
+    m_textures.load(Textures::ID::Explosion2, "../Resources/explosion2.png");
+    m_textures.load(Textures::ID::Explosion, "../Resources/explosion.png");
+    m_textures.load(Textures::ID::PlayerShip, "../Resources/playerShip.png");
+    m_textures.load(Textures::ID::Heart, "../Resources/Heart.png");
+    m_textures.load(Textures::ID::Station, "../Resources/Station.png");
+    m_textures.load(Textures::ID::BoosterYellow, "../Resources/effectYellow.png");
+    m_textures.load(Textures::ID::BoosterPurple, "../Resources/effectPurple.png");
+    m_textures.load(Textures::ID::Arrow, "../Resources/arrow.png");
+    m_textures.load(Textures::ID::Emp, "../Resources/emp.png");
+    m_textures.load(Textures::ID::Star, "../Resources/star.png");
+
 }

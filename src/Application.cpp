@@ -21,7 +21,6 @@ Application::Application(float fps)
 
     registerStates();
     m_state_stack->pushState(States::ID::Menu);
-
 }
 
 void Application::run()
@@ -30,7 +29,8 @@ void Application::run()
     {
         m_window->clear(sf::Color::Black);
         sf::Event event;
-        while(m_window->pollEvent(event)){
+        while (m_window->pollEvent(event))
+        {
             m_state_stack->handleEvent(event);
         }
         m_state_stack->update(m_dt);
@@ -38,7 +38,6 @@ void Application::run()
         m_window->display();
     }
 }
-
 
 void Application::registerStates()
 {

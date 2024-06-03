@@ -1,7 +1,6 @@
 #include "GameObject.h"
 
 #include "Polygon.h"
-#include "GameWorld.h"
 
 GameObject::GameObject(GameWorld* world, TextureHolder& textures, ObjectType type)
  :
@@ -30,11 +29,7 @@ void GameObject::updateAll(float dt)
 
 bool GameObject::collides() const
 {
-    if(m_collision_shape)
-    {
-        return true;
-    }
-    return false;
+   return m_collision_shape != nullptr;
 }
 
 const sf::Vector2f& GameObject::getPosition() const
@@ -51,6 +46,18 @@ Polygon &GameObject::getCollisionShape()
 {
     return *m_collision_shape;
 }
+
+
+bool GameObject::doesPhysics()const
+{
+    return m_rigid_body != nullptr;
+}
+
+RigidBody &GameObject::getRigidBody()
+{
+    return *m_rigid_body;
+}
+
 
 int GameObject::getId() const
 {

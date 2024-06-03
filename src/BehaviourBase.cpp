@@ -1,6 +1,11 @@
 #include "BehaviourBase.h"
+
 #include "GameWorld.h"
-#include "Entities.h"
+#include "Entities/Entities.h"
+#include "Entities/Player.h"
+#include "Entities/Enemy.h"
+#include "Entities/Attacks.h"
+
 
 FollowAndShootAI2::FollowAndShootAI2(PlayerEntity *player, Enemy *owner, GameWorld *world)
     : BoidAI2(player, owner, world)
@@ -23,7 +28,7 @@ void FollowAndShootAI2::update()
         if (frames_since_shot > cool_down)
         {
             frames_since_shot = 0;
-            auto &bullet = static_cast<Bullet2 &>(p_world->addObject(ObjectType::Bullet));
+            auto &bullet = static_cast<Bullet &>(p_world->addObject(ObjectType::Bullet));
             bullet.setPosition(p_owner->getPosition());
             float bullet_vel = 5000.f;
             bullet.m_vel = bullet_vel * dr_player / norm2(dr_player);
@@ -52,10 +57,10 @@ void FollowAndShootLasersAI::update()
         frames_since_shot_laser = 0;
         // p_bs->spawnBulletNoSeek(entity_ind, p_owner->getPosition(), player->pos);
         auto predicted_pos = p_player->getPosition() + angle2dir(p_player->getAngle()) * p_player->speed * 0.5f;
-        auto& laser = p_world->addObject(ObjectType::Laser);
+        auto& laser = static_cast<Laser&>(p_world->addObject(ObjectType::Laser));
         laser.setPosition(p_owner->getPosition());
+        laser.setOwner(p_owner);
         laser.setAngle(dir2angle(predicted_pos - p_owner->getPosition()));       
-
         shooting_laser = true;
     }
     frames_since_shot_bullet++;
@@ -126,7 +131,7 @@ void FollowAndShootLasersAI::update()
         {
             auto dr_to_player = p_player->getPosition() - p_owner->getPosition();
             auto dir = (dr_to_player) / norm(dr_to_player);
-            auto& bomb = static_cast<Bomb2&>(p_world->addObject(ObjectType::Bomb));
+            auto& bomb = static_cast<Bomb&>(p_world->addObject(ObjectType::Bomb));
             bomb.setPosition(p_owner->getPosition());
             bomb.m_vel = dir * 3.f*dist2player /(1 - std::exp(-0.95f*bomb.m_life_time));
 

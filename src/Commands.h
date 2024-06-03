@@ -15,21 +15,19 @@ enum class PlayerControl
     BOOST
 };
 
-
 class KeyBindings
 {
-    std::unordered_map<PlayerControl, sf::Keyboard::Key> command_map;
-    std::unordered_map<sf::Keyboard::Key, PlayerControl> key_map;
 
 public:
     KeyBindings();
 
     bool setBinding(PlayerControl command, sf::Keyboard::Key new_key);
-
     bool commandNotSet(PlayerControl command);
-
     void unsetKey(sf::Keyboard::Key new_key);
     void unsetCommand(PlayerControl command);
-
     sf::Keyboard::Key operator[](PlayerControl command) const;
+
+private:
+    std::unordered_map<PlayerControl, sf::Keyboard::Key> m_command_map;
+    std::unordered_map<sf::Keyboard::Key, PlayerControl> m_key_map;
 };

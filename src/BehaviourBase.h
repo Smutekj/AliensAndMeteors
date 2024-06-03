@@ -1,13 +1,9 @@
 #pragma once
 
-#include "core.h"
-#include "Player.h"
-
-#include <functional>
-
 
 class Enemy;
 class GameWorld;
+class PlayerEntity;
 
 class BoidAI2
 {
@@ -102,18 +98,3 @@ enum class AIType
     LASER,
 };
 
-class AIFactory
-{
-
-    std::unordered_map<AIType, std::function<std::unique_ptr<BoidAI2>(PlayerEntity*, Enemy*, GameWorld*)>> m_factories;
-
-    std::unique_ptr<BoidAI2> createAI(AIType type, PlayerEntity* p, Enemy* e, GameWorld* world)
-    {
-        return  m_factories.at(type)(p,e,world);
-    }
-
-    // void registerAIs()
-    // {
-    //     m_factories[] = 
-    // }
-};

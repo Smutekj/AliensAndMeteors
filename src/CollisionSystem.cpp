@@ -5,14 +5,22 @@
 namespace Collisions
 {
 
-    void CollisionSystem::insertObject(GameObject &object)
+    CollisionSystem::CollisionSystem()
     {
+        for (int i = 0; i < static_cast<int>(ObjectType::Count); ++i)
+        {
+            m_object_type2tree[static_cast<ObjectType>(i)] = {};
+        }
+    }
 
+    void CollisionSystem::insertObject(std::shared_ptr<GameObject> &p_obj)
+    {
+        auto &object = *p_obj;
         auto bounding_rect = object.getCollisionShape().getBoundingRect().inflate(1.2f);
         m_object_type2tree[object.getType()].addRect(bounding_rect, object.getId());
 
         assert(m_objects.count(object.getId()) == 0);
-        m_objects[object.getId()] = &object;
+        m_objects[object.getId()] = p_obj;
     }
 
     void CollisionSystem::removeObject(GameObject &object)
@@ -27,11 +35,12 @@ namespace Collisions
     void CollisionSystem::update()
     {
 
-        for (auto &[ind, entity] : m_objects)
+        for (auto &[ind, p_entity] : m_objects)
         {
-            auto type = entity->getType();
+            auto &entity = *p_entity.lock();
+            auto type = entity.getType();
             auto &tree = m_object_type2tree.at(type);
-            auto fitting_rect = entity->m_collision_shape->getBoundingRect();
+            auto fitting_rect = entity.getCollisionShape().getBoundingRect();
             auto big_bounding_rect = tree.getObjectRect(ind);
 
             //! if object moved in a way that rect in the collision tree does not fully contain it
@@ -64,8 +73,8 @@ namespace Collisions
         for (auto [i1, i2] : colliding_pairs)
         {
 
-            auto obj1 = m_objects.at(i1);
-            auto obj2 = m_objects.at(i2);
+            auto &obj1 = *m_objects.at(i1).lock();
+            auto &obj2 = *m_objects.at(i2).lock();
 
             if (m_collided.count({i1, i2}) > 0)
             {
@@ -73,16 +82,16 @@ namespace Collisions
             }
             m_collided.insert({i1, i2});
 
-            auto collision_data = getCollisionData(obj1->getCollisionShape(), obj2->getCollisionShape());
+            auto collision_data = getCollisionData(obj1.getCollisionShape(), obj2.getCollisionShape());
             if (collision_data.minimum_translation > 0) //! there is a collision
             {
-                if (obj1->m_rigid_body && obj2->m_rigid_body) //! if both objects have rigid bodies we do physics
+                if (obj1.doesPhysics() && obj2.doesPhysics()) //! if both objects have rigid bodies we do physics
                 {
-                    bounce(*obj1, *obj2, collision_data);
+                    bounce(obj1, obj2, collision_data);
                 }
 
-                obj1->onCollisionWith(*obj2, collision_data);
-                obj2->onCollisionWith(*obj1, collision_data);
+                obj1.onCollisionWith(obj2, collision_data);
+                obj2.onCollisionWith(obj1, collision_data);
             }
         }
     }
@@ -141,10 +150,11 @@ namespace Collisions
         std::vector<GameObject *> objects;
         for (auto ind : nearest_inds)
         {
-            auto mvt = m_objects.at(ind)->getCollisionShape().getMVTOfSphere(center, radius);
+            auto &obj = *m_objects.at(ind).lock();
+            auto mvt = obj.getCollisionShape().getMVTOfSphere(center, radius);
             if (norm2(mvt) > 0.001f)
             {
-                objects.push_back(m_objects.at(ind));
+                objects.push_back(&obj);
             }
         }
         return objects;
@@ -157,7 +167,8 @@ namespace Collisions
         auto inters = m_object_type2tree.at(type).rayCast(at, dir, length);
         for (auto ent_ind : inters)
         {
-            auto points = m_objects.at(ent_ind)->getCollisionShape().getPointsInWorld();
+            auto &obj = *m_objects.at(ent_ind).lock();
+            auto points = obj.getCollisionShape().getPointsInWorld();
 
             int next = 1;
             for (int i = 0; i < points.size(); ++i)
@@ -184,7 +195,6 @@ namespace Collisions
         }
         return closest_intersection;
     }
-
 
     CollisionData inline calcCollisionData(const std::vector<sf::Vector2f> &points1,
                                            const std::vector<sf::Vector2f> &points2)
@@ -316,28 +326,22 @@ namespace Collisions
         std::vector<sf::Vector2f> cp;
         float d1 = dot(v1, n) - overlap;
         float d2 = dot(v2, n) - overlap;
-        // if either point is past o along n
-        // then we can keep the point
         if (d1 >= 0.0)
+        {
             cp.push_back(v1);
+        }
         if (d2 >= 0.0)
+        {
             cp.push_back(v2);
-        // finally we need to check if they
-        // are on opposing sides so that we can
-        // compute the correct point
+        }
         if (d1 * d2 < 0.0)
         {
-            // if they are on different sides of the
-            // offset, d1 and d2 will be a (+) * (-)
-            // and will yield a (-) and therefore be
-            // less than zero
-            // get the vector for the edge we are clipping
+
             sf::Vector2f e = v2 - v1;
             // compute the location along e
             float u = d1 / (d1 - d2);
             e *= u;
             e += v1;
-            // add the point
             cp.push_back(e);
         }
         return cp;
@@ -369,40 +373,30 @@ namespace Collisions
         auto cp = clip(inc_edge.from, inc_edge.to(), ref_v, o1);
         auto cp_new = cp;
         // if we dont have 2 points left then fail
-        bool fucked = false;
         if (cp.size() < 2)
         {
             return {};
         }
 
-        // clip whats left of the incident edge by the
-        // second vertex of the reference edge
-        // but we need to clip in the opposite direction
-        // so we flip the direction and offset
         double o2 = dot(ref_v, ref_edge.to());
         cp = clip(cp[0], cp[1], -ref_v, -o2);
         // if we dont have 2 points left then fail
         if (cp.size() < 2)
+        {
             return {};
+        }
 
         // get the reference edge normal
         sf::Vector2f refNorm = {-ref_v.y, ref_v.x};
         refNorm /= norm(refNorm);
-        // if we had to flip the incident and reference edges
-        // then we need to flip the reference edge normal to
-        // clip properly
-        // if (flip)
-        // refNorm *= -1.f;
-        // get the largest depth
+
         double max = dot(refNorm, ref_features.best_vertex);
         // make sure the final points are not past this maximum
 
         std::vector<float> depths(2);
         depths[0] = dot(refNorm, cp.at(0)) - max;
         depths[1] = dot(refNorm, cp.at(1)) - max;
-        // if (depths[0] < 0.0f && depths[1] < 0.f){
-        //   return {};
-        // }
+
         if (depths[0] < 0.0f)
         {
             cp.erase(cp.begin());
@@ -411,22 +405,23 @@ namespace Collisions
         {
             cp.pop_back();
         }
-        // return the valid points
         return {cp, flip};
     }
 
-
     void inline bounce(GameObject &obj1, GameObject &obj2, CollisionData c_data)
     {
-        auto inertia1 = obj1.m_rigid_body->inertia;
-        auto inertia2 = obj2.m_rigid_body->inertia;
-        auto &angle_vel1 = obj1.m_rigid_body->angle_vel;
-        auto &angle_vel2 = obj2.m_rigid_body->angle_vel;
-        auto &mass1 = obj1.m_rigid_body->mass;
-        auto &mass2 = obj2.m_rigid_body->mass;
+        auto& rigid1 = obj1.getRigidBody();
+        auto& rigid2 = obj2.getRigidBody();
+
+        auto inertia1 = rigid1.inertia;
+        auto inertia2 = rigid2.inertia;
+        auto &angle_vel1 = rigid1.angle_vel;
+        auto &angle_vel2 = rigid2.angle_vel;
+        auto &mass1 = rigid1.mass;
+        auto &mass2 = rigid2.mass;
 
         auto n = c_data.separation_axis;
-        if (obj1.m_rigid_body->mass < obj2.m_rigid_body->mass)
+        if (mass1 < mass2)
         {
             obj1.move(-c_data.separation_axis * c_data.minimum_translation);
         }

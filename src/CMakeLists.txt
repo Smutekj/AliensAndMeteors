@@ -7,21 +7,25 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 
 # ========== cpp and header files ==========
-
-set(hdrs   UI.h BVH.h core.h Polygon.h Commands.h   Application.h Particles.h
-   Bloom.h )
-set(objs UI.cpp BVH.cpp  Polygon.cpp  Commands.cpp Application.cpp Particles.cpp
-    Bloom.cpp )
+set(hdrs   UI.h  Polygon.h Commands.h   Application.h Particles.h Bloom.h )
+set(objs UI.cpp Polygon.cpp  Commands.cpp Application.cpp Particles.cpp Bloom.cpp )
 
 ###### GAME ###### 
-set(game_objs  BehaviourBase.cpp Behaviours.cpp Player.cpp
-   Game.cpp SoundModule.cpp GameObject.cpp GameWorld.cpp Entities.cpp Animation.cpp)
-set(game_hdrs ResourceManager.h BehaviourBase.h Behaviours.h Player.h
-   Game.h  SoundModule.h GameObject.h GameWorld.h Entities.h Animation.h)
+set(game_objs  BehaviourBase.cpp 
+   Game.cpp SoundModule.cpp GameObject.cpp GameWorld.cpp Animation.cpp ObjectiveSystem.cpp)
+set(game_hdrs ResourceManager.h BehaviourBase.h 
+   Game.h  SoundModule.h GameObject.h GameWorld.h  Animation.h ObjectiveSystem.h)
+
+##### ENTITIES #####
+set(ent_objs Entities.cpp Player.cpp Enemy.cpp Attacks.h VisualEffects.h Triggers.h)
+set(ent_hdrs Entities.h Player.h Enemy.h Attacks.cpp VisualEffects.cpp Triggers.cpp)
+list(TRANSFORM ent_objs PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/Entities/)
+list(TRANSFORM ent_hdrs PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/Entities/)
+
 
 ###### COLLISIONS #####
-set(coll_objs CollisionSystem.cpp GridNeighbourSearcher.h )
-set(coll_hdrs CollisionSystem.h GridNeighbourSearcher.cpp )
+set(coll_objs AABB.h BVH.h CollisionSystem.cpp GridNeighbourSearcher.h )
+set(coll_hdrs AABB.cpp BVH.cpp CollisionSystem.h GridNeighbourSearcher.cpp )
 
 
 ###### MENU #####
@@ -35,7 +39,7 @@ set(utils_hdrs Grid.cpp ObjectPool.cpp  )
 list(TRANSFORM utils_objs PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/Utils/ )
 list(TRANSFORM utils_hdrs PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/Utils/ )
 
-add_executable(Boids main.cpp
+add_executable(Boids main.cpp ${ent_objs} ${ent_hdrs}
          ${utils_objs} ${utils_hdrs} ${coll_hdrs} ${coll_objs}
           ${menu_objs} ${menu_hdrs}
         ${objs}  ${hdrs}  ${game_objs} ${game_hdrs} ${gui_objs} ${gui_hdrs}   )

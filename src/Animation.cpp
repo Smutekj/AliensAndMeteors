@@ -39,11 +39,6 @@
         m_tex_y = frame_ind / m_sprites_x;
     }
 
-    bool Animation::isDone() const
-    {
-        return m_time > m_life_time || m_repeats_count == 0;
-    }
-
     void Animation::update(float dt)
     {
         m_time += dt;

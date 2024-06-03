@@ -1,12 +1,9 @@
 #pragma once
 
-#include "core.h"
 #include "BVH.h"
 
-#include <variant>
 #include <memory>
 #include <vector>
-#include <variant>
 #include <unordered_set>
 
 #include "GameObject.h"
@@ -36,7 +33,7 @@ namespace Collisions
     {
 
         std::unordered_map<ObjectType, BoundingVolumeTree> m_object_type2tree;
-        std::unordered_map<int, GameObject *> m_objects;
+        std::unordered_map<int, std::weak_ptr<GameObject>> m_objects;
 
         std::unordered_set<std::pair<int, int>, pair_hash> m_collided;
 
@@ -49,23 +46,18 @@ namespace Collisions
         };
 
     public:
-        CollisionSystem()
-        {
-            for (int i = 0; i < static_cast<int>(ObjectType::Count); ++i)
-            {
-                m_object_type2tree[static_cast<ObjectType>(i)] = {};
-            }
-        }
+        CollisionSystem();
 
-        void insertObject(GameObject &object);
+        void insertObject(std::shared_ptr<GameObject> &p_object);
         void removeObject(GameObject &object);
         void update();
-        void narrowPhase(const std::vector<std::pair<int, int>> &colliding_pairs);
-        CollisionData getCollisionData(Polygon &pa, Polygon &pb) const;
         std::vector<int> findNearestObjectInds(ObjectType type, sf::Vector2f center, float radius);
         std::vector<GameObject *> findNearestObjects(ObjectType type, sf::Vector2f center, float radius);
-
         sf::Vector2f findClosestIntesection(ObjectType type, sf::Vector2f at, sf::Vector2f dir, float length);
+        
+        private:
+        void narrowPhase(const std::vector<std::pair<int, int>> &colliding_pairs);
+        CollisionData getCollisionData(Polygon &pa, Polygon &pb) const;
     };
 
     CollisionData inline calcCollisionData(const std::vector<sf::Vector2f> &points1,
@@ -77,8 +69,7 @@ namespace Collisions
     std::pair<std::vector<sf::Vector2f>, bool> inline clipEdges(
         CollisionFeature &ref_features,
         CollisionFeature &inc_features,
-         sf::Vector2f n);
-
+        sf::Vector2f n);
 
     void inline bounce(GameObject &obj1, GameObject &obj2, CollisionData c_data);
 

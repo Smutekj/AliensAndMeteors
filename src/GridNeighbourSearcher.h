@@ -11,11 +11,6 @@
 
 class GridNeighbourSearcher
 {
-    std::unique_ptr<SearchGrid> m_grid;
-
-    std::vector<std::unordered_map<int, GameObject*>> m_grid2entities;
-
-    std::unordered_map<int, int> m_entity2grid_ind;
 
 public:
     GridNeighbourSearcher(float max_dist = 30);
@@ -29,5 +24,8 @@ public:
     std::vector<GameObject *> getNeighboursOf(sf::Vector2f center, float radius) const;
 
 private:
+    std::unique_ptr<SearchGrid> m_grid;
+    
+    std::vector<std::unordered_map<int, GameObject *>> m_grid2entities;
+    std::unordered_map<int, int> m_entity2grid_ind;
 };
-
