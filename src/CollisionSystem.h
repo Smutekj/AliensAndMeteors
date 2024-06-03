@@ -18,14 +18,6 @@ namespace Collisions
         Edgef edge;
     };
 
-    struct pair_hash
-    {
-        inline std::size_t operator()(const std::pair<int, int> &v) const
-        {
-            return v.first * 31 + v.second;
-        }
-    };
-
     CollisionData inline calcCollisionData(const std::vector<sf::Vector2f> &points1,
                                            const std::vector<sf::Vector2f> &points2);
 
@@ -35,7 +27,6 @@ namespace Collisions
         std::unordered_map<ObjectType, BoundingVolumeTree> m_object_type2tree;
         std::unordered_map<int, std::weak_ptr<GameObject>> m_objects;
 
-        std::unordered_set<std::pair<int, int>, pair_hash> m_collided;
 
         struct pair_hash
         {
@@ -44,6 +35,8 @@ namespace Collisions
                 return v.first * 31 + v.second;
             }
         };
+        
+        std::unordered_set<std::pair<int, int>, pair_hash> m_collided;
 
     public:
         CollisionSystem();

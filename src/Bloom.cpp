@@ -69,7 +69,7 @@
 
         for (int i = 0; i < 5; ++i)
         {
-            auto& vert_pass = m_shaders.get(Shaders::ID::GaussianVertPass);
+            auto& vert_pass = m_shaders.get(Shaders::ID::GaussianHorizPass);
             vert_pass.setUniform("image", m_pass_textures[0].getTexture());
             states.shader = &vert_pass;
             m_pass_textures[1].draw(m_texture_rect, states);
