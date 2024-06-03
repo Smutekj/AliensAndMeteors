@@ -115,7 +115,7 @@ ChangeStateItem::ChangeStateItem(State::Context &context, StateStack *stack,
 
 void ChangeStateItem::handleEvent(sf::Event event)
 {
-    if (event.key.code == sf::Keyboard::Enter)
+    if (event.type == sf::Event::KeyReleased &&  event.key.code == sf::Keyboard::Enter)
     {
         if (m_source == States::ID::None) //! if there is no source we don't want to return
         {
