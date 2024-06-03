@@ -2,9 +2,9 @@
 
 #include <set>
 #include <unordered_map>
-#include <queue>
+#include <vector>
 
-#include "core.h"
+#include "AABB.h"
 
 struct BVHNode
 {
@@ -28,36 +28,20 @@ struct RayCastData
     sf::Vector2f hit_normal;
 };
 
+
+//! Based on this presentation: https://box2d.org/files/ErinCatto_DynamicBVH_Full.pdf
 class BoundingVolumeTree
 {
 
-    std::vector<BVHNode> nodes;
-    std::unordered_map<int, int> object2node_indices; //! mapping from objects to leaves
-    std::set<int> free_indices;                       //! holds node indices that can be used whe inserting new rect
-    int root_ind = -1;
-
 public:
     const BVHNode &getNode(int node_index) const;
-
     void addRect(AABB rect, int object_index);
-
     void removeObject(int object_index);
-
-    const auto &getObjects() const
-    {
-        return object2node_indices;
-    }
-
+    const std::unordered_map<int, int>  &getObjects() const;
     std::vector<std::pair<int, int>> findClosePairsWith(BoundingVolumeTree &tree);
     std::vector<int> findIntersectingLeaves(AABB rect);
-
     void clear();
-
-    const AABB &getObjectRect(int object_ind) const
-    {
-        return nodes.at(object2node_indices.at(object_ind)).rect;
-    }
-
+    const AABB &getObjectRect(int object_ind) const;
     std::vector<int> rayCast(sf::Vector2f from, sf::Vector2f dir, float length);
 
 private:
@@ -68,11 +52,19 @@ private:
     void removeLeaf(int leaf_index);
     int findBestSibling(const AABB &new_rect);
     int findBestSiblingGreedy(const AABB &new_rect);
+    int findBestSiblingExhaustive(const AABB& new_rect);
     bool containsCycle() const;
     bool isConsistent() const;
     int calcMaxDepth() const;
     void moveNodeUp(int going_up_index);
     void refitFrom(int node_index);
+
+private:
+    std::vector<BVHNode> m_nodes;
+    std::unordered_map<int, int> m_object2node_indices; //! mapping from objects to leaves
+    std::set<int> m_free_indices;                       //! holds node indices that can be used whe inserting new rect
+    int m_root_ind = -1;
+
 };
 
 bool inline intersects(const AABB &r1, const AABB &r2)
@@ -81,3 +73,4 @@ bool inline intersects(const AABB &r1, const AABB &r2)
     bool intersects_y = r1.r_min.y <= r2.r_max.y && r1.r_max.y >= r2.r_min.y;
     return intersects_x && intersects_y;
 }
+
