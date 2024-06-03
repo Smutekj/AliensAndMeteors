@@ -13,6 +13,8 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
 
+
+
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 set(CMAKE_CXX_EXTENSIONS YES)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}")
@@ -25,24 +27,15 @@ set_project_warnings(project_warnings)
 include(cmake/CompilerFlags.cmake)
 include(cmake/ExternalTools.cmake)
 
-# project(lua LANGUAGES C)
-
-# add_library(lua STATIC lua/onelua.c)
-
-# target_include_directories(lua
-#                            PUBLIC
-#                            $<INSTALL_INTERFACE:lua>
-#                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../lua>
-#                            )
-# target_compile_definitions(lua PRIVATE MAKE_LIB)
-# # add_subdirectory(lua)
-
 add_subdirectory(src)
-
 
 set(CMAKE_BINARY_DIR ${PROJECT_SOURCE_DIR})
 
 set_target_properties(Boids 
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+)
+target_compile_definitions( Boids
+    PUBLIC
+$<$<CONFIG:Debug>:DEBUG>
 )
