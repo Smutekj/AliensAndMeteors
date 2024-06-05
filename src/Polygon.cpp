@@ -96,15 +96,18 @@
 
   void Polygon::makeShapeFromPolygon(sf::ConvexShape &shape)
   {
+    
+    auto trans = getTransform();
+    
     shape.setPointCount(points.size());
     for (int i = 0; i < points.size(); ++i)
     {
-      shape.setPoint(i, points[i]);
+      shape.setPoint(i, trans.transformPoint(points[i]));
     }
     shape.setFillColor(sf::Color::Yellow);
-    shape.setScale(getScale());
-    shape.setPosition(getPosition());
-    shape.setRotation(getRotation());
+    // shape.setScale(getScale());
+    // shape.setPosition(getPosition());
+    // shape.setRotation(getRotation());
   }
 
   void Polygon::draw(sf::RenderTarget &window)

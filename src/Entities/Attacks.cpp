@@ -1,6 +1,7 @@
 #include "Attacks.h"
 
 #include <SFML/Graphics/RenderTarget.hpp>
+#include <SFML/Graphics/ConvexShape.hpp>
 
 #include "../CollisionSystem.h"
 #include "../ResourceManager.h"
@@ -213,10 +214,11 @@ void Laser::update(float dt)
     auto hit = m_neighbour_searcher->findClosestIntesection(ObjectType::Meteor, m_pos, angle2dir(m_angle), m_length);
 
     m_length = dist(hit, m_pos);
-    setSize({m_length, m_width});
+    setSize({m_length/sqrtf(2), m_width});
     //! m_pos of laser is special, it is starting position not center so we set it manually
     m_collision_shape->setPosition(m_pos + m_length / 2.f * angle2dir(m_angle));
-
+    
+    
     if (m_life_time < 0.f)
     {
         kill();
@@ -238,10 +240,6 @@ void Laser::onDestruction()
 void Laser::draw(sf::RenderTarget &target)
 {
 
-    sf::VertexArray verts;
-    verts.resize(4);
-    verts.setPrimitiveType(sf::Quads);
-
     sf::RectangleShape rect;
     rect.setOrigin({0, m_width / 2.f});
     rect.setPosition(m_pos);
@@ -249,4 +247,11 @@ void Laser::draw(sf::RenderTarget &target)
     rect.setSize({m_length, m_width});
     rect.setFillColor(sf::Color{255, 255, 50, 255});
     target.draw(rect);
+
+    // sf::ConvexShape shape;
+    // m_collision_shape->makeShapeFromPolygon(shape);
+    // shape.setOutlineColor(sf::Color::Black);
+    // shape.setOutlineThickness(0.1);
+    // target.draw(shape);
+
 }
