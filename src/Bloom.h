@@ -12,8 +12,11 @@ class Bloom
 {
 
 public:
-    Bloom(int width = 1200, int height = 1200 * 1080. / 1920.);
+    Bloom(int width = 800, int height = 600 * 1080. / 1920.);
     void doTheThing(const sf::RenderTexture &input, sf::RenderTarget &output);
+
+private:
+    void setTextureRectSize(sf::Vector2u new_size);
 
 private:
     ShaderHolder m_shaders;
