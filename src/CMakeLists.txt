@@ -45,9 +45,6 @@ add_executable(Boids main.cpp ${ent_objs} ${ent_hdrs}
         ${objs}  ${hdrs}  ${game_objs} ${game_hdrs} ${gui_objs} ${gui_hdrs}   )
 
 
-#### THIS IS FOR GOOGLE TEST
-# enable_testing()
-
 target_link_libraries(Boids PRIVATE sfml-graphics sfml-audio sfml-window sfml-system ImGui-SFML::ImGui-SFML)
 
 
@@ -62,6 +59,20 @@ if (BUILD_SHARED_LIBS)
         $<TARGET_FILE_DIR:example_exe>)
 endif()
 endif()
-# include(GoogleTest)
-# gtest_discover_tests(test_all)
 
+
+
+#### Tests
+set(TESTING true)
+if(TESTING)
+enable_testing()
+include(GoogleTest)
+
+add_executable(Tests Tests/main.cpp ${ent_objs} ${ent_hdrs}
+        ${utils_objs} ${utils_hdrs} ${coll_hdrs} ${coll_objs}
+         ${menu_objs} ${menu_hdrs}
+       ${objs}  ${hdrs}  ${game_objs} ${game_hdrs} ${gui_objs} ${gui_hdrs}   )
+
+target_link_libraries(Tests PRIVATE gtest sfml-graphics sfml-system sfml-window sfml-audio ImGui-SFML::ImGui-SFML)
+gtest_discover_tests(Tests)
+endif()

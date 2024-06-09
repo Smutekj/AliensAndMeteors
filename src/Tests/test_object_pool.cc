@@ -1,38 +1,33 @@
 #pragma once
 #include <gtest/gtest.h>
-#include "../Utils/GayVector.h"
+#include "../Utils/ObjectPool.h"
 
+TEST(TestObjectPool, BasicAssertions) {
 
-
-TEST(TestGayVectorI, BasicAssertions) {
-
-    GayVectorI<10> selected_inds;
+    DynamicObjectPool<float, 10> pool;
     
-    auto& inds = selected_inds.data;
+    auto& inds = pool.getObjects();
     EXPECT_TRUE(inds.empty());
-    
-    std::vector<int> to_insert = {0,1,2, 7,5,4,3};
-    for(auto ind : to_insert){
-        selected_inds.insert(0, ind);
-        EXPECT_TRUE(selected_inds.containsEnt(ind));
-    }
 
-    selected_inds.removeEnt(0);
-    auto old_inds = selected_inds.data;
-    EXPECT_TRUE(!selected_inds.containsEnt(0));
+    auto e1_ind = pool.addObject(1.0f);
+    auto e2_ind = pool.addObject(1.5f);
     
-    //! nothing should change when removing non-existing index
-    selected_inds.removeEnt(0);
-    auto new_inds = selected_inds.data;
-    for(int i = 0; i < old_inds.size(); ++i){
-        EXPECT_TRUE(old_inds[i] == new_inds[i]);
-    }
+    EXPECT_EQ(pool.getObjects().size(), 2);
+    EXPECT_FLOAT_EQ(pool.at(e1_ind), 1.0f);
+    EXPECT_FLOAT_EQ(pool.at(e2_ind), 1.5f);
 
-    
-    selected_inds.insert(0, 0);
-    selected_inds.insert(0, 0);
-    EXPECT_TRUE(selected_inds.noDuplicates());
-    
+    pool.remove(e1_ind);
+    EXPECT_EQ(pool.getObjects().size(), 1);
+    EXPECT_FLOAT_EQ(pool.getObjects()[0], 1.5);
+
+    auto e3_ind = pool.addObject(2.0f);
+    EXPECT_EQ(pool.getObjects().size(), 2);
+    EXPECT_FLOAT_EQ(pool.at(e3_ind), 2.0f);
+    EXPECT_FLOAT_EQ(pool.at(e2_ind), 1.5f);
+
+    pool.clear();
+    EXPECT_EQ(pool.getObjects().size(), 0);
     
 }
+
 

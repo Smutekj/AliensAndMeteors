@@ -77,19 +77,11 @@ struct ObjectPool
     }
 };
 
-
-
 template <typename DataType, int MAX_OBJECTS>
 struct DynamicObjectPool
 {
 
-    std::vector<DataType> objects;
-
-    std::array<int, MAX_OBJECTS> entity2ind;
-    std::vector<int> object2entity;
-
-    std::set<int> free_inds;
-
+public:
     DynamicObjectPool()
     {
         for (int i = 0; i < MAX_OBJECTS; ++i)
@@ -99,7 +91,8 @@ struct DynamicObjectPool
         entity2ind.fill(-1);
     }
 
-    int addObject(DataType &obj)
+    template <class T>
+    int addObject(T &&obj)
     {
         auto new_entity_ind = *free_inds.begin();
         free_inds.erase(free_inds.begin());
@@ -107,9 +100,10 @@ struct DynamicObjectPool
         assert(entity2ind.at(new_entity_ind) == -1);
         assert(new_entity_ind < MAX_OBJECTS);
 
-        objects.push_back(obj);
+        objects.push_back(std::forward<T>(obj));
+
         object2entity.push_back(new_entity_ind);
-        entity2ind.at(new_entity_ind) = objects.size()-1;
+        entity2ind.at(new_entity_ind) = objects.size() - 1;
         return new_entity_ind;
     }
 
@@ -122,10 +116,10 @@ struct DynamicObjectPool
         object2entity.at(vec_ind) = object2entity.back();
         entity2ind.at(object2entity.back()) = vec_ind;
         object2entity.pop_back();
-        
+
         objects.at(vec_ind) = objects.back();
         objects.pop_back();
-        
+
         entity2ind.at(entity_ind) = -1;
     }
 
@@ -135,17 +129,33 @@ struct DynamicObjectPool
         return objects.at(entity2ind.at(entity_ind));
     }
 
-    std::vector<DataType>& getObjects()
+    std::vector<DataType> &getObjects()
     {
         return objects;
     }
-    std::vector<int>& getEntityIds()
+    std::vector<int> &getEntityIds()
     {
         return object2entity;
     }
+    void clear()
+    {
+        for (auto &ind : object2entity)
+        {
+            free_inds.insert(ind);
+            entity2ind.at(ind) = -1;    
+        }
 
+        objects.clear();
+        object2entity.clear();
+    }
+
+
+private:
+    std::vector<int> object2entity;
+    std::vector<DataType> objects;
+    std::array<int, MAX_OBJECTS> entity2ind;
+    std::set<int> free_inds;
 };
-
 
 template <typename Type>
 class VectorMap
