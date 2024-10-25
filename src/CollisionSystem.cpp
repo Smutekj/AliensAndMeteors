@@ -11,7 +11,7 @@ namespace Collisions
         {
             m_object_type2tree[static_cast<ObjectType>(i)] = {};
         }
-        m_exceptions.insert({(int)ObjectType::Wall, (int)ObjectType::Wall});
+        // m_exceptions.insert({(int)ObjectType::Wall, (int)ObjectType::Wall});
     }
 
     void CollisionSystem::insertObject(std::shared_ptr<GameObject> &p_obj)
@@ -92,10 +92,10 @@ namespace Collisions
 
             if (collision_data.minimum_translation > 0) //! there is a collision
             {
-                // if (obj1.doesPhysics() && obj2.doesPhysics()) //! if both objects have rigid bodies we do physics
-                // {
-                //     bounce(obj1, obj2, collision_data);
-                // }
+                if (obj1.doesPhysics() && obj2.doesPhysics()) //! if both objects have rigid bodies we do physics
+                {
+                    bounce(obj1, obj2, collision_data);
+                }
 
                 obj1.onCollisionWith(obj2, collision_data);
                 obj2.onCollisionWith(obj1, collision_data);

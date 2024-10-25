@@ -1,5 +1,6 @@
 #pragma once
-#include <Vector2.h>
+
+#include <Utils/Vector2.h>
 #include <Transform.h>
 
 #include <vector>
@@ -19,7 +20,10 @@ struct Polygon : public Transform
     return {r - dr, r + dr};
   }
 
-  utils::Vector2f getCenter();
+  utils::Vector2f getCenter()
+  {
+    return getPosition();
+  }
 
   std::vector<utils::Vector2f> getPointsInWorld();
   void move(utils::Vector2f by);

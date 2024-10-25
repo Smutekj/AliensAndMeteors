@@ -106,4 +106,63 @@ float Grid::getSizeY() const{
     return  m_cell_count.y*m_cell_size.y;
 }
 
-} // namespace cdt
+
+
+
+//! \param cell_coords 2D cell coordinates
+//! \returns true if point is within grid bounds
+bool SearchGrid::isInGrid(utils::Vector2i cell_coords) const {
+    return cell_coords.x < m_cell_count.x && cell_coords.x >= 0 && cell_coords.x < m_cell_count.y && cell_coords.y >= 0;
+}
+
+
+SearchGrid::SearchGrid(utils::Vector2i n_cells, utils::Vector2f cell_size)
+    : Grid(n_cells, cell_size) {
+}
+
+//! \brief calculates indices of (up to) 9 closest cells EXCLUDING CENTER CELL, takes boundary into account, 
+//! \param cell_ind
+//! \param nearest_cells array containing cell_indices of closest cells (right now only looking at 9 nearest cells)
+//! \param n_nearest_cells number of nearest cells
+void SearchGrid::calcNearestCells(const int cell_ind, std::array<int, 9>& nearest_cells, int& n_nearest_cells) const {
+
+    const auto cell_coords = cellCoords(cell_ind);
+    n_nearest_cells = 0;
+    for (int i = -1; i <= 1; ++i) {
+        for (int j = -1; j <= 1; ++j) {
+            auto neighbour_cell_ind = cell_ind + i + j * m_cell_count.x;
+            if (isInGrid({cell_coords.x + i, cell_coords.y + j}) && (neighbour_cell_ind != cell_ind)) {
+                nearest_cells.at(n_nearest_cells) = neighbour_cell_ind;
+                n_nearest_cells++;
+            }
+        }
+    }
+    assert(n_nearest_cells != 0);
+}
+
+//! \brief calculates cell indices of (up to) 9 closest cells EXCLUDING CENTER CELL, 
+//! \brief will add only neighbour cell indices whose value is larger than \p cell_ind  
+//! \brief (this is useful to prevent double counting)
+//! \param cell_ind
+//! \param nearest_cells array containing cell_indices of closest cells (right now only looking at 9 nearest cells)
+//! \param n_nearest_cells number of nearest cells
+void SearchGrid::calcNearestCells2(const int cell_ind, std::array<int, 9>& nearest_cells, int& n_nearest_cells) const {
+
+    const auto cell_coords = cellCoords(cell_ind);
+    n_nearest_cells = 0;
+    for (int i = -1; i <= 1; ++i) {
+        for (int j = -1; j <= 1; ++j) {
+            auto neighbour_cell_ind = cell_ind + i + j * m_cell_count.x;
+            if (isInGrid({cell_coords.x + i, cell_coords.y + j}) && (neighbour_cell_ind > cell_ind)) {
+                nearest_cells.at(n_nearest_cells) = neighbour_cell_ind;
+                n_nearest_cells++;
+            }
+        }
+    }
+    assert(n_nearest_cells != 0); //! this would be silly
+}
+
+
+
+
+} // namespace utils

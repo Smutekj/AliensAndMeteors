@@ -22,18 +22,16 @@ include(cmake/External.cmake)
 if( ${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
 set(USE_FLAGS "-std=c++20 -s USE_SDL=2 -s FULL_ES3=1 -s OFFSCREEN_FRAMEBUFFER=1")
 set(USE_FLAGS "${USE_FLAGS} -s MIN_WEBGL_VERSION=1 -s MAX_WEBGL_VERSION=2")
-set(USE_FLAGS "${USE_FLAGS} -s TOTAL_STACK=32MB")
+set(USE_FLAGS "${USE_FLAGS} -s TOTAL_STACK=64MB -INITIAL_HEAP=250MB")
 set(USE_FLAGS "${USE_FLAGS} -s NO_DISABLE_EXCEPTION_CATCHING")
 set(USE_FLAGS "${USE_FLAGS} -s -sASSERTIONS=2 -sALLOW_MEMORY_GROWTH=1")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${USE_FLAGS} ")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --embed-file ../scripts  --embed-file ../external/lygia ") 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --embed-file ../Resources/Shaders --embed-file ../Resources/Textures --embed-file ../Resources/Fonts")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --embed-file ../Resources/GrassTiles")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${USE_FLAGS}   -L../external/lua/src/liblua.a -I ../external/lua/src")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --embed-file ../scripts  --embed-file ../external/lygia ") 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --embed-file ../Resources/Shaders --embed-file ../Resources/Textures --embed-file ../Resources/Fonts")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --embed-file ../Resources/GrassTiles")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${USE_FLAGS}")
 set(CMAKE_EXECUTABLE_SUFFIX .html)
 endif()
@@ -45,10 +43,10 @@ file(GLOB SRC
      "src/*.cpp"
      "src/Utils/*.h"
      "src/Utils/*.cpp"
-     "src/PathFinding/*.h"
-     "src/PathFinding/*.cpp"
-     "src/Shadows/*.h"
-     "src/Shadows/*.cpp"
+     "src/Menu/*.h"
+     "src/Menu/*.cpp"
+     "src/Entities/*.h"
+     "src/Entities/*.cpp"
 )
 
 include_directories(SYSTEM external/stbimage)

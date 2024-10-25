@@ -1,10 +1,7 @@
 #include "LuaWrapper.h"
-#include "GameWorld.h"
-#include "Wall.h"
-#include "AILuaComponent.h"
-#include "Entities.h"
-#include "Enviroment.h"
-#include "Particles.h"
+// #include "GameWorld.h"
+// #include "Enviroment.h"
+// #include "Particles.h"
 
 #include <Font.h>
 
@@ -25,58 +22,58 @@ LuaWrapper *LuaWrapper::getSingleton()
     return s_instance;
 }
 
-namespace luabridge
-{
-    template <class... Args>
-    struct ConstOverload
-    {
-        template <class R, class T>
-        constexpr auto operator()(R (T::*ptr)(Args...) const) const noexcept -> decltype(ptr)
-        {
-            return ptr;
-        }
+// namespace luabridge
+// {
+//     template <class... Args>
+//     struct ConstOverload
+//     {
+//         template <class R, class T>
+//         constexpr auto operator()(R (T::*ptr)(Args...) const) const noexcept -> decltype(ptr)
+//         {
+//             return ptr;
+//         }
 
-        template <class R, class T>
-        static constexpr auto with(R (T::*ptr)(Args...) const) noexcept -> decltype(ptr)
-        {
-            return ptr;
-        }
-    };
-    template <class... Args>
-    struct NonConstOverload
-    {
-        template <class R, class T>
-        constexpr auto operator()(R (T::*ptr)(Args...)) const noexcept -> decltype(ptr)
-        {
-            return ptr;
-        }
+//         template <class R, class T>
+//         static constexpr auto with(R (T::*ptr)(Args...) const) noexcept -> decltype(ptr)
+//         {
+//             return ptr;
+//         }
+//     };
+//     template <class... Args>
+//     struct NonConstOverload
+//     {
+//         template <class R, class T>
+//         constexpr auto operator()(R (T::*ptr)(Args...)) const noexcept -> decltype(ptr)
+//         {
+//             return ptr;
+//         }
 
-        template <class R, class T>
-        static constexpr auto with(R (T::*ptr)(Args...)) noexcept -> decltype(ptr)
-        {
-            return ptr;
-        }
-    };
+//         template <class R, class T>
+//         static constexpr auto with(R (T::*ptr)(Args...)) noexcept -> decltype(ptr)
+//         {
+//             return ptr;
+//         }
+//     };
 
-    template <class... Args>
-    [[maybe_unused]] constexpr ConstOverload<Args...> constOverload = {};
-    template <class... Args>
-    [[maybe_unused]] constexpr NonConstOverload<Args...> nonConstOverload = {};
-}
+//     template <class... Args>
+//     [[maybe_unused]] constexpr ConstOverload<Args...> constOverload = {};
+//     template <class... Args>
+//     [[maybe_unused]] constexpr NonConstOverload<Args...> nonConstOverload = {};
+// }
 
-template <class T>
-void registerVector(luabridge::Namespace luaNamespace, const char *className)
-{
-    using VecT = std::vector<T>;
+// template <class T>
+// void registerVector(luabridge::Namespace luaNamespace, const char *className)
+// {
+//     using VecT = std::vector<T>;
 
-    luaNamespace
-        .beginClass<VecT>(className)
-        // .addConstructor([](void* ptr) { return new(ptr) U(); })
-        .addFunction("at", luabridge::nonConstOverload<std::size_t>(&VecT::at))
-        .addFunction("size", &VecT::size)
-        .endClass();
-    // .endNamespace();
-}
+//     luaNamespace
+//         .beginClass<VecT>(className)
+//         // .addConstructor([](void* ptr) { return new(ptr) U(); })
+//         .addFunction("at", luabridge::nonConstOverload<std::size_t>(&VecT::at))
+//         .addFunction("size", &VecT::size)
+//         .endClass();
+//     // .endNamespace();
+// }
 
 static std::filesystem::path getPathToScripts(const std::string &script_name)
 {
@@ -155,648 +152,648 @@ LuaWrapper::~LuaWrapper()
     lua_close(m_lua_state);
 }
 
-//////////////////////////////////////////////
-/// C/C++ functions we are exposing to lua
-///////////////////////////////////////////////
-static int createObject(lua_State *state)
-{
-    int num_args = lua_gettop(state);
+// //////////////////////////////////////////////
+// /// C/C++ functions we are exposing to lua
+// ///////////////////////////////////////////////
+// static int createObject(lua_State *state)
+// {
+//     int num_args = lua_gettop(state);
 
-    if (num_args != 2)
-    {
-        std::string msg = " OBJECT NOT CREATED! EXPECTED 2 ARGUMENTS BUT GOT " + std::to_string(num_args);
-        spdlog::get("lua_logger")->error(msg);
-        lua_pushinteger(state, LUA_ERRRUN);
-        lua_error(state);
-        return 1;
-    }
-    const char *object_type = lua_tostring(state, 1);
-    const char *object_name = lua_tostring(state, 2);
+//     if (num_args != 2)
+//     {
+//         std::string msg = " OBJECT NOT CREATED! EXPECTED 2 ARGUMENTS BUT GOT " + std::to_string(num_args);
+//         spdlog::get("lua_logger")->error(msg);
+//         lua_pushinteger(state, LUA_ERRRUN);
+//         lua_error(state);
+//         return 1;
+//     }
+//     const char *object_type = lua_tostring(state, 1);
+//     const char *object_name = lua_tostring(state, 2);
 
-    auto new_obj = GameWorld::getWorld().addObject(object_type, object_name);
-    if (!new_obj)
-    {
-        lua_pushinteger(state, LUA_ERRRUN);
-        lua_error(state);
-        return 1;
-    }
-    lua_pushinteger(state, LUA_OK);
-    lua_error(state);
-    return 1;
-}
+//     auto new_obj = GameWorld::getWorld().addObject(object_type, object_name);
+//     if (!new_obj)
+//     {
+//         lua_pushinteger(state, LUA_ERRRUN);
+//         lua_error(state);
+//         return 1;
+//     }
+//     lua_pushinteger(state, LUA_OK);
+//     lua_error(state);
+//     return 1;
+// }
 
-static Projectile *createProjectile(lua_State *state)
-{
-    int num_args = lua_gettop(state);
+// static Projectile *createProjectile(lua_State *state)
+// {
+//     int num_args = lua_gettop(state);
 
-    if (num_args != 2)
-    {
-        std::string msg = " OBJECT NOT CREATED! EXPECTED 2 ARGUMENTS BUT GOT " + std::to_string(num_args);
-        spdlog::get("lua_logger")->error(msg);
-        lua_pushinteger(state, LUA_ERRRUN);
-        lua_error(state);
-        return nullptr;
-    }
-    const char *object_type = lua_tostring(state, 1);
-    const char *object_name = lua_tostring(state, 2);
+//     if (num_args != 2)
+//     {
+//         std::string msg = " OBJECT NOT CREATED! EXPECTED 2 ARGUMENTS BUT GOT " + std::to_string(num_args);
+//         spdlog::get("lua_logger")->error(msg);
+//         lua_pushinteger(state, LUA_ERRRUN);
+//         lua_error(state);
+//         return nullptr;
+//     }
+//     const char *object_type = lua_tostring(state, 1);
+//     const char *object_name = lua_tostring(state, 2);
 
-    auto new_obj = GameWorld::getWorld().addObject("Bullet", object_name);
+//     auto new_obj = GameWorld::getWorld().addObject("Bullet", object_name);
 
-    return static_cast<Projectile *>(new_obj.get());
-}
+//     return static_cast<Projectile *>(new_obj.get());
+// }
 
-static Enemy *createEnemy(lua_State *state)
-{
-    int num_args = lua_gettop(state);
+// static Enemy *createEnemy(lua_State *state)
+// {
+//     int num_args = lua_gettop(state);
 
-    if (num_args != 1)
-    {
-        std::string msg = " OBJECT NOT CREATED! EXPECTED 1 ARGUMENTS BUT GOT " + std::to_string(num_args);
-        spdlog::get("lua_logger")->error(msg);
-        lua_pushinteger(state, LUA_ERRRUN);
-        lua_error(state);
-        return nullptr;
-    }
-    const char *object_name = lua_tostring(state, 1);
+//     if (num_args != 1)
+//     {
+//         std::string msg = " OBJECT NOT CREATED! EXPECTED 1 ARGUMENTS BUT GOT " + std::to_string(num_args);
+//         spdlog::get("lua_logger")->error(msg);
+//         lua_pushinteger(state, LUA_ERRRUN);
+//         lua_error(state);
+//         return nullptr;
+//     }
+//     const char *object_name = lua_tostring(state, 1);
 
-    auto new_obj = GameWorld::getWorld().addObject("Enemy", object_name);
+//     auto new_obj = GameWorld::getWorld().addObject("Enemy", object_name);
 
-    return static_cast<Enemy *>(new_obj.get());
-}
+//     return static_cast<Enemy *>(new_obj.get());
+// }
 
-static Event *createEvent(std::string event_id)
-{
-    auto new_obj = GameWorld::getWorld().addObject<Event>(event_id, event_id);
-    return static_cast<Event *>(new_obj.get());
-}
-static EnviromentEffect *createEffect(std::string effect_id)
-{
-    std::cout << "EFFECT: " << effect_id << "\n"; 
-    auto new_obj = GameWorld::getWorld().addObject<EnviromentEffect>(effect_id, effect_id);
-    return static_cast<EnviromentEffect *>(new_obj.get());
-}
+// static Event *createEvent(std::string event_id)
+// {
+//     auto new_obj = GameWorld::getWorld().addObject<Event>(event_id, event_id);
+//     return static_cast<Event *>(new_obj.get());
+// }
+// static EnviromentEffect *createEffect(std::string effect_id)
+// {
+//     std::cout << "EFFECT: " << effect_id << "\n"; 
+//     auto new_obj = GameWorld::getWorld().addObject<EnviromentEffect>(effect_id, effect_id);
+//     return static_cast<EnviromentEffect *>(new_obj.get());
+// }
 
-static GameObject *createObject2(lua_State *state)
-{
-    int num_args = lua_gettop(state);
+// static GameObject *createObject2(lua_State *state)
+// {
+//     int num_args = lua_gettop(state);
 
-    if (num_args != 2)
-    {
-        std::string msg = " OBJECT NOT CREATED! EXPECTED 2 ARGUMENTS BUT GOT " + std::to_string(num_args);
-        spdlog::get("lua_logger")->error(msg);
-        lua_pushinteger(state, LUA_ERRRUN);
-        lua_error(state);
-        return nullptr;
-    }
-    const char *object_type = lua_tostring(state, 1);
-    const char *object_name = lua_tostring(state, 2);
+//     if (num_args != 2)
+//     {
+//         std::string msg = " OBJECT NOT CREATED! EXPECTED 2 ARGUMENTS BUT GOT " + std::to_string(num_args);
+//         spdlog::get("lua_logger")->error(msg);
+//         lua_pushinteger(state, LUA_ERRRUN);
+//         lua_error(state);
+//         return nullptr;
+//     }
+//     const char *object_type = lua_tostring(state, 1);
+//     const char *object_name = lua_tostring(state, 2);
 
-    auto new_obj = GameWorld::getWorld().addObject(object_type, object_name);
-    return new_obj.get();
-}
+//     auto new_obj = GameWorld::getWorld().addObject(object_type, object_name);
+//     return new_obj.get();
+// }
 
-static GameObject *getObject(lua_State *state)
-{
-    int num_args = lua_gettop(state);
+// static GameObject *getObject(lua_State *state)
+// {
+//     int num_args = lua_gettop(state);
 
-    if (num_args != 1)
-    {
-        spdlog::get("lua_logger")->error("Object not fetched. EXPECTED 1 ARGUMENTS BUT GOT " + std::to_string(num_args));
-        return nullptr;
-    }
-    const std::string object_name = lua_tostring(state, 1);
+//     if (num_args != 1)
+//     {
+//         spdlog::get("lua_logger")->error("Object not fetched. EXPECTED 1 ARGUMENTS BUT GOT " + std::to_string(num_args));
+//         return nullptr;
+//     }
+//     const std::string object_name = lua_tostring(state, 1);
 
-    auto new_obj = GameWorld::getWorld().get(object_name);
-    if (new_obj)
-    {
-        return new_obj.get();
-    }
-    spdlog::get("lua_logger")->error("Object not fetched. Name " + object_name + " does not exist.");
-    return nullptr;
-}
+//     auto new_obj = GameWorld::getWorld().get(object_name);
+//     if (new_obj)
+//     {
+//         return new_obj.get();
+//     }
+//     spdlog::get("lua_logger")->error("Object not fetched. Name " + object_name + " does not exist.");
+//     return nullptr;
+// }
 
-static PlayerEntity *getPlayer(const std::string &player_name)
-{
-    auto new_obj = GameWorld::getWorld().get<PlayerEntity>(player_name);
-    if (new_obj)
-    {
-        return new_obj.get();
-    }
-    spdlog::get("lua_logger")->error("Object not fetched. Name " + player_name + " does not exist.");
-    return nullptr;
-}
-static Enemy *getEnemy(const std::string &enemy_name)
-{
-    auto new_obj = GameWorld::getWorld().get<Enemy>(enemy_name);
-    if (new_obj)
-    {
-        return new_obj.get();
-    }
-    spdlog::get("lua_logger")->error("Object not fetched. Name " + enemy_name + " does not exist.");
-    return nullptr;
-}
+// static PlayerEntity *getPlayer(const std::string &player_name)
+// {
+//     auto new_obj = GameWorld::getWorld().get<PlayerEntity>(player_name);
+//     if (new_obj)
+//     {
+//         return new_obj.get();
+//     }
+//     spdlog::get("lua_logger")->error("Object not fetched. Name " + player_name + " does not exist.");
+//     return nullptr;
+// }
+// static Enemy *getEnemy(const std::string &enemy_name)
+// {
+//     auto new_obj = GameWorld::getWorld().get<Enemy>(enemy_name);
+//     if (new_obj)
+//     {
+//         return new_obj.get();
+//     }
+//     spdlog::get("lua_logger")->error("Object not fetched. Name " + enemy_name + " does not exist.");
+//     return nullptr;
+// }
 
-static int removeObject(lua_State *state)
-{
-    int num_args = lua_gettop(state);
+// static int removeObject(lua_State *state)
+// {
+//     int num_args = lua_gettop(state);
 
-    if (num_args != 1)
-    {
-        std::string msg = " OBJECT NOT CREATED! EXPECTED 1 ARGUMENT BUT GOT " + std::to_string(num_args);
-        spdlog::get("lua_logger")->error(msg);
-        lua_pushinteger(state, LUA_ERRRUN);
-        lua_error(state);
-        return 1;
-    }
-    const char *object_name = lua_tostring(state, 1);
+//     if (num_args != 1)
+//     {
+//         std::string msg = " OBJECT NOT CREATED! EXPECTED 1 ARGUMENT BUT GOT " + std::to_string(num_args);
+//         spdlog::get("lua_logger")->error(msg);
+//         lua_pushinteger(state, LUA_ERRRUN);
+//         lua_error(state);
+//         return 1;
+//     }
+//     const char *object_name = lua_tostring(state, 1);
 
-    auto &world = GameWorld::getWorld();
-    auto id = world.getIdOf(object_name);
-    if (id == -1)
-    {
-        std::string text = object_name;
-        spdlog::get("lua_logger")->error("Object with name: " + text + " not found!");
-        lua_pushinteger(state, LUA_ERRRUN);
-        lua_error(state);
-        return 1;
-    }
-    world.get(id)->kill();
-    lua_pushinteger(state, LUA_OK);
-    lua_error(state);
-    return 1;
-}
+//     auto &world = GameWorld::getWorld();
+//     auto id = world.getIdOf(object_name);
+//     if (id == -1)
+//     {
+//         std::string text = object_name;
+//         spdlog::get("lua_logger")->error("Object with name: " + text + " not found!");
+//         lua_pushinteger(state, LUA_ERRRUN);
+//         lua_error(state);
+//         return 1;
+//     }
+//     world.get(id)->kill();
+//     lua_pushinteger(state, LUA_OK);
+//     lua_error(state);
+//     return 1;
+// }
 
-struct BookKeeper
-{
-};
+// struct BookKeeper
+// {
+// };
 
-static void removeObjects(lua_State *state)
-{
+// static void removeObjects(lua_State *state)
+// {
 
-    const std::string match_sequence = lua_tostring(state, 1);
-    std::regex regex(match_sequence);
+//     const std::string match_sequence = lua_tostring(state, 1);
+//     std::regex regex(match_sequence);
 
-    auto &world = GameWorld::getWorld();
-    for (auto &[name, id] : world.getNames())
-    {
-        if (std::regex_match(name.begin(), name.end(), regex))
-        {
-            assert(id != -1);
-            world.get(id)->kill();
-        }
-    }
-}
+//     auto &world = GameWorld::getWorld();
+//     for (auto &[name, id] : world.getNames())
+//     {
+//         if (std::regex_match(name.begin(), name.end(), regex))
+//         {
+//             assert(id != -1);
+//             world.get(id)->kill();
+//         }
+//     }
+// }
 
-static int addEffect(lua_State *state)
-{
-    int num_args = lua_gettop(state);
+// static int addEffect(lua_State *state)
+// {
+//     int num_args = lua_gettop(state);
 
-    if (num_args != 2)
-    {
-        spdlog::get("lua_logger")->error(" OBJECT NOT CREATED! EXPECTED 2 ARGUMENTS BUT GOT " + std::to_string(num_args));
-        lua_pushinteger(state, LUA_ERRRUN);
-        lua_error(state);
-        return 1;
-    }
-    const char *object_type = lua_tostring(state, 1);
-    const char *object_name = lua_tostring(state, 2);
+//     if (num_args != 2)
+//     {
+//         spdlog::get("lua_logger")->error(" OBJECT NOT CREATED! EXPECTED 2 ARGUMENTS BUT GOT " + std::to_string(num_args));
+//         lua_pushinteger(state, LUA_ERRRUN);
+//         lua_error(state);
+//         return 1;
+//     }
+//     const char *object_type = lua_tostring(state, 1);
+//     const char *object_name = lua_tostring(state, 2);
 
-    auto new_obj = GameWorld::getWorld().addEffect(object_type, object_name);
-    if (!new_obj)
-    {
-        lua_pushinteger(state, LUA_ERRRUN);
-        lua_error(state);
-        return 1;
-    }
-    new_obj->setPosition({300, 200});
-    new_obj->setSize(10);
-    lua_pushinteger(state, LUA_OK);
-    lua_error(state);
-    return 1;
-}
+//     auto new_obj = GameWorld::getWorld().addEffect(object_type, object_name);
+//     if (!new_obj)
+//     {
+//         lua_pushinteger(state, LUA_ERRRUN);
+//         lua_error(state);
+//         return 1;
+//     }
+//     new_obj->setPosition({300, 200});
+//     new_obj->setSize(10);
+//     lua_pushinteger(state, LUA_OK);
+//     lua_error(state);
+//     return 1;
+// }
 
-int createObjectAsChild(lua_State *state)
-{
-    auto logger = spdlog::get("lua_logger");
-    int num_args = lua_gettop(state);
+// int createObjectAsChild(lua_State *state)
+// {
+//     auto logger = spdlog::get("lua_logger");
+//     int num_args = lua_gettop(state);
 
-    if (num_args != 3)
-    {
-        std::string msg = " OBJECT NOT CREATED! EXPECTED 3 ARGUMENTS BUT GOT " + std::to_string(num_args);
-        logger->error(msg);
-        lua_pushinteger(state, LUA_ERRRUN);
-        lua_error(state);
-        return 1;
-    }
-    const char *object_type = lua_tostring(state, 1);
-    const char *object_name = lua_tostring(state, 2);
-    const char *parent_name = lua_tostring(state, 3);
+//     if (num_args != 3)
+//     {
+//         std::string msg = " OBJECT NOT CREATED! EXPECTED 3 ARGUMENTS BUT GOT " + std::to_string(num_args);
+//         logger->error(msg);
+//         lua_pushinteger(state, LUA_ERRRUN);
+//         lua_error(state);
+//         return 1;
+//     }
+//     const char *object_type = lua_tostring(state, 1);
+//     const char *object_name = lua_tostring(state, 2);
+//     const char *parent_name = lua_tostring(state, 3);
 
-    auto &world = GameWorld::getWorld();
-    auto parent_id = world.getIdOf(parent_name);
-    auto new_obj = world.addObject(object_type, object_name, parent_id);
-    auto parent_obj = world.get(parent_name);
-    if (!parent_obj)
-    {
-        lua_pushinteger(state, LUA_ERRRUN);
-        lua_error(state);
-        return 1;
-    }
-    if (!new_obj)
-    {
-        lua_pushinteger(state, LUA_ERRRUN);
-        lua_error(state);
-        return 1;
-    }
-    new_obj->setPosition(parent_obj->getPosition());
-    new_obj->setSize(10);
-    lua_pushinteger(state, LUA_OK);
-    lua_error(state);
-    return 1;
-}
-int changeParentOf(lua_State *state)
-{
-    int num_args = lua_gettop(state);
-    if (num_args != 2)
-    {
-        std::string msg = " OBJECT NOT CREATED! EXPECTED 2 ARGUMENT BUT GOT " + std::to_string(num_args);
-        spdlog::get("lua_logger")->error(msg);
-        return 0;
-    }
-    const char *object_name = lua_tostring(state, 1);
-    const char *parent_name = lua_tostring(state, 2);
-    auto &world = GameWorld::getWorld();
-    auto parent_id = world.getIdOf(parent_name);
-    auto my_id = world.getIdOf(object_name);
-    if (my_id != -1 && parent_id != -1)
-    {
-        world.m_scene.changeParentOf(my_id, parent_id);
-    }
-    return 0;
-}
+//     auto &world = GameWorld::getWorld();
+//     auto parent_id = world.getIdOf(parent_name);
+//     auto new_obj = world.addObject(object_type, object_name, parent_id);
+//     auto parent_obj = world.get(parent_name);
+//     if (!parent_obj)
+//     {
+//         lua_pushinteger(state, LUA_ERRRUN);
+//         lua_error(state);
+//         return 1;
+//     }
+//     if (!new_obj)
+//     {
+//         lua_pushinteger(state, LUA_ERRRUN);
+//         lua_error(state);
+//         return 1;
+//     }
+//     new_obj->setPosition(parent_obj->getPosition());
+//     new_obj->setSize(10);
+//     lua_pushinteger(state, LUA_OK);
+//     lua_error(state);
+//     return 1;
+// }
+// int changeParentOf(lua_State *state)
+// {
+//     int num_args = lua_gettop(state);
+//     if (num_args != 2)
+//     {
+//         std::string msg = " OBJECT NOT CREATED! EXPECTED 2 ARGUMENT BUT GOT " + std::to_string(num_args);
+//         spdlog::get("lua_logger")->error(msg);
+//         return 0;
+//     }
+//     const char *object_name = lua_tostring(state, 1);
+//     const char *parent_name = lua_tostring(state, 2);
+//     auto &world = GameWorld::getWorld();
+//     auto parent_id = world.getIdOf(parent_name);
+//     auto my_id = world.getIdOf(object_name);
+//     if (my_id != -1 && parent_id != -1)
+//     {
+//         world.m_scene.changeParentOf(my_id, parent_id);
+//     }
+//     return 0;
+// }
 
-int setPosition(lua_State *state)
-{
-    int num_args = lua_gettop(state);
-    if (num_args != 3)
-    {
-        std::string msg = "POSITION NOT SET! EXPECTED 3 ARGUMENTS BUT GOT " + std::to_string(num_args);
-        spdlog::get("lua_logger")->error(msg);
-        lua_pushinteger(state, LUA_ERRRUN);
-        lua_error(state);
-        return 1;
-    }
-    const char *entity_name = lua_tostring(state, 1);
-    float x = (float)lua_tonumber(state, 2);
-    float y = (float)lua_tonumber(state, 3);
-    auto &world = GameWorld::getWorld();
+// int setPosition(lua_State *state)
+// {
+//     int num_args = lua_gettop(state);
+//     if (num_args != 3)
+//     {
+//         std::string msg = "POSITION NOT SET! EXPECTED 3 ARGUMENTS BUT GOT " + std::to_string(num_args);
+//         spdlog::get("lua_logger")->error(msg);
+//         lua_pushinteger(state, LUA_ERRRUN);
+//         lua_error(state);
+//         return 1;
+//     }
+//     const char *entity_name = lua_tostring(state, 1);
+//     float x = (float)lua_tonumber(state, 2);
+//     float y = (float)lua_tonumber(state, 3);
+//     auto &world = GameWorld::getWorld();
 
-    auto entity_id = world.getIdOf(entity_name);
-    if (entity_id != -1)
-    {
-        auto p_entity = world.get(entity_id);
-        assert(p_entity);
-        p_entity->setPosition({x, y});
-        lua_pushinteger(state, LUA_OK);
-        lua_error(state);
-        return 1;
-    }
-    lua_pushinteger(state, LUA_ERRRUN);
-    lua_error(state);
-    return 1;
-}
+//     auto entity_id = world.getIdOf(entity_name);
+//     if (entity_id != -1)
+//     {
+//         auto p_entity = world.get(entity_id);
+//         assert(p_entity);
+//         p_entity->setPosition({x, y});
+//         lua_pushinteger(state, LUA_OK);
+//         lua_error(state);
+//         return 1;
+//     }
+//     lua_pushinteger(state, LUA_ERRRUN);
+//     lua_error(state);
+//     return 1;
+// }
 
-void setPosition2(const std::string &entity_name, float x, float y)
-{
-    auto &world = GameWorld::getWorld();
+// void setPosition2(const std::string &entity_name, float x, float y)
+// {
+//     auto &world = GameWorld::getWorld();
 
-    auto entity_id = world.getIdOf(entity_name);
-    if (entity_id != -1)
-    {
-        auto p_entity = world.get(entity_id);
-        assert(p_entity);
-        p_entity->setPosition({x, y});
-    }
-}
-static int setTarget(lua_State *state)
-{
-    int num_args = lua_gettop(state);
-    if (num_args != 3 && num_args != 2)
-    {
-        std::string msg = "POSITION NOT SET! EXPECTED 3 ARGUMENTS BUT GOT " + std::to_string(num_args);
-        spdlog::get("lua_logger")->error(msg);
-        lua_pushinteger(state, LUA_ERRRUN);
-        lua_error(state);
-        return 1;
-    }
-    auto &world = GameWorld::getWorld();
+//     auto entity_id = world.getIdOf(entity_name);
+//     if (entity_id != -1)
+//     {
+//         auto p_entity = world.get(entity_id);
+//         assert(p_entity);
+//         p_entity->setPosition({x, y});
+//     }
+// }
+// static int setTarget(lua_State *state)
+// {
+//     int num_args = lua_gettop(state);
+//     if (num_args != 3 && num_args != 2)
+//     {
+//         std::string msg = "POSITION NOT SET! EXPECTED 3 ARGUMENTS BUT GOT " + std::to_string(num_args);
+//         spdlog::get("lua_logger")->error(msg);
+//         lua_pushinteger(state, LUA_ERRRUN);
+//         lua_error(state);
+//         return 1;
+//     }
+//     auto &world = GameWorld::getWorld();
 
-    const char *entity_name = lua_tostring(state, 1);
-    auto p_entity = world.get(entity_name);
-    if (num_args == 2)
-    {
-        const char *target_name = lua_tostring(state, 2);
-        if (p_entity)
-        {
-            p_entity->m_target = world.get(target_name).get();
-        }
-    }
-    else if (num_args == 3)
-    {
-        float x = (float)lua_tonumber(state, 2);
-        float y = (float)lua_tonumber(state, 3);
-        if (p_entity)
-        {
-            p_entity->m_target_pos = {x, y};
-        }
-    }
+//     const char *entity_name = lua_tostring(state, 1);
+//     auto p_entity = world.get(entity_name);
+//     if (num_args == 2)
+//     {
+//         const char *target_name = lua_tostring(state, 2);
+//         if (p_entity)
+//         {
+//             p_entity->m_target = world.get(target_name).get();
+//         }
+//     }
+//     else if (num_args == 3)
+//     {
+//         float x = (float)lua_tonumber(state, 2);
+//         float y = (float)lua_tonumber(state, 3);
+//         if (p_entity)
+//         {
+//             p_entity->m_target_pos = {x, y};
+//         }
+//     }
 
-    lua_pushinteger(state, LUA_OK);
-    lua_error(state);
-    return 1;
-}
-int setVelocity(lua_State *state)
-{
-    int num_args = lua_gettop(state);
-    if (num_args != 3)
-    {
-        std::string msg = "VELOCITY NOT SET! EXPECTED 3 ARGUMENTs BUT GOT " + num_args;
-        spdlog::get("lua_logger")->error(msg);
-        lua_pushinteger(state, LUA_ERRRUN);
-        lua_error(state);
-        return 1;
-    }
-    const char *entity_name = lua_tostring(state, 1);
-    float vx = (float)lua_tonumber(state, 2);
-    float vy = (float)lua_tonumber(state, 3);
-    auto &world = GameWorld::getWorld();
+//     lua_pushinteger(state, LUA_OK);
+//     lua_error(state);
+//     return 1;
+// }
+// int setVelocity(lua_State *state)
+// {
+//     int num_args = lua_gettop(state);
+//     if (num_args != 3)
+//     {
+//         std::string msg = "VELOCITY NOT SET! EXPECTED 3 ARGUMENTs BUT GOT " + num_args;
+//         spdlog::get("lua_logger")->error(msg);
+//         lua_pushinteger(state, LUA_ERRRUN);
+//         lua_error(state);
+//         return 1;
+//     }
+//     const char *entity_name = lua_tostring(state, 1);
+//     float vx = (float)lua_tonumber(state, 2);
+//     float vy = (float)lua_tonumber(state, 3);
+//     auto &world = GameWorld::getWorld();
 
-    auto entity_id = world.getIdOf(entity_name);
-    if (entity_id != -1)
-    {
-        auto p_entity = world.get(entity_id);
-        assert(p_entity);
-        p_entity->m_vel = {vx, vy};
-    }
-    lua_pushinteger(state, LUA_OK);
-    lua_error(state);
-    return 1;
-}
+//     auto entity_id = world.getIdOf(entity_name);
+//     if (entity_id != -1)
+//     {
+//         auto p_entity = world.get(entity_id);
+//         assert(p_entity);
+//         p_entity->m_vel = {vx, vy};
+//     }
+//     lua_pushinteger(state, LUA_OK);
+//     lua_error(state);
+//     return 1;
+// }
 
-std::string getName(lua_State *state)
-{
-    int num_args = lua_gettop(state);
-    if (num_args != 1)
-    {
-        std::string msg = "Wrong number of arguments. Expected 1 but got: " + std::to_string(num_args);
-        spdlog::get("lua_logger")->error(msg);
-    }
-    int id = lua_tointeger(state, 1);
-    auto name = GameWorld::getWorld().getName(id);
-    return name;
-};
-int getId(const std::string &name)
-{
-    return GameWorld::getWorld().getIdOf(name);
-    ;
-};
+// std::string getName(lua_State *state)
+// {
+//     int num_args = lua_gettop(state);
+//     if (num_args != 1)
+//     {
+//         std::string msg = "Wrong number of arguments. Expected 1 but got: " + std::to_string(num_args);
+//         spdlog::get("lua_logger")->error(msg);
+//     }
+//     int id = lua_tointeger(state, 1);
+//     auto name = GameWorld::getWorld().getName(id);
+//     return name;
+// };
+// int getId(const std::string &name)
+// {
+//     return GameWorld::getWorld().getIdOf(name);
+//     ;
+// };
 
-static Texture *getTexture(lua_State *lua_state)
-{
-    int num_args = lua_gettop(lua_state);
-    if (num_args != 1)
-    {
-        return nullptr;
-    }
-    auto &textures = GameWorld::getWorld().getTextrures();
-    std::string texture_id = lua_tostring(lua_state, 1);
-    return textures.get(texture_id).get();
-};
+// static Texture *getTexture(lua_State *lua_state)
+// {
+//     int num_args = lua_gettop(lua_state);
+//     if (num_args != 1)
+//     {
+//         return nullptr;
+//     }
+//     auto &textures = GameWorld::getWorld().getTextrures();
+//     std::string texture_id = lua_tostring(lua_state, 1);
+//     return textures.get(texture_id).get();
+// };
 
-static Font *getFont()
-{
-    return GameWorld::getWorld().getFont();
-};
+// static Font *getFont()
+// {
+//     return GameWorld::getWorld().getFont();
+// };
 
-static void setVec2InShader(Shader &shader, const std::string &uniform_name, float x, float y)
-{
-    shader.setVec2(uniform_name, {x, y});
-}
+// static void setVec2InShader(Shader &shader, const std::string &uniform_name, float x, float y)
+// {
+//     shader.setVec2(uniform_name, {x, y});
+// }
 
-static void setVec3InShader(Shader &shader, const std::string &uniform_name, float x, float y, float z)
-{
-    shader.setVec3(uniform_name, {x, y, z});
-}
+// static void setVec3InShader(Shader &shader, const std::string &uniform_name, float x, float y, float z)
+// {
+//     shader.setVec3(uniform_name, {x, y, z});
+// }
 
-static void setVec4InShader(Shader &shader, const std::string &uniform_name, float x, float y, float z, float w)
-{
-    shader.setVec4(uniform_name, {x, y, z, w});
-}
+// static void setVec4InShader(Shader &shader, const std::string &uniform_name, float x, float y, float z, float w)
+// {
+//     shader.setVec4(uniform_name, {x, y, z, w});
+// }
 
-static std::vector<GameObject *> findNearsetNeighbours(const utils::Vector2f &center, float radius)
-{
-    const auto &collision_system = GameWorld::getWorld().getCollider();
-    auto r_min = center - utils::Vector2f{radius, radius};
-    auto r_max = center + utils::Vector2f{radius, radius};
-    auto objects = collision_system.findNearestObjects(ObjectType::Enemy, {r_min, r_max});
-    return objects;
-}
+// static std::vector<GameObject *> findNearsetNeighbours(const utils::Vector2f &center, float radius)
+// {
+//     const auto &collision_system = GameWorld::getWorld().getCollider();
+//     auto r_min = center - utils::Vector2f{radius, radius};
+//     auto r_max = center + utils::Vector2f{radius, radius};
+//     auto objects = collision_system.findNearestObjects(ObjectType::Enemy, {r_min, r_max});
+//     return objects;
+// }
 
 //! \brief Registers functions with lua
 void LuaWrapper::initializeLuaFunctions()
 {
 
-    using namespace utils;
+//     using namespace utils;
 
-    luabridge::getGlobalNamespace(m_lua_state)
-        .beginClass<utils::Vector2f>("Vec")
-        .addConstructor<void (*)(float, float)>()
-        .addProperty("x", &Vector2f::x)
-        .addProperty("y", &Vector2f::y)
-        .addFunction("__add", &Vector2f::operator+)
-        .addFunction("__sub", &Vector2f::operator-)
-        .endClass()
-        .beginClass<utils::Vector2i>("VecI")
-        .addConstructor<void (*)(float, float)>()
-        .addProperty("x", &Vector2i::x)
-        .addProperty("y", &Vector2i::y)
-        .addFunction("__add", &Vector2i::operator+)
-        // .addFunction("__sub", &Vector2f::oerator-)
-        .endClass();
+//     luabridge::getGlobalNamespace(m_lua_state)
+//         .beginClass<utils::Vector2f>("Vec")
+//         .addConstructor<void (*)(float, float)>()
+//         .addProperty("x", &Vector2f::x)
+//         .addProperty("y", &Vector2f::y)
+//         .addFunction("__add", &Vector2f::operator+)
+//         .addFunction("__sub", &Vector2f::operator-)
+//         .endClass()
+//         .beginClass<utils::Vector2i>("VecI")
+//         .addConstructor<void (*)(float, float)>()
+//         .addProperty("x", &Vector2i::x)
+//         .addProperty("y", &Vector2i::y)
+//         .addFunction("__add", &Vector2i::operator+)
+//         // .addFunction("__sub", &Vector2f::oerator-)
+//         .endClass();
 
-    luabridge::getGlobalNamespace(m_lua_state)
-        .beginNamespace("draw")
-        .beginClass<LayersHolder>("layers")
-        .addFunction("getCanvas", &LayersHolder::getCanvasP)
-        .addFunction("drawSprite", &LayersHolder::drawSprite)
-        .addFunction("drawLine", &LayersHolder::drawLine)
-        .addFunction("drawRectangle", &LayersHolder::drawRectangle)
-        .addFunction("toggleActivate", &LayersHolder::activate)
-        .addFunction("isActive", &LayersHolder::isActive)
-        .addFunction("getShader", &LayersHolder::getShaderP)
-        .endClass()
-        .beginClass<Shader>("Shader")
-        .addFunction("setFloat", std::function<void(Shader *, const std::string &, float)>(
-                                     [](Shader *p_this, const std::string &name, float val)
-                                     { p_this->setUniform2(name, val); }))
-        .endClass()
-        .beginClass<UniformType>("Uniform")
-        .endClass()
-        .beginClass<Renderer>("Renderer")
-        .addFunction("drawRectangle", std::function<void(Renderer *, RectangleSimple &, const std::string &, Color)>(
-                                          [](Renderer *p_this, RectangleSimple &r, const std::string &shader_id, Color c)
-                                          { p_this->drawRectangle(r, c, shader_id, DrawType::Dynamic); }))
-        .addFunction("drawSprite", &Renderer::drawSpriteDynamic)
-        .addFunction("drawText", std::function<void(Renderer *, Text &, const std::string &)>(
-                                     [](Renderer *p_this, Text &text, const std::string &shader_id)
-                                     { p_this->drawText(text, shader_id, DrawType::Dynamic); }))
-        .addFunction("drawEllipse", &Renderer::drawEllipseBatched)
-        .addFunction("drawLine", &Renderer::drawLineBatched)
-        .addFunction("render", &Renderer::drawAll)
-        .addFunction("getSize", &Renderer::getTargetSize)
-        .addFunction("getShader", &Renderer::getShaderP)
-        .endClass()
-        .endNamespace();
+//     luabridge::getGlobalNamespace(m_lua_state)
+//         .beginNamespace("draw")
+//         .beginClass<LayersHolder>("layers")
+//         .addFunction("getCanvas", &LayersHolder::getCanvasP)
+//         .addFunction("drawSprite", &LayersHolder::drawSprite)
+//         .addFunction("drawLine", &LayersHolder::drawLine)
+//         .addFunction("drawRectangle", &LayersHolder::drawRectangle)
+//         .addFunction("toggleActivate", &LayersHolder::activate)
+//         .addFunction("isActive", &LayersHolder::isActive)
+//         .addFunction("getShader", &LayersHolder::getShaderP)
+//         .endClass()
+//         .beginClass<Shader>("Shader")
+//         .addFunction("setFloat", std::function<void(Shader *, const std::string &, float)>(
+//                                      [](Shader *p_this, const std::string &name, float val)
+//                                      { p_this->setUniform2(name, val); }))
+//         .endClass()
+//         .beginClass<UniformType>("Uniform")
+//         .endClass()
+//         .beginClass<Renderer>("Renderer")
+//         .addFunction("drawRectangle", std::function<void(Renderer *, RectangleSimple &, const std::string &, Color)>(
+//                                           [](Renderer *p_this, RectangleSimple &r, const std::string &shader_id, Color c)
+//                                           { p_this->drawRectangle(r, c, shader_id, DrawType::Dynamic); }))
+//         .addFunction("drawSprite", &Renderer::drawSpriteDynamic)
+//         .addFunction("drawText", std::function<void(Renderer *, Text &, const std::string &)>(
+//                                      [](Renderer *p_this, Text &text, const std::string &shader_id)
+//                                      { p_this->drawText(text, shader_id, DrawType::Dynamic); }))
+//         .addFunction("drawEllipse", &Renderer::drawEllipseBatched)
+//         .addFunction("drawLine", &Renderer::drawLineBatched)
+//         .addFunction("render", &Renderer::drawAll)
+//         .addFunction("getSize", &Renderer::getTargetSize)
+//         .addFunction("getShader", &Renderer::getShaderP)
+//         .endClass()
+//         .endNamespace();
 
-    luabridge::getGlobalNamespace(m_lua_state)
-        .addFunction("createObject", &createObject2)
-        .addFunction("createObjectAsChild", &createObjectAsChild)
-        .addFunction("changeParentOf", &changeParentOf)
-        .addFunction("createProjectile", &createProjectile)
-        .addFunction("createEnemy", &createEnemy)
-        .addFunction("createEffect", &createEffect)
-        .addFunction("createEvent", &createEvent)
-        .addFunction("removeObject", &removeObject)
-        .addFunction("removeObjects", &removeObjects)
-        .addFunction("setPosition", &setPosition2)
-        .addFunction("setTarget", &setTarget)
-        .addFunction("setVelocity", &setVelocity)
-        .addFunction("getName", &getName)
-        .addFunction("getIdOf", &getId)
-        .addFunction("getObject", &getObject)
-        .addFunction("getEnemy", &getEnemy)
-        .addFunction("getPlayer", &getPlayer)
-        .addFunction("getTexture", &getTexture)
-        .addFunction("getFont", &getFont)
-        .addFunction("getMapSize", std::function<utils::Vector2i()>([]()
-                                                         {
-        auto &world = GameWorld::getWorld();
-        return utils::Vector2i{map::MAP_SIZE_X, map::MAP_SIZE_Y}; }))
-        .addFunction("setVec2Shader", &setVec2InShader)
-        .addFunction("setVec3Shader", &setVec3InShader)
-        .addFunction("setVec4Shader", &setVec4InShader)
-        .addFunction("findEnemies", &findNearsetNeighbours);
+//     luabridge::getGlobalNamespace(m_lua_state)
+//         .addFunction("createObject", &createObject2)
+//         .addFunction("createObjectAsChild", &createObjectAsChild)
+//         .addFunction("changeParentOf", &changeParentOf)
+//         .addFunction("createProjectile", &createProjectile)
+//         .addFunction("createEnemy", &createEnemy)
+//         .addFunction("createEffect", &createEffect)
+//         .addFunction("createEvent", &createEvent)
+//         .addFunction("removeObject", &removeObject)
+//         .addFunction("removeObjects", &removeObjects)
+//         .addFunction("setPosition", &setPosition2)
+//         .addFunction("setTarget", &setTarget)
+//         .addFunction("setVelocity", &setVelocity)
+//         .addFunction("getName", &getName)
+//         .addFunction("getIdOf", &getId)
+//         .addFunction("getObject", &getObject)
+//         .addFunction("getEnemy", &getEnemy)
+//         .addFunction("getPlayer", &getPlayer)
+//         .addFunction("getTexture", &getTexture)
+//         .addFunction("getFont", &getFont)
+//         .addFunction("getMapSize", std::function<utils::Vector2i()>([]()
+//                                                          {
+//         auto &world = GameWorld::getWorld();
+//         return utils::Vector2i{map::MAP_SIZE_X, map::MAP_SIZE_Y}; }))
+//         .addFunction("setVec2Shader", &setVec2InShader)
+//         .addFunction("setVec3Shader", &setVec3InShader)
+//         .addFunction("setVec4Shader", &setVec4InShader)
+//         .addFunction("findEnemies", &findNearsetNeighbours);
 
-    luabridge::getGlobalNamespace(m_lua_state)
-        .beginClass<Color>("Color")
-        .addConstructor<void (*)(float, float, float, float)>()
-        .addProperty("r", &Color::r)
-        .addProperty("g", &Color::g)
-        .addProperty("b", &Color::b)
-        .addProperty("a", &Color::a)
-        .endClass()
-        .beginClass<ColorByte>("ColorByte")
-        .addConstructor<void (*)(unsigned char, unsigned char, unsigned char, unsigned char)>()
-        .addProperty("r", &ColorByte::r)
-        .addProperty("g", &ColorByte::g)
-        .addProperty("b", &ColorByte::b)
-        .addProperty("a", &ColorByte::a)
-        .endClass();
+//     luabridge::getGlobalNamespace(m_lua_state)
+//         .beginClass<Color>("Color")
+//         .addConstructor<void (*)(float, float, float, float)>()
+//         .addProperty("r", &Color::r)
+//         .addProperty("g", &Color::g)
+//         .addProperty("b", &Color::b)
+//         .addProperty("a", &Color::a)
+//         .endClass()
+//         .beginClass<ColorByte>("ColorByte")
+//         .addConstructor<void (*)(unsigned char, unsigned char, unsigned char, unsigned char)>()
+//         .addProperty("r", &ColorByte::r)
+//         .addProperty("g", &ColorByte::g)
+//         .addProperty("b", &ColorByte::b)
+//         .addProperty("a", &ColorByte::a)
+//         .endClass();
 
-    luabridge::getGlobalNamespace(m_lua_state)
-        .beginClass<Texture>("Texture")
-        .endClass()
-        .beginClass<Font>("Font")
-        .endClass()
-        .beginClass<Transform>("Transform")
-        .addProperty("pos", &Transform::getPosition, &Transform::setPosition)
-        .addProperty("scale", &Transform::getScale, &Transform::setScale)
-        .addProperty("angle", &Transform::getRotation, &Transform::setRotation)
-        .endClass()
-        .deriveClass<RectangleSimple, Transform>("Rectangle")
-        .addConstructor<void (*)()>()
-        .endClass()
-        .deriveClass<Sprite, RectangleSimple>("Sprite")
-        .addConstructor<void (*)()>()
-        .addProperty("color", &Sprite::m_color)
-        .addFunction("setTexture", &Sprite::setTextureP)
-        .endClass()
-        .deriveClass<Text, Transform>("Text")
-        .addConstructor<void (*)(std::string)>()
-        .addProperty("color", &Text::getColor, &Text::setColor)
-        .addProperty("string", &Text::getText, &Text::setText)
-        .addFunction("setFont", std::function<void(Text *, Font *)>(
-                                    [](Text *p_this, Font *p_font)
-                                    {if(p_this && p_font){ p_this->setFont(p_font);} }))
-        .endClass();
+//     luabridge::getGlobalNamespace(m_lua_state)
+//         .beginClass<Texture>("Texture")
+//         .endClass()
+//         .beginClass<Font>("Font")
+//         .endClass()
+//         .beginClass<Transform>("Transform")
+//         .addProperty("pos", &Transform::getPosition, &Transform::setPosition)
+//         .addProperty("scale", &Transform::getScale, &Transform::setScale)
+//         .addProperty("angle", &Transform::getRotation, &Transform::setRotation)
+//         .endClass()
+//         .deriveClass<RectangleSimple, Transform>("Rectangle")
+//         .addConstructor<void (*)()>()
+//         .endClass()
+//         .deriveClass<Sprite, RectangleSimple>("Sprite")
+//         .addConstructor<void (*)()>()
+//         .addProperty("color", &Sprite::m_color)
+//         .addFunction("setTexture", &Sprite::setTextureP)
+//         .endClass()
+//         .deriveClass<Text, Transform>("Text")
+//         .addConstructor<void (*)(std::string)>()
+//         .addProperty("color", &Text::getColor, &Text::setColor)
+//         .addProperty("string", &Text::getText, &Text::setText)
+//         .addFunction("setFont", std::function<void(Text *, Font *)>(
+//                                     [](Text *p_this, Font *p_font)
+//                                     {if(p_this && p_font){ p_this->setFont(p_font);} }))
+//         .endClass();
 
-    luabridge::getGlobalNamespace(m_lua_state)
-        .beginClass<Particle>("Particle")
-        .addConstructor<void (*)(float, float)>()
-        .addProperty("pos", &Particle::pos)
-        .addProperty("vel", &Particle::vel)
-        .addProperty("angle", &Particle::angle)
-        .addProperty("scale", &Particle::scale)
-        .addProperty("color", &Particle::color)
-        .addProperty("life_time", &Particle::life_time)
-        .addProperty("time", &Particle::time)
-        .endClass();
-    luabridge::getGlobalNamespace(m_lua_state)
-        .beginClass<Particles>("Particles")
-        .addConstructor<void (*)(int)>()
-        .addProperty("spawn_pos", &Particles::m_spawn_pos)
-        .addProperty("init_color", &Particles::m_init_color)
-        .addProperty("updater", &Particles::m_updater_full)
-        .endClass();
+//     luabridge::getGlobalNamespace(m_lua_state)
+//         .beginClass<Particle>("Particle")
+//         .addConstructor<void (*)(float, float)>()
+//         .addProperty("pos", &Particle::pos)
+//         .addProperty("vel", &Particle::vel)
+//         .addProperty("angle", &Particle::angle)
+//         .addProperty("scale", &Particle::scale)
+//         .addProperty("color", &Particle::color)
+//         .addProperty("life_time", &Particle::life_time)
+//         .addProperty("time", &Particle::time)
+//         .endClass();
+//     luabridge::getGlobalNamespace(m_lua_state)
+//         .beginClass<Particles>("Particles")
+//         .addConstructor<void (*)(int)>()
+//         .addProperty("spawn_pos", &Particles::m_spawn_pos)
+//         .addProperty("init_color", &Particles::m_init_color)
+//         .addProperty("updater", &Particles::m_updater_full)
+//         .endClass();
 
-    luabridge::getGlobalNamespace(m_lua_state)
-        .beginClass<GameObject>("GameObject")
-        .addProperty("x", &GameObject::getX, &GameObject::setX)
-        .addProperty("y", &GameObject::getY, &GameObject::setY)
-        .addProperty("pos", &GameObject::getPosition, &GameObject::setPosition)
-        .addProperty("angle", &GameObject::getAngle, &GameObject::setAngle)
-        .addProperty("target", &GameObject::getTarget, &GameObject::setTarget)
-        .addProperty("target_pos", &GameObject::m_target_pos)
-        .addProperty("scale", &GameObject::getSize, &GameObject::setSize)
-        .addProperty("id", &GameObject::getId)
-        .addProperty("type", &GameObject::getType)
-        .addProperty("vel", &GameObject::m_vel)
-        .addProperty("is_dead", &GameObject::isDead)
-        .addFunction("kill", &GameObject::kill)
-        .endClass()
-        .deriveClass<Enemy, GameObject>("Enemy")
-        .addProperty("state", &Enemy::getState, &Enemy::setState)
-        .addProperty("script", &Enemy::getScript, &Enemy::setScript)
-        .addProperty("max_health", &Enemy::m_max_health)
-        .addProperty("health", &Enemy::m_health)
-        .addProperty("max_vel", &Enemy::max_vel)
-        .addProperty("max_acc", &Enemy::max_acc)
-        .endClass()
-        .deriveClass<Projectile, GameObject>("Projectile")
-        .addProperty("max_vel", &Projectile::getMaxVel, &Projectile::setMaxVel)
-        .addProperty("acc", &Projectile::getAcc, &Projectile::setAcc)
-        .addProperty("owner", &Projectile::m_owner_entity_id)
-        .addFunction("setScript", &Projectile::setScriptName)
-        .endClass()
-        .deriveClass<PlayerEntity, GameObject>("Player")
-        .addProperty("max_vel", &PlayerEntity::m_max_speed)
-        .addProperty("vision_radius", &PlayerEntity::m_vision_radius)
-        .addProperty("health", &PlayerEntity::m_health)
-        .addProperty("max_health", &PlayerEntity::m_max_health)
-        .addProperty("target_enemy", &PlayerEntity::target_enemy)
-        .endClass()
-        .deriveClass<Event, GameObject>("Event")
-        .addProperty("script_name", &Event::m_script_name)
-        .endClass()
-        .deriveClass<Wall, GameObject>("Wall")
-        .endClass()
-        .deriveClass<EnviromentEffect, GameObject>("Effect")
-        .addFunction("addParticles", &EnviromentEffect::addParticles)
-        .addProperty("lifetime", &EnviromentEffect::m_lifetime)
-        .endClass();
+//     luabridge::getGlobalNamespace(m_lua_state)
+//         .beginClass<GameObject>("GameObject")
+//         .addProperty("x", &GameObject::getX, &GameObject::setX)
+//         .addProperty("y", &GameObject::getY, &GameObject::setY)
+//         .addProperty("pos", &GameObject::getPosition, &GameObject::setPosition)
+//         .addProperty("angle", &GameObject::getAngle, &GameObject::setAngle)
+//         .addProperty("target", &GameObject::getTarget, &GameObject::setTarget)
+//         .addProperty("target_pos", &GameObject::m_target_pos)
+//         .addProperty("scale", &GameObject::getSize, &GameObject::setSize)
+//         .addProperty("id", &GameObject::getId)
+//         .addProperty("type", &GameObject::getType)
+//         .addProperty("vel", &GameObject::m_vel)
+//         .addProperty("is_dead", &GameObject::isDead)
+//         .addFunction("kill", &GameObject::kill)
+//         .endClass()
+//         .deriveClass<Enemy, GameObject>("Enemy")
+//         .addProperty("state", &Enemy::getState, &Enemy::setState)
+//         .addProperty("script", &Enemy::getScript, &Enemy::setScript)
+//         .addProperty("max_health", &Enemy::m_max_health)
+//         .addProperty("health", &Enemy::m_health)
+//         .addProperty("max_vel", &Enemy::max_vel)
+//         .addProperty("max_acc", &Enemy::max_acc)
+//         .endClass()
+//         .deriveClass<Projectile, GameObject>("Projectile")
+//         .addProperty("max_vel", &Projectile::getMaxVel, &Projectile::setMaxVel)
+//         .addProperty("acc", &Projectile::getAcc, &Projectile::setAcc)
+//         .addProperty("owner", &Projectile::m_owner_entity_id)
+//         .addFunction("setScript", &Projectile::setScriptName)
+//         .endClass()
+//         .deriveClass<PlayerEntity, GameObject>("Player")
+//         .addProperty("max_vel", &PlayerEntity::m_max_speed)
+//         .addProperty("vision_radius", &PlayerEntity::m_vision_radius)
+//         .addProperty("health", &PlayerEntity::m_health)
+//         .addProperty("max_health", &PlayerEntity::m_max_health)
+//         .addProperty("target_enemy", &PlayerEntity::target_enemy)
+//         .endClass()
+//         .deriveClass<Event, GameObject>("Event")
+//         .addProperty("script_name", &Event::m_script_name)
+//         .endClass()
+//         .deriveClass<Wall, GameObject>("Wall")
+//         .endClass()
+//         .deriveClass<EnviromentEffect, GameObject>("Effect")
+//         .addFunction("addParticles", &EnviromentEffect::addParticles)
+//         .addProperty("lifetime", &EnviromentEffect::m_lifetime)
+//         .endClass();
 
-    registerVector<Particle>(luabridge::getGlobalNamespace(m_lua_state), "ParticleVector");
-    registerVector<GameObject *>(luabridge::getGlobalNamespace(m_lua_state), "ObjectVector");
+//     registerVector<Particle>(luabridge::getGlobalNamespace(m_lua_state), "ParticleVector");
+//     registerVector<GameObject *>(luabridge::getGlobalNamespace(m_lua_state), "ObjectVector");
 }
 
 //! \brief runs the command if it is registered
@@ -824,6 +821,7 @@ bool LuaWrapper::doString(const std::string &command)
     }
     return true;
 }
+
 //! \brief runs the script if it is exists
 bool LuaWrapper::doFile(const std::string &filename)
 {

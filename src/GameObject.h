@@ -3,13 +3,12 @@
 #include <memory>
 #include <functional>
 
-#include <Vector2.h>
-#include <Renderer.h>
-
 #include "Polygon.h"
-#include "DrawLayer.h"
 
 class GameWorld;
+class TextureHolder;
+class LayersHolder;
+
 
 enum class Multiplier
 {
@@ -32,18 +31,23 @@ enum class ObjectType
 {
     Enemy,
     Bullet,
+    Missile,
+    Bomb,
+    Laser,
+    Meteor,
+    Heart,
+    SpaceStation,
+    Explosion,
     Player,
-    Wall,
-    Orbiter,
-    Event,
-    VisualEffect,
+    Flag,
+    Boss,
+    Trigger,
+    EMP,
     Count
 };
 
 enum class EffectType
 {
-    Fire = static_cast<int>(ObjectType::Count),
-    Water,
     ParticleEmiter,
     AnimatedSprite,
 
@@ -67,33 +71,22 @@ class GameObject
 {
 
 public:
-    GameObject(GameObject& left)
-    : m_textures(left.m_textures)
-    {
-        m_collision_shape = std::move(left.m_collision_shape);
-    }
-    GameObject() = default;
     GameObject(GameWorld *world, TextureHolder &textures, ObjectType type);
 
     virtual void update(float dt) = 0;
     virtual void onCreation() = 0;
     virtual void onDestruction() {m_on_destruction_callback(m_id, m_type);}
-    virtual void draw(LayersHolder &layers) = 0;
+    virtual void draw(LayersHolder &target) = 0;
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) = 0;
     virtual ~GameObject() {}
 
     void removeCollider();
+    bool isBloomy() const;
     void kill();
     bool isDead() const;
     void updateAll(float dt);
 
     const utils::Vector2f &getPosition() const;
-    void setX(float x) ;
-    void setY(float y) ;
-    float getX() const;
-    float getY() const;
-    void setTarget(GameObject* target);
-    GameObject* getTarget()const;
     void setPosition(utils::Vector2f new_position);
     void move(utils::Vector2f by);
 
@@ -107,37 +100,39 @@ public:
     RigidBody &getRigidBody();
     
     int getId() const;
-    const ObjectType& getType() const;
-    
+    ObjectType getType() const;
+
+
     void setSize(utils::Vector2f size);
-    utils::Vector2f getSize() const;
+
+    void setDestructionCallback(std::function<void(int, ObjectType)> callback)
+    {
+        m_on_destruction_callback = callback;
+    }
 
 public:
 
-    utils::Vector2f m_pos;
-    utils::Vector2f m_target_pos;
-    GameObject* m_target = nullptr;
-    
-    int m_id;
-    Transform m_transform;
     utils::Vector2f m_vel = {0, 0};
-    std::string m_name = "DefaultName";
+    int m_id;
 
 protected:
-    TextureHolder* m_textures;
-    GameWorld *m_world;
+    TextureHolder &m_textures;
     
     std::unique_ptr<Polygon> m_collision_shape = nullptr;
     std::unique_ptr<RigidBody> m_rigid_body = nullptr;
     
-    utils::Vector2f m_size = {1, 1};
+    utils::Vector2f m_pos;
     float m_angle = 0;
     
-    bool m_is_dead = false;
+    GameWorld *m_world;
     
+    bool m_is_dead = false;
+    bool m_is_bloomy = false;
+    
+    utils::Vector2f m_size = {1, 1};
 
 private:
-
     std::function<void(int, ObjectType)> m_on_destruction_callback = [](int, ObjectType){};
+
     ObjectType m_type;
 };

@@ -73,10 +73,10 @@ ShadersWindow::ShadersWindow(TextureHolder &textures, LayersHolder &layers, Rend
     {
         m_slots.emplace_back(*l_ptr);
     }
-    for (auto &[id, shader] : GameWorld::getWorld().m_shaders.getShaders())
-    {
-        m_shader_slots.emplace_back(*shader, id);
-    };
+    // for (auto &[id, shader] : GameWorld::getWorld().m_shaders.getShaders())
+    // {
+    //     m_shader_slots.emplace_back(*shader, id);
+    // };
 }
 
 LuaWindow::LuaWindow()
@@ -95,46 +95,46 @@ SceneGraphWindow::SceneGraphWindow()
 
 void SceneGraphWindow::drawSceneGraph()
 {
-    auto &scene = GameWorld::getWorld().m_scene;
-    for (auto root_id : scene.m_roots)
-    {
-        std::queue<int> to_visit;
-        to_visit.push(root_id);
-        while (!to_visit.empty()) 
-        {
-            auto current_id = to_visit.front();
-            auto &current = scene.m_nodes.at(current_id);
-            to_visit.pop();
-            assert(current.p_object);
-            auto node_name = GameWorld::getWorld().getName(current.p_object->getId());
-            if(!std::regex_match(node_name, std::regex{m_filter}))
-            {
-                continue;
-            }
-            bool opened = ImGui::TreeNode(node_name.c_str());
-            ImGui::SameLine();
-            bool selected = false;
-            if (ImGui::Selectable(node_name.c_str(), selected))
-            {
-                m_selected_entity_id = current.p_object->getId();
-            }
-            if (opened)
-            {
-                for (auto child : current.children)
-                {
-                    to_visit.push(child);
-                }
-                ImGui::TreePop();
+    // auto &scene = GameWorld::getWorld().m_scene;
+    // for (auto root_id : scene.m_roots)
+    // {
+    //     std::queue<int> to_visit;
+    //     to_visit.push(root_id);
+    //     while (!to_visit.empty()) 
+    //     {
+    //         auto current_id = to_visit.front();
+    //         auto &current = scene.m_nodes.at(current_id);
+    //         to_visit.pop();
+    //         assert(current.p_object);
+    //         auto node_name = GameWorld::getWorld().getName(current.p_object->getId());
+    //         if(!std::regex_match(node_name, std::regex{m_filter}))
+    //         {
+    //             continue;
+    //         }
+    //         bool opened = ImGui::TreeNode(node_name.c_str());
+    //         ImGui::SameLine();
+    //         bool selected = false;
+    //         if (ImGui::Selectable(node_name.c_str(), selected))
+    //         {
+    //             m_selected_entity_id = current.p_object->getId();
+    //         }
+    //         if (opened)
+    //         {
+    //             for (auto child : current.children)
+    //             {
+    //                 to_visit.push(child);
+    //             }
+    //             ImGui::TreePop();
 
-                static char buf[69] = "";
-                ImGuiInputTextFlags flags = ImGuiInputTextFlags_::ImGuiInputTextFlags_EnterReturnsTrue;
-                if (ImGui::InputText("Name", buf, 69, flags))
-                {
-                    GameWorld::getWorld().setName(current.p_object->getId(), {buf});
-                }
-            }
-        }
-    }
+    //             static char buf[69] = "";
+    //             ImGuiInputTextFlags flags = ImGuiInputTextFlags_::ImGuiInputTextFlags_EnterReturnsTrue;
+    //             if (ImGui::InputText("Name", buf, 69, flags))
+    //             {
+    //                 GameWorld::getWorld().setName(current.p_object->getId(), {buf});
+    //             }
+    //         }
+    //     }
+    // }
 
 }
 
@@ -199,8 +199,8 @@ void LuaWindow::draw()
 
     if (ImGui::InputFloat2("Coordinates: ", &m_coords.x))
     {
-        auto p_object = GameWorld::getWorld().get(m_selected_entity_id);
-        p_object->setPosition(m_coords);
+        // auto p_object = GameWorld::getWorld().get(m_selected_entity_id);
+        // p_object->setPosition(m_coords);
     }
 
     ImGui::End();

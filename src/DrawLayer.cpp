@@ -17,6 +17,7 @@ DrawLayer::DrawLayer(int width, int height, TextureOptions options)
       m_tmp_canvas2(m_tmp_pixels2),
       m_canvas(m_pixels)
 {
+        
 }
 
 void DrawLayer::toggleActivate()
@@ -32,6 +33,12 @@ bool DrawLayer::isActive() const
 void DrawLayer::draw(Renderer &window_rend)
 {
     m_canvas.drawAll();
+
+    if(!m_canvas.hasShader("Instanced"))
+    {
+        m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
+    }
+
 
     int n_effects = m_effects.size();
     if (n_effects >= 2)

@@ -4,10 +4,10 @@
 #include <numeric>
 #include <cmath>
 
-
 Statistics::Statistics()
-: m_hist(101) 
-{}
+    : m_hist(101)
+{
+}
 
 void Statistics::addNumber(double num)
 {
@@ -19,6 +19,15 @@ void Statistics::addNumber(double num)
     avg = std::accumulate(data.begin(), data.end(), 0.) / data.size();
     m_hist.addNumber(num);
 }
+double Statistics::getAverage()
+{
+    return avg;
+}
+double Statistics::getVariance()
+{
+    auto avg2 = std::accumulate(data.begin(), data.end(), 0., [](double sum_2, double datum){ return sum_2 + datum*datum;}) / data.size();
+    return avg2 - avg * avg;
+}
 
 Histogram::Histogram(std::size_t n_bins, double min_val, double max_val)
     : min_value(min_val), max_value(max_val), m_bin_counts(n_bins)
@@ -28,7 +37,7 @@ Histogram::Histogram(std::size_t n_bins, double min_val, double max_val)
 void Histogram::addNumber(double num)
 {
     auto index = getIndex(num);
-    if(index != -1)
+    if (index != -1)
     {
         m_bin_counts.at(index)++;
     }
@@ -42,11 +51,10 @@ void Histogram::clear()
 std::vector<double> Histogram::getNormalizedHist() const
 {
 
-
     auto total_count = std::accumulate(m_bin_counts.begin(), m_bin_counts.end(), 0);
 
     std::vector<double> values(n_bins);
-    for(std::size_t i = 0; i < n_bins; ++i)
+    for (std::size_t i = 0; i < n_bins; ++i)
     {
         values.at(i) = (double)m_bin_counts.at(i) / (double)total_count;
     }
@@ -57,7 +65,7 @@ Histogram::BinIndexType Histogram::getIndex(double value) const
 {
     double dr = (max_value - min_value) / n_bins;
     int index = std::floor((value - min_value) / dr);
-    if(index >= 0 && index < m_bin_counts.size())
+    if (index >= 0 && index < m_bin_counts.size())
     {
         return index;
     }

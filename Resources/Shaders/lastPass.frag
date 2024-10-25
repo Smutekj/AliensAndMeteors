@@ -20,5 +20,5 @@ void main(void)
     result = vec3(1.) - exp(-result*u_exposure);
 
 
-    FragColor = vec4(source_color, source_alpha);
+    FragColor = vec4(source_color*source_alpha, source_alpha);
 }

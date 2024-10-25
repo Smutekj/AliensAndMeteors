@@ -1,6 +1,7 @@
 #pragma once
 #include <stdexcept>
 #include <Utils/Vector2.h>
+#include <array>
 
 namespace utils
 {
@@ -38,4 +39,17 @@ namespace utils
     size_t getNCells() const;
   };
 
-} // namespace cdt;
+
+//! \class represents grids that are used for searching for nearest neighbours
+class SearchGrid : public Grid {
+
+public:
+    SearchGrid(utils::Vector2i n_cells, utils::Vector2f cell_size);
+    bool isInGrid(utils::Vector2i cell_coords) const;
+
+    void calcNearestCells(const int cell_ind, std::array<int, 9>& nearest_neighbours, int& n_nearest_cells) const;
+    void calcNearestCells2(const int cell_ind, std::array<int, 9>& nearest_neighbours, int& n_nearest_cells) const;
+};
+
+
+} // namespace utils;

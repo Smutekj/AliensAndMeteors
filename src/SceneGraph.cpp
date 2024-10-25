@@ -36,11 +36,11 @@ void SceneGraph::updateRoot(int root_ind, float dt)
             to_visit.push(child);
         }
 
-        auto parent_obj = m_nodes.at(curr_node.parent).p_object;
-        auto parent_pos = parent_obj->getPosition();
-        curr_node.p_object->m_transform.transform(parent_pos);
-        curr_node.p_object->setPosition(parent_pos);
-        curr_node.p_object->update(dt);
+        // auto parent_obj = m_nodes.at(curr_node.parent).p_object;
+        // auto parent_pos = parent_obj->getPosition();
+        // curr_node.p_object->m_transform.transform(parent_pos);
+        // curr_node.p_object->setPosition(parent_pos);
+        // curr_node.p_object->update(dt);
     }
 }
 
