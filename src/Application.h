@@ -23,7 +23,7 @@ class Application
 public:
     Application(int widht, int height);
     void run();
-    void handleInput();
+    void iterate();
 
 private:
     void registerStates();

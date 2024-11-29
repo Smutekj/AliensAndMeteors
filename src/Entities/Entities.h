@@ -20,57 +20,6 @@ namespace Collisions
 
 class GridNeighbourSearcher;
 
-class Boss : public GameObject
-{
-
-    enum class State
-    {
-
-        Patroling,
-        Shooting,
-        ShootingLasers,
-        ThrowingBombs,
-    };
-
-    State m_state = State::Patroling;
-
-    utils::Vector2f m_acc;
-
-    PlayerEntity *m_player;
-
-    Collisions::CollisionSystem *m_collision_system;
-
-    float m_shooting_cooldown = 3.f;
-    float m_bombing_cooldown = 0.5f;
-    float m_lasering_cooldown = 10.f;
-
-    int m_bomb_count = 0;
-    float m_shooting_timer = 0.f;
-
-public:
-    float max_vel = 30.f;
-    const float max_acc = 100.f;
-    float m_vision_radius = 150.f;
-
-    float m_health = 50;
-    utils::Vector2f m_impulse = {0, 0};
-    utils::Vector2f m_target_pos;
-
-    Boss(GameWorld *world, TextureHolder &textures, PlayerEntity *player);
-    virtual ~Boss() override;
-
-    virtual void update(float dt) override;
-    virtual void onCreation() override;
-    virtual void onDestruction() override;
-    virtual void draw(LayersHolder &target) override;
-    virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
-
-private:
-    void shootAtPlayer();
-    void throwBombsAtPlayer();
-    void shootLasers();
-};
-
 class Explosion : public GameObject
 {
 
@@ -93,6 +42,9 @@ public:
     virtual void draw(LayersHolder &target) override;
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
 
+public:
+    bool m_is_expanding = true;
+
 private:
     std::unique_ptr<Animation> m_animation;
 
@@ -104,6 +56,7 @@ private:
 
     float m_time = 0.f;
     float m_life_time = 1.;
+    Sprite m_explosion_sprite;
 };
 
 class EMP : public GameObject
@@ -192,26 +145,3 @@ private:
     float m_life_time = 10.;
 };
 
-class Enemy;
-
-class SpaceStation : public GameObject
-{
-
-public:
-    SpaceStation(GameWorld *world, TextureHolder &textures);
-    virtual ~SpaceStation() override;
-
-    virtual void update(float dt) override;
-    virtual void onCreation() override;
-    virtual void onDestruction() override;
-    virtual void draw(LayersHolder &target) override;
-    virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
-
-private:
-    std::vector<Enemy *> m_produced_ships;
-    float m_time = 0.f;
-    float m_spawn_timer = 2.f;
-
-    float m_max_health = 100.f;
-    float m_health = m_max_health;
-};

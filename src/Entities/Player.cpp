@@ -26,7 +26,7 @@ PlayerEntity::PlayerEntity(GameWorld *world, TextureHolder &textures)
 
     auto basic_updater = [](Particle &part, float dt)
     {
-        part.pos = part.pos + part.vel*dt;
+        part.pos = part.pos + part.vel * dt;
         part.scale += utils::Vector2f{0.075, 0.075};
     };
 
@@ -35,21 +35,40 @@ PlayerEntity::PlayerEntity(GameWorld *world, TextureHolder &textures)
     m_particles_left->setUpdater(basic_updater);
     m_particles_right->setUpdater(basic_updater);
 
-    m_particles_left->setFinalColor({0,0,0,0});
-    m_particles_right->setFinalColor({0,0,0,0});
+    m_particles_left->setFinalColor({0, 0, 0, 0});
+    m_particles_right->setFinalColor({0, 0, 0, 0});
 }
 
 void PlayerEntity::update(float dt)
 {
     fixAngle();
     boost();
+    if (m_is_turning_left)
+    {
+        //! slower turning when shooting laser
+        auto angle_vel = m_angle_vel - m_angle_vel * 0.4 * m_is_shooting_laser;
+        setAngle(m_angle + angle_vel * dt);
+    }
+    if (m_is_turning_right)
+    {
+        auto angle_vel = m_angle_vel - m_angle_vel * 0.4 * m_is_shooting_laser;
+        setAngle(m_angle - angle_vel * dt);
+    }
+    if (m_is_shooting_laser)
+    {
+        m_laser_timer -= dt;
+        if (m_laser_timer <= 0.)
+        {
+            m_laser_timer = 0.;
+            m_is_shooting_laser = false;
+        }
+    }
 
-    speed += acceleration*dt;
-    speed += boost_factor*dt * is_boosting;
-    speed -= speed * slowing_factor;
-
-    m_vel = speed * utils::angle2dir(m_angle);
-
+    auto acc = acceleration + 20 * acceleration * is_boosting;
+    speed += acc * dt;
+    // std::cout << "Speed: " << speed << "\n";
+    m_vel = (speed)*utils::angle2dir(m_angle);
+    // utils::truncate(m_vel, max_speed + is_boosting * max_speed);
     if (m_deactivated_time > 0)
     {
         m_deactivated_time -= dt;
@@ -57,6 +76,15 @@ void PlayerEntity::update(float dt)
         is_boosting = false;
     }
     m_pos += m_vel * dt;
+    //! speed fallout
+    if (speed > boost_max_speed)
+    {
+        speed -= speed * 1.1 * slowing_factor;
+    }
+    else
+    {
+        speed -= speed * slowing_factor;
+    }
 
     m_particles_left->setSpawnPos(m_pos - m_radius * utils::angle2dir(m_angle + 40));
     m_particles_left->update(dt);
@@ -91,15 +119,7 @@ void PlayerEntity::onCollisionWith(GameObject &obj, CollisionData &c_data)
     }
     case ObjectType::Heart:
     {
-        health += 5;
-        break;
-    }
-    case ObjectType::Laser:
-    {
-        if (static_cast<Laser &>(obj).getOwner() != this)
-        {
-            health -= 0.1f;
-        }
+        health += 3;
         break;
     }
     }
@@ -118,15 +138,15 @@ void PlayerEntity::draw(LayersHolder &layers)
 
     target.drawSprite(m_player_shape, "Instanced");
 
-    if (is_boosting)
+    if (!is_boosting)
     {
         m_particles_left->setInitColor({5., 2., 0, 0.2});
         m_particles_right->setInitColor({5., 2., 0, 0.2});
     }
     else
     {
-        m_particles_left->setInitColor({25, 3, 0, 0.05});
-        m_particles_right->setInitColor({25, 3, 0, 0.05});
+        m_particles_left->setInitColor({205, 30, 0, 1.0});
+        m_particles_right->setInitColor({250, 30, 0, 1.0});
     }
 
     m_particles_left->draw(shiny_target);

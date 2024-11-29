@@ -8,7 +8,7 @@ class PostEffect
 {
 public:
     virtual void process(Texture &source, Renderer &target) = 0;
-
+    virtual ~PostEffect() = default;
 protected:
 };
 
@@ -18,7 +18,7 @@ class Bloom : public PostEffect
 public:
     Bloom(int width, int height);
     virtual void process(Texture &source, Renderer &target)override;
-    virtual ~Bloom() = default;
+    virtual ~Bloom() {}
 
 private:
     FrameBuffer m_bloom_pass1;
@@ -39,7 +39,7 @@ public:
     Bloom2(int width, int height, TextureOptions options = {});
 
     virtual void process(Texture &source, Renderer &target) override;
-    virtual ~Bloom2() = default;
+    virtual ~Bloom2() {};
 
     struct TexMip
     {
@@ -83,7 +83,7 @@ public:
     Bloom3(int width, int height, TextureOptions options = {});
 
     virtual void process(Texture &source, Renderer &target) override;
-    virtual ~Bloom3() = default;
+    virtual ~Bloom3(){};
 
 
     void initMips(int n_levels, int width, int height, TextureOptions option);

@@ -41,12 +41,12 @@ void main()
 
     float t = abs(v_tex_coord.y -0.5);
     vec3 gay_color = vec3(1.);
-    gay_color.r = (1. + cos(u_time * u_time_multiplier + t*u_space_multiplier))/2.; 
+    gay_color.r = (2. + cos(u_time * u_time_multiplier + t*u_space_multiplier))/2.; 
     gay_color.g = (1. + sin(u_time * u_time_multiplier+ t*u_space_multiplier))/2.; 
     gay_color.b = (1. + mod(t*u_space_multiplier + u_time*u_time_multiplier, 1.0))/2.; 
 
 
-    vec3 result = 2.*gay_color + 0.*edge_factor * u_color_edge;
+    vec3 result = 2.*gay_color + edge_factor * u_color_edge;
 
     FragColor = vec4(result*shape_factor, shape_factor);
 }                                          

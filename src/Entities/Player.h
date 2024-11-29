@@ -12,7 +12,7 @@ class GameWorld;
 
 struct PlayerEntity : public GameObject
 {
-    public:
+public:
     PlayerEntity(GameWorld *world, TextureHolder &textures);
     virtual ~PlayerEntity() = default;
 
@@ -28,11 +28,20 @@ private:
 
 public:
     float speed = 0.f;
-    float max_speed = 5.f;
+    float boost_max_speed = 80.f;
+    float max_speed = 50.f;
     bool is_boosting = false;
-    float boost_factor = 2.f;
+
+    float m_laser_timer = 0.f;
+
+    bool m_is_shooting_laser = false;
+    bool m_is_turning_left = false;
+    bool m_is_turning_right = false;
+    
+    float boost_factor = 2.6f;
     float slowing_factor = 0.03f;
     float acceleration = 1.5f;
+    float m_angle_vel = 270.69f;
 
     float boost_time = 0.f;
     float max_boost_time = 100.f;

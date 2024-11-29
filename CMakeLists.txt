@@ -57,9 +57,8 @@ include_directories(SYSTEM external/freetype/include)
 include_directories("${PROJECT_BINARY_DIR}" ${IMGUI_DIR} ${IMGUI_DIR}/backends ${BOOST_INCLUDE_DIRS} ${LUA_INCLUDE_DIRS} ${LUABRIDG3E_INCLUDE_DIRS})
 add_executable(${CMAKE_PROJECT_NAME} ${SRC} )
 target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC LuaLib
-                                            renderer CDT
+                                            renderer
                                             ${LUABRIDG3E_LIBRARIES}
                                             ${BOOST_LIBRARIES}
                                             freetype) #flecs::flecs_static
 
-message(${CMAKE_SOURCE_DIR})

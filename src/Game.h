@@ -23,7 +23,7 @@ public:
 
   void update(const float dt, Renderer &win);
   void handleEvent(const SDL_Event &event);
-  void parseInput(Renderer &window);
+  void parseInput(Renderer &window, float dt);
   void draw(Renderer &window);
 
   static bool isKeyPressed(SDL_Keycode key)

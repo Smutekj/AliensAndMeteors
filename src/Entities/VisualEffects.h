@@ -50,10 +50,13 @@ public:
     virtual void draw(LayersHolder &target) override;
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override{}
 
-    // void setType(std::string type);
+    void setType(std::string type)
+    {
+        
+    }
 private:
     std::unique_ptr<Animation> m_animation;
-
+    
 };
 
 class StarEmitter : public VisualEffect

@@ -16,7 +16,7 @@ MenuState::MenuState(StateStack &stack, Context &context)
 
   utils::Vector2f window_size = {static_cast<float>(context.window->getTargetSize().x),
                                  static_cast<float>(context.window->getTargetSize().y)};
-  m_background_rect.setScale(window_size*2.);
+  m_background_rect.setScale(window_size * 2.);
   m_background_rect.setTexture(m_background_texture);
 
   auto new_game_button = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Game, States::ID::None, "New Game");
@@ -125,14 +125,26 @@ void PlayerDiedState::update(float dt)
 
 void PlayerDiedState::handleEvent(const SDL_Event &event)
 {
-  if (event.type == SDL_KEYUP && event.key.keysym.sym == SDLK_RETURN)
+  if (event.type == SDL_KEYUP)
   {
-    if (m_entered_name.length() != 0)
+    bool key_is_enter = event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_KP_ENTER;
+    if (key_is_enter)
     {
-      m_context.score->setScore(m_entered_name, m_context.score->getCurrentScore());
+      if (m_entered_name.length() != 0)
+      {
+        m_context.score->setScore(m_entered_name, m_context.score->getCurrentScore());
+      }
       m_stack->popState();
       m_stack->pushState(States::ID::Menu);
     }
+    else if (event.key.keysym.sym == SDLK_BACKSPACE && m_entered_name.size() > 0)
+    {
+      m_entered_name.pop_back();
+    }
+  }
+  else if (event.type == SDL_TEXTINPUT)
+  {
+    m_entered_name = m_entered_name + event.text.text[0];
   }
 
   m_menu.handleEvent(event);
@@ -141,7 +153,7 @@ void PlayerDiedState::handleEvent(const SDL_Event &event)
 void PlayerDiedState::draw()
 {
   auto &window = *m_context.window;
-  
+
   window.m_view = window.getDefaultView();
 
   m_menu.draw(window);
@@ -152,18 +164,17 @@ void PlayerDiedState::draw()
   m_text.setColor({0, 0, 255, 255});
   m_text.setScale(2.f, 2.f);
   m_text.centerAround({window_size.x / 2.f,
-                     window_size.y *6.f/ 8.f});
+                       window_size.y * 6.f / 8.f});
   window.drawText(m_text, "Text");
 
   m_text.setText("Your score was: " + std::to_string(m_context.score->getCurrentScore()));
   m_text.setColor({0, 0, 255, 255});
   m_text.setScale(2.f, 2.f);
   m_text.centerAround({window_size.x / 2.f,
-                     window_size.y *4.f/ 8.f});
+                       window_size.y * 4.f / 8.f});
   window.drawText(m_text, "Text");
 
   window.drawAll();
-
 }
 
 ScoreBoardState::ScoreBoardState(StateStack &stack, Context &context)
@@ -201,12 +212,12 @@ void ScoreBoardState::draw()
   utils::Vector2f window_size = {static_cast<float>(window.getTargetSize().x), static_cast<float>(window.getTargetSize().y)};
 
   float item_width = window_size.x / 5.f;
-  float y_pos = 100.f;
+  float y_pos = window_size.y / 20.f + 20;
 
   m_left_text.setScale(1.1f, 1.1f);
   m_right_text.setScale(1.1f, 1.1f);
   drawScoreLine(window, "Player", "Score", item_width, y_pos);
-  y_pos += 20.f; // m_left_text.getGlobalBounds().height * 1.55f;
+  y_pos += window_size.y / 10.f; // m_left_text.getGlobalBounds().height * 1.55f;
   m_left_text.setScale(1, 1);
   m_right_text.setScale(1, 1);
 
@@ -225,13 +236,15 @@ void ScoreBoardState::draw()
 }
 
 void ScoreBoardState::drawScoreLine(Renderer &window,
-                                    std::string text1, std::string text2, float width, float y_position)
+                                    std::string text1, std::string text2,
+                                    float width, float y_position)
 {
+  auto window_size = window.getTargetSize();
   m_left_text.setText(text1);
-  m_left_text.setPosition(window.getTargetSize().x / 2.f - width, y_position);
+  m_left_text.centerAround({window_size.x / 2.f - width, y_position});
 
   m_right_text.setText(text2);
-  m_right_text.setPosition(window.getTargetSize().x / 2.f + width, y_position);
+  m_right_text.centerAround({window_size.x / 2.f + width, y_position});
   window.drawText(m_left_text, "Text");
   window.drawText(m_right_text, "Text");
 }

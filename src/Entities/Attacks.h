@@ -6,7 +6,6 @@
 
 #include "../GameObject.h"
 
-
 class PlayerEntity;
 class GameWorld;
 class Animation;
@@ -15,7 +14,6 @@ namespace Collisions
 {
     class CollisionSystem;
 }
-
 
 enum class BulletType
 {
@@ -39,25 +37,28 @@ public:
 
     float getTime() const;
 
-    // const static std::unordered_map<BulletType, std::string> m_bullet_shader_ids = 
-    // {
-    //     {BulletType::Fire, "fireBolt"},
-    //     {BulletType::Frost, "frostBolt"},
-    //     {BulletType::Lightning, "lightningBolt"}
-    // };
+    void setTarget(GameObject *new_target);
+    GameObject *getTarget() const;
+    void setBulletType(BulletType type);
+
+private:
+    static std::unordered_map<BulletType, std::string> m_type2shader_id;
 
 private:
     utils::Vector2f m_acc;
     const float max_vel = 100.f;
     const float max_acc = 30.f;
 
-    PlayerEntity *m_player = nullptr;
+    BulletType m_type = BulletType::Lightning;
+
+    GameObject *m_target = nullptr;
 
     float m_time = 0.f;
     float m_life_time = 10.;
 
     std::deque<utils::Vector2f> m_past_positions;
 };
+
 
 class Bomb : public GameObject
 {
@@ -109,16 +110,17 @@ public:
         return m_owner;
     }
 
-private:
     float m_min_dmg = 0.f;
-    float m_max_dmg = 5.f;
-    float m_length = 0.f;
+    float m_max_dmg = 1.f;
+    float m_max_length = 100.f;
     float m_width = 3.f;
-
-    const float max_vel = 100.f;
-    const float max_acc = 20.f;
-
     float m_life_time = 1.;
+
+    bool m_rotates_with_owner = true;
+private:
+    float m_length = 0.f;
+    float m_time = 0.;
+
     Collisions::CollisionSystem *m_neighbour_searcher;
 
     GameObject *m_owner = nullptr;

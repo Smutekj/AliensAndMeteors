@@ -25,14 +25,14 @@ class Subject
 public:
     Subject() {}
     virtual ~Subject() {}
-    void attach(Observer<T> &observer)
+    void attach(std::shared_ptr<Observer<T>> observer)
     {
-        m_observers.push_back(&observer);
+        m_observers.push_back(observer);
     }
 
     void notify()
     {
-        for (auto &observer : m_observers)
+        for (auto observer : m_observers)
         {
 
             // auto* ob_ptr = dynamic_cast<ReachSpotObjective *>(observer);
@@ -42,7 +42,7 @@ public:
     }
 
 private:
-    std::vector<Observer<T> *> m_observers;
+    std::vector<std::shared_ptr<Observer<T>>> m_observers;
 };
 
 class Trigger : public GameObject, public Subject<Trigger>

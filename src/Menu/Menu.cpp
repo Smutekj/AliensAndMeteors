@@ -113,22 +113,34 @@ ChangeStateItem::ChangeStateItem(State::Context &context, StateStack *stack,
 
 void ChangeStateItem::handleEvent(SDL_Event event)
 {
-    if (event.type == SDL_KEYUP && event.key.keysym.sym == SDLK_RETURN)
+    if (event.type == SDL_KEYUP)
     {
-        if (m_source == States::ID::None) //! if there is no source we don't want to return
+        bool key_is_enter = event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_KP_ENTER;
+        if (key_is_enter)
         {
-            p_stack->popState();
-            std::cout << "State popped!" << std::endl;
+            if (m_source == States::ID::None) //! if there is no source we don't want to return
+            {
+                p_stack->popState();
+                std::cout << "State popped!" << std::endl;
+            }
+            p_stack->pushState(m_destination);
         }
-        p_stack->pushState(m_destination);
     }
+}
+
+void ChangeStateItem::draw(Renderer &window)
+{
+    Menu::centerTextInWindow(window, m_text, getPosition().y);
+    m_text.setColor(m_text_color);
+
+    window.drawText(m_text, "Text", DrawType::Dynamic);
 }
 
 ChangeKeyItem::ChangeKeyItem(std::string command_name, PlayerControl command, State::Context &context)
     : m_command(command), m_command_name(command_name), p_bindings(context.bindings), MenuItem(context.font)
 {
     m_item_size.x = 200.f;
-    m_item_size.y = 50.f; // context.font->getLineSpacing(32) * 1.1f;
+    m_item_size.y = 50.f;
 }
 
 void ChangeKeyItem::handleEvent(SDL_Event event)
@@ -145,19 +157,11 @@ void ChangeKeyItem::handleEvent(SDL_Event event)
     }
     else if (m_is_changing_key)
     {
-        if (p_bindings->setBinding(m_command, event.key.keysym.sym)) //! if we succesfully changed key
+        if (p_bindings->setBinding(m_command, (SDL_KeyCode)event.key.keysym.sym)) //! if we succesfully changed key
         {
             m_is_changing_key = false;
         }
     }
-}
-
-void ChangeStateItem::draw(Renderer &window)
-{
-    Menu::centerTextInWindow(window, m_text, getPosition().y);
-    m_text.setColor(m_text_color);
-
-    window.drawText(m_text, "Text", DrawType::Dynamic);
 }
 
 void ChangeKeyItem::draw(Renderer &window)
@@ -179,8 +183,7 @@ void ChangeKeyItem::draw(Renderer &window)
     }
     else
     {
-        // auto key_name = static_cast<std::string>(magic_enum::enum_name((*p_bindings)[m_command]));
-        // right_text.setText(key_name);
+        right_text.setText(p_bindings->keyName(m_command));
     }
 
     right_text.setColor(m_text_color);
@@ -197,7 +200,6 @@ void ChangeKeyItem::draw(Renderer &window)
 void Menu::centerTextInWindow(const Renderer &window, Text &m_text, float y_coord)
 {
     auto window_size = window.getTargetSize();
-    // m_text.setPosition(window_size.x / 2.f - 0. / 2.f, y_coord);
     m_text.centerAround({window_size.x / 2.f, y_coord});
 }
 
@@ -234,7 +236,7 @@ void EnterTextItem::draw(Renderer &window)
     Text left_text;
     left_text.setFont(p_font);
     utils::Vector2f left_text_pos = {
-        getPosition().x - window_size.x/4.f,
+        getPosition().x - window_size.x / 4.f,
         getPosition().y};
     left_text.setText(m_left_text);
     left_text.centerAround(left_text_pos);
@@ -243,7 +245,7 @@ void EnterTextItem::draw(Renderer &window)
     Text right_text;
     right_text.setFont(p_font);
     utils::Vector2f right_text_pos = {
-        getPosition().x + window_size.x/4.f,
+        getPosition().x + window_size.x / 4.f,
         getPosition().y};
     right_text.setText(m_entered_text);
     right_text.centerAround(right_text_pos);
@@ -257,18 +259,19 @@ bool EnterTextItem::isLetter(u_int32_t code)
     return (code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
 }
 
-CallBackItem::CallBackItem(State::Context &context, std::function<void()> callback)
+CallBackItem::CallBackItem(State::Context &context, std::string item_name, std::function<void()> callback)
     : MenuItem(context.font), m_callback(callback)
 {
+    m_text.setFont(context.font);
+    m_text.setText(item_name);
 }
 
 void CallBackItem::handleEvent(SDL_Event event)
 {
-
     if (event.type == SDL_KEYUP)
-
     {
-        if (event.key.keysym.sym == SDLK_RETURN)
+        bool enter_hit = event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_KP_ENTER;
+        if (enter_hit)
         {
             m_callback();
         }
@@ -277,10 +280,69 @@ void CallBackItem::handleEvent(SDL_Event event)
 
 void CallBackItem::draw(Renderer &window)
 {
-    utils::Vector2f left_text_pos = {
-        window.getTargetSize().x / 2.f - 0. / 2.f,
-        getPosition().y};
-    m_text.setPosition(left_text_pos);
-
+    m_text.centerAround({window.getTargetSize().x / 2.f, getPosition().y});
+    m_text.setColor(m_text_color);
     window.drawText(m_text, "Text");
+}
+
+EnterNumberItem::EnterNumberItem(State::Context &context, std::string &text, std::string left_text)
+    : MenuItem(context.font), m_entered_text(text), m_left_text(left_text)
+{
+}
+
+void EnterNumberItem::handleEvent(SDL_Event event)
+{
+
+    if (event.type == SDL_KEYUP)
+    {
+        bool key_is_enter = event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_KP_ENTER;
+
+        if (key_is_enter)
+        {
+            m_is_changing_key = !m_is_changing_key;
+        }
+        else
+        {
+            if (event.key.keysym.sym == SDLK_BACKSPACE && m_entered_text.size() > 0)
+            {
+                m_entered_text.pop_back();
+            }
+        }
+    }
+    else if (event.type == SDL_TEXTINPUT && m_is_changing_key)
+    {
+        if (event.text.text[0] >= '0' && event.text.text[0] <= '9')
+        {
+            m_entered_text = m_entered_text + event.text.text[0];
+        }
+    }
+
+    if (event.key.keysym.sym == SDLK_ESCAPE)
+    {
+        m_is_changing_key = false;
+    }
+}
+
+void EnterNumberItem::draw(Renderer &window)
+{
+
+    Text left_text;
+    left_text.setFont(m_text.getFont());
+    utils::Vector2f left_text_pos = {
+        getPosition().x - m_item_size.x,
+        getPosition().y};
+    left_text.setPosition(left_text_pos);
+    left_text.setColor(m_text_color);
+    left_text.setText(m_left_text);
+
+    Text right_text;
+    right_text.setFont(m_text.getFont());
+    right_text.setText(m_entered_text);
+    utils::Vector2f right_text_pos = {
+        getPosition().x + m_item_size.x - right_text.getBoundingBox().width,
+        getPosition().y};
+    right_text.setPosition(right_text_pos);
+
+    window.drawText(left_text, "Text");
+    window.drawText(right_text, "Text");
 }

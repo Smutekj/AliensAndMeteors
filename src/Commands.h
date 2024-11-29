@@ -15,19 +15,27 @@ enum class PlayerControl
     BOOST
 };
 
+
+
 class KeyBindings
 {
+
+    std::unordered_map<SDL_KeyCode, std::string> m_key_names;
 
 public:
     KeyBindings();
 
-    bool setBinding(PlayerControl command, SDL_Keycode new_key);
+    bool setBinding(PlayerControl command, SDL_KeyCode new_key);
     bool commandNotSet(PlayerControl command);
-    void unsetKey(SDL_Keycode new_key);
+    void unsetKey(SDL_KeyCode new_key);
     void unsetCommand(PlayerControl command);
-    SDL_Keycode operator[](PlayerControl command) const;
+    SDL_KeyCode operator[](PlayerControl command) const;
+    std::string keyName(SDL_KeyCode key) const;
+    std::string keyName(PlayerControl key) const;
+
+
 
 private:
-    std::unordered_map<PlayerControl, SDL_Keycode> m_command_map;
-    std::unordered_map<SDL_Keycode, PlayerControl> m_key_map;
+    std::unordered_map<PlayerControl, SDL_KeyCode> m_command_map;
+    std::unordered_map<SDL_KeyCode, PlayerControl> m_key_map;
 };

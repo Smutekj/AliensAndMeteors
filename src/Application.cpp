@@ -29,10 +29,12 @@ void Application::run()
 #endif
 }
 
-void Application::handleInput()
+void Application::iterate()
 {
 
     m_state_stack->update(m_dt);
+
+    //! poll and events let state stack handle them
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
@@ -42,41 +44,57 @@ void Application::handleInput()
             if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
             {
                 m_window.setSize(event.window.data1, event.window.data2);
-                // m_window_canvas.m_view = m_window_canvas;
-                // m_window_canvas.m_view
             }
         }
     }
+
     m_state_stack->draw();
     Shader::m_time += m_dt;
 }
 
 static std::size_t s_frame_count = 0;
-clock_t tic = 0;
 
 void inline gameLoop(void *mainLoopArg)
 {
+
+#ifdef __EMSCRIPTEN__
+    auto tic = emscripten_get_now();
+#else
+    auto tic = std::chrono::high_resolution_clock::now();
+#endif
+
     Application *p_app = (Application *)mainLoopArg;
 
-    p_app->handleInput();
-    double dt = (double)(SDL_GetPerformanceCounter() - tic) / SDL_GetPerformanceFrequency();
-    tic = SDL_GetPerformanceCounter();
-    p_app->m_dt = dt;
+    p_app->iterate();
+    p_app->m_dt = 16.6666 / 1000. * 3.0;
 
     // Swap front/back framebuffers
     SDL_GL_SwapWindow(p_app->m_window.getHandle());
 
-    if (s_frame_count++ > 300)
+    if (s_frame_count++ > 1000)
     {
-        std::cout << "avg frame time: " << p_app->m_avg_frame_time.getAverage() << " ms" << std::endl;
+        std::cout << "max frame time: " << p_app->m_avg_frame_time.getAverage() << " ms" << std::endl;
         s_frame_count = 0;
     }
-    // auto toc = clock();
-    // if (dt < 16.6666)
-    // {
-    //     SDL_Delay(16.6666 - dt);
-    // }
-    p_app->m_avg_frame_time.addNumber((double)(clock() - tic) / CLOCKS_PER_SEC * 1000.);
+
+#ifdef __EMSCRIPTEN__
+    double dt = emscripten_get_now() - tic;
+#else
+    double dt = std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::chrono::high_resolution_clock::now() - tic)
+                    .count() /
+                1e3;
+#endif
+
+    p_app->m_avg_frame_time.addNumber(dt);
+    if (dt < 33)
+    {
+#ifdef __EMSCRIPTEN__
+        emscripten_sleep(33 - dt);
+#else
+        SDL_Delay(33 - dt);
+#endif
+    }
 }
 
 Application::Application(int width, int height)
@@ -86,7 +104,9 @@ Application::Application(int width, int height)
 
     m_textures.add("background", "../Resources/Textures/background.png");
 
-    m_font = std::make_shared<Font>("arial.ttf");
+    std::filesystem::path font_path = {__FILE__};
+    font_path.remove_filename().append("../Resources/Fonts/arial.ttf");
+    m_font = std::make_shared<Font>(font_path);
     State::Context context(m_window_canvas, m_window, m_textures, m_bindings, *m_font, m_score);
     m_state_stack = std::make_unique<StateStack>(context);
 
@@ -94,8 +114,8 @@ Application::Application(int width, int height)
     m_state_stack->pushState(States::ID::Menu);
 
     //     //! set view and add it to renderers
-    m_window_canvas.m_view.setSize(m_window.getSize());
-    m_window_canvas.m_view.setCenter(m_window.getSize() / 2);
+    m_window_canvas.m_view.setSize(m_window_canvas.getTargetSize());
+    m_window_canvas.m_view.setCenter(m_window_canvas.getTargetSize() / 2);
 
     // m_window_canvas.addShader("circle", "basicinstanced.vert", "circle.frag");
     m_window_canvas.addShader("Shiny", "basicinstanced.vert", "shiny.frag");
@@ -115,4 +135,6 @@ void Application::registerStates()
     m_state_stack->registerState<ScoreBoardState>(States::Score);
     m_state_stack->registerState<PlayerDiedState>(States::Player_Died);
     m_state_stack->registerState<SettingsState>(States::Settings);
+    m_state_stack->registerState<KeyBindingState>(States::KeyBindings);
+    m_state_stack->registerState<GraphicsState>(States::Graphics);
 }

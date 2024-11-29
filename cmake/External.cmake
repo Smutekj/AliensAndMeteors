@@ -42,23 +42,3 @@ FetchContent_Declare(
   GIT_TAG master
 )
 FetchContent_MakeAvailable(renderer)
-
-### CONSTRAINED DELAUNAY TRIANGULATION
-FetchContent_Declare(
-    CDT
-    GIT_REPOSITORY https://github.com/Smutekj/CDT
-    GIT_TAG main 
-)
-FetchContent_MakeAvailable(CDT)
-
-# set(BOOST_INCLUDE_LIBRARIES mpl)
-# set(BOOST_ENABLE_CMAKE ON)
-# FetchContent_Declare(
-#   boost
-#   GIT_REPOSITORY https://github.com/boostorg/boost.git
-#   GIT_TAG boost-1.80.0
-# )
-# FetchContent_MakeAvailable(boost)
-
-# find_package(Freetype REQUIRED)
-# find_package(Boost REQUIRED)

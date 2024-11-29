@@ -4,7 +4,7 @@ precision mediump float;
 in vec2 v_tex_coord;
 in vec4 v_color;                          
 
-uniform vec4 u_edge_color = vec4(1., 0.,0.,1.);
+uniform vec4 u_edge_color = vec4(0., 0.,0.,1.);
 
 out vec4 FragColor;
 
@@ -14,8 +14,19 @@ void main()
 {        
 
     float glyph_region = texture(u_texture, v_tex_coord).a;         
-    float x = smoothstep(0.4, 0.45, glyph_region);  
-    float edge = smoothstep(0.45, 0.49, glyph_region)  - smoothstep(0.51, 0.55, glyph_region);  
-
-    FragColor = vec4(v_color.rgb*x*(1.-edge) + edge*u_edge_color.rgb, x); //vec4(vec3(1. - glyph_region), 1.); 
-}                                            
+    float x = smoothstep(0.44, 0.45, glyph_region);    
+    float edge = smoothstep(0.31, 0.36, glyph_region)  - smoothstep(0.46, 0.5, glyph_region);   
+ 
+    float edge_inside_alpha = smoothstep(0.5, 0.9, edge);
+    vec3 color_res = edge*edge_inside_alpha * u_edge_color.rgb + (1. - edge_inside_alpha) * x * v_color.rgb;
+    FragColor = vec4(color_res, max(edge, x)); 
+    // if(edge > 0.95)
+    // {
+    // }else{
+    //     FragColor = vec4(x*v_color.rgb, x); //vec4(vec3(1. - glyph_region), 1.); 
+    // }
+    // if(glyph_region > 0.45)
+    // {
+    // }?
+    // FragColor = vec4(v_color.rgb * x, x);
+}                                             

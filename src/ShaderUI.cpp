@@ -152,58 +152,6 @@ void SceneGraphWindow::draw()
 }
 void LuaWindow::draw()
 {
-    ImGui::Begin("Lua");
-
-    ImGuiInputTextFlags flags = ImGuiInputTextFlags_::ImGuiInputTextFlags_EnterReturnsTrue;
-
-    if (ImGui::InputText("Command", m_current_command.data(), 200, flags))
-    {
-        auto lua = LuaWrapper::getSingleton();
-        if (!lua->doString(m_current_command.c_str()))
-        {
-            m_last_error_msg = lua->getLastError();
-        }
-        else
-        {
-            m_last_error_msg = "";
-        }
-        //! add command to history and remove old commands
-        m_command_history.push_back(m_current_command);
-        if (m_command_history.size() > 20)
-        {
-            m_command_history.pop_front();
-        }
-    }
-    if (ImGui::InputText("Script", m_script_name.data(), 200, flags))
-    {
-        auto lua = LuaWrapper::getSingleton();
-        if (!lua->doFile(m_script_name.c_str()))
-        {
-            m_last_error_msg = lua->getLastError();
-        }
-    }
-
-    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255));
-    ImGui::Text("%s", m_last_error_msg.c_str());
-    ImGui::PopStyleColor();
-
-    if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
-    {
-        ImGui::SetNextFrameWantCaptureKeyboard(true);
-        if (ImGui::IsKeyChordPressed(ImGuiKey_DownArrow) && m_command_history.size() > 0)
-        {
-            m_selected_command_ind = (m_selected_command_ind + 1) % m_command_history.size();
-            m_current_command = m_command_history.at(m_selected_command_ind);
-        }
-    }
-
-    if (ImGui::InputFloat2("Coordinates: ", &m_coords.x))
-    {
-        // auto p_object = GameWorld::getWorld().get(m_selected_entity_id);
-        // p_object->setPosition(m_coords);
-    }
-
-    ImGui::End();
 }
 
 ShadersWindow::~ShadersWindow() {}
@@ -254,6 +202,12 @@ void ShadersWindow::drawUniformValue(const char *name, UniformType &value)
                    {
                         float* val = &value[0];
                         ImGui::InputFloat4(name, val);
+                   }
+                   else if constexpr (std::is_same_v<T, glm::mat3>)
+                   {
+                   }
+                   else if constexpr (std::is_same_v<T, glm::mat4>)
+                   {
                    }
                    else 
                    {

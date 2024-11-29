@@ -16,7 +16,6 @@ namespace Collisions
 
 class GridNeighbourSearcher;
 
-
 class Enemy : public GameObject
 {
 
@@ -65,3 +64,88 @@ private:
     bool m_is_avoiding = false;
 };
 
+class SpaceStation : public GameObject
+{
+
+public:
+    SpaceStation(GameWorld *world, TextureHolder &textures);
+    virtual ~SpaceStation() override;
+
+    virtual void update(float dt) override;
+    virtual void onCreation() override;
+    virtual void onDestruction() override;
+    virtual void draw(LayersHolder &target) override;
+    virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
+
+private:
+    std::vector<Enemy *> m_produced_ships;
+    float m_time = 0.f;
+    float m_spawn_timer = 2.f;
+
+    float m_max_health = 100.f;
+    float m_health = m_max_health;
+};
+
+class Boss : public GameObject
+{
+
+    enum class MotionState
+    {
+        Pursuing,
+        Searching,
+    };
+
+    enum class State
+    {
+        Patroling,
+        Shooting,
+        ShootingLasers,
+        ThrowingBombs,
+    };
+
+    State m_state = State::Patroling;
+
+    utils::Vector2f m_acc;
+
+    PlayerEntity *m_player;
+
+    Collisions::CollisionSystem *m_collision_system;
+
+    float m_shooting_cooldown = 3.f;
+    float m_bombing_cooldown = 0.5f;
+    float m_lasering_cooldown = 3.f;
+
+    int m_bomb_count = 0;
+    float m_shooting_timer = 0.f;
+    float m_shooting_timer2 = 0.f;
+    
+    bool m_is_recharging = false;
+    float m_recharge_time = 7.;
+
+public:
+    const float m_orig_max_vel = 90.f;
+    float m_max_vel = 90.f;
+    const float max_acc = 130.f;
+    float m_vision_radius = 70.f;
+
+    float m_health = 50;
+    float m_max_health = 50;
+    utils::Vector2f m_impulse = {0, 0};
+    utils::Vector2f m_target_pos;
+
+    Boss(GameWorld *world, TextureHolder &textures, PlayerEntity *player);
+    virtual ~Boss() override;
+
+    virtual void update(float dt) override;
+    virtual void onCreation() override;
+    virtual void onDestruction() override;
+    virtual void draw(LayersHolder &target) override;
+    virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
+
+private:
+    void aiWhenRecharged(float dt);
+    void shootAtPlayer();
+    void throwBombsAtPlayer();
+    void shootLasers();
+    void shootLaserAtPlayer();
+};

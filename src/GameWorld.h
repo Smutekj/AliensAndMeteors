@@ -47,6 +47,8 @@ public:
     template <class TriggerType, class... Args>
     TriggerType &addTrigger(Args... args);
     
+    std::size_t getNActiveEntities(ObjectType type);
+
     void update(float dt);
     void draw(LayersHolder &window);
 

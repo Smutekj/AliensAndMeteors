@@ -2,6 +2,8 @@
 
 precision mediump float;    
 
+// #include "../../external/lygia/generative/pnoise.glsl"
+
 in vec2 v_tex_coord;                          
 in vec4 v_color;       
 
@@ -41,6 +43,6 @@ void main()
         FragColor = vec4(u_color_edge,  1.0);
     }    
     else{
-        FragColor = vec4(vec3(1.0 - v_tex_coord.x, 1.0,  0.)*0., 0.);
+        FragColor = vec4(vec3(1.0 - v_tex_coord.x, 1.0,  0.), 0.6);
     }       
 }                                   

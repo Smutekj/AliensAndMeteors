@@ -9,8 +9,11 @@
 #include "Enemy.h"
 #include "Player.h"
 
+std::unordered_map<BulletType, std::string> Bullet::m_type2shader_id = {{BulletType::Lightning, "lightningBolt"},
+                                                                        {BulletType::Fire, "fireBolt"}};
+
 Bullet::Bullet(GameWorld *world, TextureHolder &textures, PlayerEntity *player)
-    : m_player(player), GameObject(world, textures, ObjectType::Bullet)
+    : GameObject(world, textures, ObjectType::Bullet)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
     m_collision_shape->setScale(1, 1);
@@ -21,12 +24,26 @@ float Bullet::getTime() const
     return m_time;
 }
 
+void Bullet::setTarget(GameObject *new_target)
+{
+    m_target = new_target;
+}
+
+GameObject *Bullet::getTarget() const
+{
+    return m_target;
+}
+
 Bullet::~Bullet() {}
 
 void Bullet::update(float dt)
 {
-    auto dr_to_target = m_player->getPosition() - m_pos;
-    auto acc = max_vel * dr_to_target / norm(dr_to_target) - m_vel;
+    utils::Vector2f acc = 0;
+    if (m_target)
+    {
+        auto dr_to_target = m_target->getPosition() - m_pos;
+        acc = max_vel * dr_to_target / norm(dr_to_target) - m_vel;
+    }
 
     utils::truncate(acc, max_acc);
     m_vel += acc * dt;
@@ -40,6 +57,7 @@ void Bullet::update(float dt)
     }
 
     m_time += dt;
+    //! remember past positions to draw a tail
     if (m_time > 0.1f)
     {
         m_time = 0.f;
@@ -87,8 +105,14 @@ void Bullet::onDestruction()
 {
 }
 
+void Bullet::setBulletType(BulletType type)
+{
+    m_type = type;
+}
+
 void Bullet::draw(LayersHolder &layers)
 {
+
     auto &target = layers.getCanvas("Unit");
 
     Sprite rect;
@@ -97,7 +121,10 @@ void Bullet::draw(LayersHolder &layers)
     rect.setRotation(glm::radians(dir2angle(m_vel)));
     rect.setScale(5., 5.);
     rect.m_color = {255, 0, 0, 255};
-    target.drawSprite(rect, "lightningBolt");
+
+    assert(m_type2shader_id.count(m_type) > 0);
+    auto shader_id = m_type2shader_id.at(m_type);
+    target.drawSprite(rect, shader_id);
 
     int alpha = 255;
     for (auto pos : m_past_positions)
@@ -107,7 +134,7 @@ void Bullet::draw(LayersHolder &layers)
         rect.setPosition(pos);
         rect.m_color = {255, 0, 0, static_cast<unsigned char>(alpha)};
         rect.setScale(3.5, 3.5);
-        target.drawSprite(rect, "lightningBolt");
+        target.drawSprite(rect, shader_id);
     }
 }
 
@@ -117,10 +144,10 @@ Bomb::Bomb(GameWorld *world, TextureHolder &textures,
 {
     m_collision_shape = std::make_unique<Polygon>(4);
     m_collision_shape->setScale(2, 2);
-    m_rigid_body = std::make_unique<RigidBody>();
-    m_rigid_body->mass = 0.01f;
-    m_rigid_body->angle_vel = 0.0;
-    m_rigid_body->inertia = 0.001f;
+    // m_rigid_body = std::make_unique<RigidBody>();
+    // m_rigid_body->mass = 0.01f;
+    // // m_rigid_body->angle_vel = 0.0;
+    // m_rigid_body->inertia = 0.001f;
 
     auto texture_size = static_cast<utils::Vector2i>(m_textures.get("Bomb")->getSize());
 
@@ -168,7 +195,6 @@ void Bomb::onDestruction()
         if (distance_factor > 0)
         {
             p_meteor->m_vel += distance_factor * impulse_dir * 5.f;
-            ;
         }
     }
 
@@ -203,13 +229,16 @@ Laser::~Laser() {}
 
 void Laser::update(float dt)
 {
-    m_life_time -= dt;
+    m_time += dt;
 
-    m_length += 3.f;
+    m_length = m_max_length * (m_time / m_life_time);
     if (m_owner)
     {
         m_pos = m_owner->getPosition();
-        m_angle = m_owner->getAngle();
+        if(m_rotates_with_owner)
+        {
+            m_angle = m_owner->getAngle();
+        }
     }
 
     auto hit = m_neighbour_searcher->findClosestIntesection(ObjectType::Meteor, m_pos, utils::angle2dir(m_angle), m_length);
@@ -219,7 +248,7 @@ void Laser::update(float dt)
     //! m_pos of laser is special, it is starting position not center so we set it manually
     m_collision_shape->setPosition(m_pos + m_length / 2.f * utils::angle2dir(m_angle));
 
-    if (m_life_time < 0.f)
+    if (m_time > m_life_time)
     {
         kill();
     }
@@ -227,6 +256,25 @@ void Laser::update(float dt)
 
 void Laser::onCollisionWith(GameObject &obj, CollisionData &c_data)
 {
+    switch (obj.getType())
+    {
+    case ObjectType::Enemy:
+    {
+        if (&obj != getOwner())
+        {
+            static_cast<Enemy&>(obj).m_health -= m_max_dmg;
+        }
+        break;
+    }
+    case ObjectType::Player:
+    {
+        if (&obj != getOwner())
+        {
+            static_cast<PlayerEntity&>(obj).health -= m_max_dmg;
+        }
+        break;
+    }
+    }
 }
 
 void Laser::onCreation()
@@ -245,10 +293,9 @@ void Laser::draw(LayersHolder &layers)
 
     Sprite rect;
     rect.setTexture(*m_textures.get("BoosterPurple"));
-    rect.setPosition(m_pos + utils::angle2dir(m_angle) * m_length / 2.f);
+    rect.setPosition(m_collision_shape->getPosition());
     rect.setRotation(glm::radians(m_angle));
     rect.setScale(m_length / 2., m_width / 2.);
     rect.m_color = {255, 255, 50, 255};
     target.drawSprite(rect, "laser");
-
 }

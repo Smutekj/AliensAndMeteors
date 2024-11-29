@@ -7,8 +7,6 @@ in vec4 v_color;
 
 out vec4 FragColor;
 
-uniform float u_tex_multiplier = 100.0;
-uniform float u_time_multiplier = 0.9;
 uniform float u_health_percentage = 1.0;
 uniform vec3 u_color = vec3(1.,0.2,0.);
 uniform vec3 u_color_fire = vec3(1.,1.,0.);
@@ -35,13 +33,6 @@ void main()
     float sdf = sdBox(v_tex_coord - vec2(0.5, 0.5), vec2(0.51, 0.47));
     float rect_shape = 1. - smoothstep(-0.05, 0.0, sdf) ;
 
-    float alpha = 1. - smoothstep(u_health_percentage, u_health_percentage + 0.05, v_tex_coord.x);
-    if(rect_shape < 0.5)
-    {
-        FragColor = vec4(u_color_edge,  1.0);
-    }    
-    else{
-        // FragColor = vec4(1.0 - v_tex_coord.x, alpha*v_tex_coord.x,  0., 0.);
-        FragColor = vec4(vec3(1.0 - v_tex_coord.x, alpha*v_tex_coord.x,  0.)*0., 0.);
-    }       
+    float alpha = smoothstep(u_health_percentage, u_health_percentage + 0.03, v_tex_coord.x);
+    FragColor = vec4(1.-alpha,alpha,0.,1.);
 }                                   

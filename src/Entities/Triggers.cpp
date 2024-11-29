@@ -80,7 +80,7 @@ void EntityDestroyed::update(float dt)
 void EntityDestroyed::draw(LayersHolder &layers)
 {
     auto& target = layers.getCanvas("Unit");
-    target.drawCricleBatched(m_watched_entity->getPosition(), 10.f, {0.5, 0.5, 0, 0.5});
+    // target.drawCricleBatched(m_watched_entity->getPosition(), 10.f, {0.5, 0.5, 0, 0.5});
 }
 
 void EntityDestroyed::onCollisionWith(GameObject &obj, CollisionData &c_data)

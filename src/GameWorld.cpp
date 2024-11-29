@@ -23,6 +23,14 @@ GameWorld::GameWorld()
     m_effect_factories[EffectType::ParticleEmiter] =
         [this]()
     { return std::make_shared<StarEmitter>(this, m_textures); };
+    m_effect_factories[EffectType::AnimatedSprite] =
+        [this]()
+    { return std::make_shared<AnimatedSprite>(this, m_textures); };
+}
+
+std::size_t GameWorld::getNActiveEntities(ObjectType type)
+{
+    return m_entities.getObjects().size();
 }
 
 GameObject &GameWorld::addObject(ObjectType type)
@@ -135,16 +143,17 @@ void GameWorld::update(float dt)
             destroyObject(obj->getId());
         }
 
-        //! move objects far away from player somewhere
+        //! move objects far away from player somewhere around the player
         auto player_pos = m_player->getPosition();
         auto player_vel = m_player->m_vel;
         auto obj_pos = obj->getPosition();
         auto obj_vel = obj->m_vel;
         auto obj_moves_away = utils::dot(player_vel, obj_vel) < 0;
         auto player_obj_dist = utils::dist(obj_pos, player_pos);
-        if (true && player_obj_dist > 400)
+        if (obj_moves_away && player_obj_dist > 450)
         {
-            auto rand_radius = randf(100, 300);
+
+            auto rand_radius = randf(400, 500);
             auto rand_angle = randf(0, 360);
             // auto x = randomPosInBox(player_pos - utils::Vector2f(300.),player_pos + utils::Vector2f(300.));
             auto new_obj_pos = player_pos + rand_radius * utils::angle2dir(rand_angle);

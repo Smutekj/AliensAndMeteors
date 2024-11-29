@@ -63,18 +63,6 @@ private:
     bool isLetter(u_int32_t code);
 };
 
-class CallBackItem : public MenuItem
-{
-
-public:
-    CallBackItem(State::Context &context, std::function<void()> callback);
-    virtual void handleEvent(SDL_Event event) override;
-    virtual void draw(Renderer &window) override;
-
-private:
-    std::function<void()> m_callback;
-};
-
 //! \class item that changes key_bindings
 //!         if existing key is selected, the command bound to the key is unbound
 //! \todo   make it impossible to return back when a some key is unbound
@@ -91,6 +79,64 @@ private:
     std::string m_command_name;
     KeyBindings *p_bindings;
 };
+
+
+// class EnterTextItem : public MenuItem
+// {
+//     bool m_is_changing_key = false;
+
+//     std::string m_left_text = "Enter IP Address:";
+//     std::string& m_entered_text;
+
+// public:
+
+//     EnterTextItem(State::Context &context, std::string& text, std::string left_text);
+//     virtual void handleEvent(SDL_Event event) override;
+//     virtual void draw(Renderer &window)override;
+// };
+
+class EnterNumberItem : public MenuItem
+{
+
+public:
+
+    EnterNumberItem(State::Context &context, std::string& text, std::string left_text);
+    virtual void handleEvent(SDL_Event event) override;
+    virtual void draw(Renderer &window)override;
+    
+    private:
+    bool m_is_changing_key = false;
+    std::string m_left_text = "Enter IP Address:";
+    std::string& m_entered_text;
+};
+
+
+// class ResizeWindowItem : public MenuItem
+// {
+// public:
+//     ResizeWindowItem(std::string command_name, State::Context &context);
+//     virtual void handleEvent(SDL_Event event) override;
+//     virtual void draw(Renderer &window) override;
+
+// private:
+//     bool m_is_changing_key = false;
+//     std::string m_command_name;
+//     KeyBindings *p_bindings;
+// };
+
+class CallBackItem : public MenuItem
+{
+
+public:
+
+    CallBackItem(State::Context& context, std::string item_name, std::function<void()> callback);
+    virtual void handleEvent(SDL_Event event) override;
+    virtual void draw(Renderer &window)override;
+
+private:
+    std::function<void()> m_callback;
+};
+
 
 //! \class contains a list of MenuItems which can be navigated by up/down arrows
 class Menu

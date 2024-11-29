@@ -39,5 +39,5 @@ void main()
 
     vec3 result = u_color*shape_factor + edge_factor * u_color_edge;
 
-    FragColor = vec4(result*(1.-texture_factor) + texture_factor*shape_factor*u_color_fire, shape_factor);
+    FragColor = vec4(result*(1.-texture_factor) + texture_factor*shape_factor*u_color_fire, shape_factor * v_color.a);
 }                                          

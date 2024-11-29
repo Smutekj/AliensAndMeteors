@@ -18,7 +18,9 @@ namespace States
 		Pause,
 		Score,
 		Player_Died,
-		Settings
+		Settings,
+		KeyBindings,
+		Graphics,
 	};
 }
 

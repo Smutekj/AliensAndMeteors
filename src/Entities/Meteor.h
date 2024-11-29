@@ -21,6 +21,6 @@ private:
 
     Polygon generateRandomConvexPolygon(int n) const;
 
-    const float max_vel = 5.f;
+    const float max_vel = 40.f;
     const float max_impulse_vel = 10.f;
 };
