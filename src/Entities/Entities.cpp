@@ -57,6 +57,8 @@ void Explosion::update(float dt)
     if(m_is_expanding)
     {
         m_explosion_radius = m_time / m_life_time * m_max_explosion_radius;
+    }else{
+        m_explosion_radius = m_max_explosion_radius;
     }
     setSize({m_explosion_radius, m_explosion_radius});
     // if (m_collision_shape)

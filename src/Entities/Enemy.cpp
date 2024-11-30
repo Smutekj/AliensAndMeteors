@@ -28,7 +28,7 @@ Enemy::~Enemy() {}
 void Enemy::update(float dt)
 {
     // m_neighbour_searcher->moveEntity(*this);
-    m_behaviour->update();
+    m_behaviour->update(dt);
 
     boidSteering();
     avoidMeteors();
@@ -67,7 +67,7 @@ void Enemy::onCollisionWith(GameObject &obj, CollisionData &c_data)
     case ObjectType::Bullet:
     {
         auto &bullet = static_cast<Bullet &>(obj);
-        if (bullet.getTime() > 1.5f)
+        if (bullet.getTime() > 3.5f)
         {
             m_health--;
         }
@@ -114,7 +114,7 @@ void Enemy::onDestruction()
     new_explosion.removeCollider();
     new_explosion.m_is_expanding = false;
     new_explosion.setPosition(m_pos);
-    new_explosion.m_explosion_radius = 4.f;
+    new_explosion.m_max_explosion_radius = 4.f;
     new_explosion.setType("Explosion2");
 
     // SoundManager::play(0);
@@ -124,22 +124,20 @@ void Enemy::draw(LayersHolder &layers)
 {
 
     auto &target = layers.getCanvas("Unit");
-    Sprite rect;
-    rect.setTexture(*m_textures.get("EnemyShip"));
-    rect.setPosition(m_pos);
-    rect.setRotation(glm::radians(m_angle));
-    rect.setScale(3, -3);
+    m_sprite.setPosition(m_pos);
+    m_sprite.setRotation(glm::radians(m_angle));
+    m_sprite.setScale(4, -4);
     // if(m_is_avoiding){ rect.setFillColor(sf::Color::Red);}
 
-    target.drawSprite(rect, "Instanced");
+    target.drawSprite(m_sprite, "Instanced");
 
     Sprite booster;
     utils::Vector2f booster_size = {4, 2};
 
     booster.setTexture(*m_textures.get("BoosterPurple"));
     booster.setScale(booster_size.x, -booster_size.y);
-    booster.setPosition(m_pos + m_vel / norm(m_vel) * rect.getScale().y);
-    booster.setRotation(rect.getRotation());
+    booster.setPosition(m_pos + m_vel / norm(m_vel) * m_sprite.getScale().y);
+    booster.setRotation(m_sprite.getRotation());
     target.drawSprite(booster, "Instanced");
 
     // sf::RectangleShape line;
@@ -303,14 +301,17 @@ void Enemy::setBehaviour()
     if (dice_roll < 2)
     {
         m_behaviour = std::make_unique<FollowAndShootAI2>(m_player, this, m_world);
+        m_sprite.setTexture(*m_textures.get("EnemyShip"));
     }
     else if (dice_roll <= 3)
     {
         m_behaviour = std::make_unique<BomberAI>(m_player, this, m_world);
+        m_sprite.setTexture(*m_textures.get("EnemyBomber"));
     }
     else
     {
         m_behaviour = std::make_unique<FollowAndShootLasersAI>(m_player, this, m_world);
+        m_sprite.setTexture(*m_textures.get("EnemyLaser"));
     }
 }
 

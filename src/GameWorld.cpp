@@ -30,7 +30,11 @@ GameWorld::GameWorld()
 
 std::size_t GameWorld::getNActiveEntities(ObjectType type)
 {
-    return m_entities.getObjects().size();
+    auto &entities = m_entities.getObjects();
+    auto n_enemies = std::count_if(entities.begin(), entities.end(), [type](auto &obj) {
+        return obj->getType() == type;
+    });
+    return n_enemies;
 }
 
 GameObject &GameWorld::addObject(ObjectType type)
@@ -200,6 +204,8 @@ void GameWorld::loadTextures()
 {
     m_textures.add("Bomb", "../Resources/Textures/bomb.png");
     m_textures.add("EnemyShip", "../Resources/Textures/EnemyShip.png");
+    m_textures.add("EnemyLaser", "../Resources/Textures/EnemyLaser.png");
+    m_textures.add("EnemyBomber", "../Resources/Textures/EnemyBomber.png");
     m_textures.add("Meteor", "../Resources/Textures/Meteor.png");
     m_textures.add("BossShip", "../Resources/Textures/BossShip.png");
     m_textures.add("Explosion2", "../Resources/Textures/explosion2.png");

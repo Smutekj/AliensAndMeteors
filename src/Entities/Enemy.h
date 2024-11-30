@@ -2,6 +2,8 @@
 
 #include <unordered_map>
 
+#include <Sprite.h>
+
 #include "../GameObject.h"
 
 class BoidAI2;
@@ -39,8 +41,8 @@ public:
     bool m_deactivated = false;
     float m_deactivated_time = 1.f;
 
-    float max_vel = 40.f;
-    float max_acc = 100.f;
+    float max_vel = 50.f;
+    float max_acc = 70.f;
     float max_impulse_vel = 40.f;
 
     float m_health = 5;
@@ -57,11 +59,13 @@ private:
     utils::Vector2f m_acc;
 
     std::unique_ptr<BoidAI2> m_behaviour;
-    PlayerEntity *m_player;
+    PlayerEntity *m_player = nullptr;
     GridNeighbourSearcher *m_neighbour_searcher;
     Collisions::CollisionSystem *m_collision_system;
 
     bool m_is_avoiding = false;
+
+    Sprite m_sprite;
 };
 
 class SpaceStation : public GameObject

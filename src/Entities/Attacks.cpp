@@ -42,28 +42,28 @@ void Bullet::update(float dt)
     if (m_target)
     {
         auto dr_to_target = m_target->getPosition() - m_pos;
-        acc = max_vel * dr_to_target / norm(dr_to_target) - m_vel;
+        acc = m_max_vel * dr_to_target / norm(dr_to_target) - m_vel;
     }
 
-    utils::truncate(acc, max_acc);
+    utils::truncate(acc, m_max_acc);
     m_vel += acc * dt;
-    utils::truncate(m_vel, max_vel);
+    utils::truncate(m_vel, m_max_vel);
     m_pos += m_vel * dt;
 
-    m_life_time -= dt;
-    if (m_life_time < 0.f)
+    m_time += dt;
+    if (m_time >= m_life_time)
     {
         kill();
     }
 
-    m_time += dt;
+    m_tail_timer += dt;
     //! remember past positions to draw a tail
-    if (m_time > 0.1f)
+    if (m_tail_timer > 0.1f)
     {
-        m_time = 0.f;
+        m_tail_timer = 0.f;
         m_past_positions.push_front(m_pos);
     }
-    if (m_past_positions.size() > 5)
+    if (m_past_positions.size() > 4)
     {
         m_past_positions.pop_back();
     }
@@ -75,7 +75,7 @@ void Bullet::onCollisionWith(GameObject &obj, CollisionData &c_data)
     {
     case ObjectType::Enemy:
     {
-        if (m_life_time < 9.5f)
+        if (m_life_time < 10.f)
         {
             kill();
         }
@@ -159,22 +159,28 @@ Bomb::~Bomb() {}
 
 void Bomb::update(float dt)
 {
+
+    auto old_speed = utils::norm(m_vel);
+    auto new_speed = old_speed -  m_acc * dt;
+    new_speed = std::max(0.f, new_speed);
+    
+    if(old_speed > 0.)
+    {
+        m_vel *= new_speed / old_speed;
+    }
+
     m_life_time -= dt;
-
-    m_vel -= 0.05f * m_vel;
-
     if (m_life_time < 0.f)
     {
         kill();
     }
-
     m_animation->update(dt);
-
     m_pos += m_vel * dt;
 }
 
 void Bomb::onCollisionWith(GameObject &obj, CollisionData &c_data)
 {
+
 }
 
 void Bomb::onCreation()
@@ -198,8 +204,10 @@ void Bomb::onDestruction()
         }
     }
 
-    auto &explosion = m_world->addObject(ObjectType::Explosion);
+    auto &explosion = static_cast<Explosion&>(m_world->addObject(ObjectType::Explosion));
     explosion.setPosition(m_pos);
+    explosion.m_is_expanding = true;
+    explosion.m_max_explosion_radius = 25.;
 }
 
 void Bomb::draw(LayersHolder &layers)

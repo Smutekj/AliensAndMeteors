@@ -109,7 +109,7 @@ void PlayerEntity::onCollisionWith(GameObject &obj, CollisionData &c_data)
     }
     case ObjectType::Explosion:
     {
-        health -= 0.1f;
+        health -= 0.5f;
         break;
     }
     case ObjectType::Bullet:

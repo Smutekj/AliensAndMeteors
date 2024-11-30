@@ -41,18 +41,20 @@ public:
     GameObject *getTarget() const;
     void setBulletType(BulletType type);
 
+    
+    float m_max_vel = 100.f;
+    float m_max_acc = 30.f;
 private:
     static std::unordered_map<BulletType, std::string> m_type2shader_id;
 
 private:
     utils::Vector2f m_acc;
-    const float max_vel = 100.f;
-    const float max_acc = 30.f;
 
     BulletType m_type = BulletType::Lightning;
 
     GameObject *m_target = nullptr;
 
+    float m_tail_timer = 0.f;
     float m_time = 0.f;
     float m_life_time = 10.;
 
@@ -64,8 +66,6 @@ class Bomb : public GameObject
 {
 
 public:
-    float m_life_time = 3.;
-
     Bomb(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem &collider);
     virtual ~Bomb() override;
 
@@ -75,15 +75,15 @@ public:
     virtual void draw(LayersHolder &target) override;
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
 
+public:
+    float m_life_time = 3.;
+    float m_acc = 10.;
 private:
     std::unique_ptr<Animation> m_animation;
 
-    float m_explosion_radius = 25.f;
+    float m_explosion_radius = 5.f;
     float m_min_dmg = 0.f;
     float m_max_dmg = 5.f;
-
-    const float max_vel = 1000.f;
-    const float max_acc = 20.f;
 
     Collisions::CollisionSystem *m_neighbour_searcher;
 };

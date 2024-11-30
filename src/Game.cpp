@@ -101,10 +101,10 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     enemy_spawner.setCallback(
         [this]()
         {
-            if (m_world->getNActiveEntities(ObjectType::Enemy) < 100)
+            if (m_world->getNActiveEntities(ObjectType::Enemy) < 35) //! max 50 enemies
             {
                 auto &enemy = m_world->addObject(ObjectType::Enemy);
-                auto spawn_pos = m_player->getPosition() + randf(20, 200) * angle2dir(randf(0, 360));
+                auto spawn_pos = m_player->getPosition() + randf(50, 200) * angle2dir(randf(0, 360));
                 enemy.setPosition(spawn_pos);
             }
         });
@@ -404,17 +404,17 @@ void Game::draw(Renderer &window)
     m_window.drawAll();
     drawUI(window);
     m_window.m_view = old_view;
+
+    m_window.m_blend_factors = old_factors;
+
+
     m_objective_system.draw(window);
     m_window.drawAll();
-    m_window.m_blend_factors = old_factors;
-    m_window.m_view = old_view;
-
     // m_ui.draw(window);
 }
 
 void Game::drawUI(Renderer &window)
-{
-
+{   
     auto old_view = window.m_view;
     window.m_view = window.getDefaultView(); //! draw directly on screen
 
