@@ -34,6 +34,10 @@ public:
 
     void setBehaviour();
 
+private:
+    void avoidMeteors();
+    void boidSteering();
+
 public:
     static std::unordered_map<Multiplier, float> m_force_multipliers;
     static std::unordered_map<Multiplier, float> m_force_ranges;
@@ -49,10 +53,6 @@ public:
     utils::Vector2f m_impulse = {0, 0};
     utils::Vector2f m_target_pos;
     std::vector<utils::Vector2f> m_cm;
-
-private:
-    void avoidMeteors();
-    void boidSteering();
 
 private:
     float m_boid_radius = 30.f;
