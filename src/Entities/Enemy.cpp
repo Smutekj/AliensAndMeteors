@@ -126,8 +126,7 @@ void Enemy::draw(LayersHolder &layers)
     auto &target = layers.getCanvas("Unit");
     m_sprite.setPosition(m_pos);
     m_sprite.setRotation(glm::radians(m_angle));
-    m_sprite.setScale(4, -4);
-    // if(m_is_avoiding){ rect.setFillColor(sf::Color::Red);}
+    m_sprite.setScale(4, 4);
 
     target.drawSprite(m_sprite, "Instanced");
 
@@ -135,24 +134,11 @@ void Enemy::draw(LayersHolder &layers)
     utils::Vector2f booster_size = {4, 2};
 
     booster.setTexture(*m_textures.get("BoosterPurple"));
-    booster.setScale(booster_size.x, -booster_size.y);
-    booster.setPosition(m_pos + m_vel / norm(m_vel) * m_sprite.getScale().y);
+    booster.setScale(booster_size.x, 1.3*booster_size.y);
+    booster.setPosition(m_pos - m_vel / norm(m_vel) * m_sprite.getScale().y);
     booster.setRotation(m_sprite.getRotation());
+
     target.drawSprite(booster, "Instanced");
-
-    // sf::RectangleShape line;
-    // line.setFillColor(sf::Color::Green);
-
-    // for(auto pos : m_cm)
-    // {
-    //     auto dr = pos - m_pos;
-
-    //     line.setPosition(m_pos);
-    //     line.setRotation(dir2angle(dr));
-    //     line.setSize({norm(dr), 1.f});
-    //     line.setOrigin({0, 0.5f });
-    //     target.draw(line);
-    // }
 }
 
 void Enemy::avoidMeteors()
