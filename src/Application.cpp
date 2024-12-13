@@ -10,7 +10,6 @@
 
 #include <IncludesGl.h>
 #include <Utils/RandomTools.h>
-#include <Utils/IO.h>
 
 #include <time.h>
 #include <chrono>
@@ -104,8 +103,9 @@ Application::Application(int width, int height)
 
     m_textures.add("background", "../Resources/Textures/background.png");
 
-    std::filesystem::path font_path = {__FILE__};
-    font_path.remove_filename().append("../Resources/Fonts/arial.ttf");
+    std::filesystem::path font_path = {"../Resources/Fonts/arial.ttf"};
+    // std::filesystem::path font_path = {__FILE__};
+    // font_path.remove_filename().append("../Resources/Fonts/arial.ttf");
     m_font = std::make_shared<Font>(font_path);
     State::Context context(m_window_canvas, m_window, m_textures, m_bindings, *m_font, m_score);
     m_state_stack = std::make_unique<StateStack>(context);
@@ -118,6 +118,7 @@ Application::Application(int width, int height)
     m_window_canvas.m_view.setCenter(m_window_canvas.getTargetSize() / 2);
 
     // m_window_canvas.addShader("circle", "basicinstanced.vert", "circle.frag");
+    m_window_canvas.setShadersPath("../Resources/Shaders/");
     m_window_canvas.addShader("Shiny", "basicinstanced.vert", "shiny.frag");
     m_window_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
     m_window_canvas.addShader("LastPass", "basicinstanced.vert", "lastPass.frag");
