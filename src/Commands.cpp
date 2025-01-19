@@ -25,6 +25,11 @@ KeyBindings::KeyBindings()
     m_key_names[SDL_KeyCode::SDLK_RALT] = "Right Alt";
     m_key_names[SDL_KeyCode::SDLK_SPACE] = "Space";
     m_key_names[SDL_KeyCode::SDLK_TAB] = "Tab";
+    
+    m_key_names[SDL_KeyCode::SDLK_LEFT] = "Left Arrow";
+    m_key_names[SDL_KeyCode::SDLK_RIGHT] = "Right Arrow";
+    m_key_names[SDL_KeyCode::SDLK_UP] = "Up Arrow";
+    m_key_names[SDL_KeyCode::SDLK_DOWN] = "Down Arrow";
 
     for (int key_ind = SDL_KeyCode::SDLK_0; key_ind <= SDL_KeyCode::SDLK_9; key_ind += 1)
     {

@@ -13,17 +13,11 @@ bool Objective::isFinished() const
     return m_is_finished;
 }
 
-void Objective::drawArrowTo(utils::Vector2f location, Renderer &window, Color color = {0, 1, 0, 1})
+void Objective::drawArrowTo(utils::Vector2f location, Renderer &window, Color color = {1, 1, 0, 1})
 {
     auto center = window.m_view.getCenter();
 
-    Sprite m_arrow_rect;
-    m_arrow_rect.setScale(6, 6);
-    m_arrow_rect.m_color = color;
-    m_arrow_rect.setTexture(*m_textures.get("Arrow"));
-
     auto angle = utils::dir2angle(location - center);
-    m_arrow_rect.setRotation(glm::radians(angle));
 
     auto view_size = window.m_view.getSize() * 0.95f;
     auto angle_threshold = utils::dir2angle(view_size);
@@ -49,9 +43,13 @@ void Objective::drawArrowTo(utils::Vector2f location, Renderer &window, Color co
     float actual_dist = utils::dist(location, center);
     if (actual_dist > distance_on_view)
     { //! draw only when not on screen
-
-        m_arrow_rect.setPosition(center + distance_on_view * utils::angle2dir(angle));
-        window.drawSprite(m_arrow_rect, "Instanced");
+        Sprite arrow_rect(*m_textures.get("Arrow"));
+        arrow_rect.setScale(6, 6);
+        arrow_rect.m_color = color;
+        arrow_rect.setRotation(glm::radians(angle));
+        arrow_rect.setPosition(center + distance_on_view * utils::angle2dir(angle));
+        window.m_blend_factors.src_factor = BlendFactor::SrcAlpha;
+        window.drawSprite(arrow_rect, "Arrow");
     }
 }
 
@@ -84,7 +82,7 @@ void ReachSpotObjective::draw(Renderer &window)
         static_cast<float>(window.getTargetSize().x),
         static_cast<float>(window.getTargetSize().y)};
     text.setPosition(window_size.x / 20.f, m_text_y_pos);
-    window.drawText(text, "Text");
+    window.drawText(text);
     window.m_view = old_view;
 }
 
@@ -137,7 +135,7 @@ void DestroyEntity::draw(Renderer &window)
         static_cast<float>(window.getTargetSize().y)};
     text.setPosition(window_size.x / 20.f, m_text_y_pos);
 
-    window.drawText(text, "Text");
+    window.drawText(text);
     window.m_view = old_view;
 }
 
@@ -199,7 +197,7 @@ void DestroyNOfType::draw(Renderer &window)
         static_cast<float>(window.getTargetSize().y)};
     text.setPosition(window_size.x / 20.f, m_text_y_pos);
 
-    window.drawText(text, "Text");
+    window.drawText(text);
     window.m_view = old_view;
 }
 

@@ -128,7 +128,7 @@ void Enemy::draw(LayersHolder &layers)
     m_sprite.setRotation(glm::radians(m_angle));
     m_sprite.setScale(4, 4);
 
-    target.drawSprite(m_sprite, "Instanced");
+    target.drawSprite(m_sprite);
 
     Sprite booster;
     utils::Vector2f booster_size = {4, 2};
@@ -138,7 +138,7 @@ void Enemy::draw(LayersHolder &layers)
     booster.setPosition(m_pos - m_vel / norm(m_vel) * m_sprite.getScale().y);
     booster.setRotation(m_sprite.getRotation());
 
-    target.drawSprite(booster, "Instanced");
+    target.drawSprite(booster);
 }
 
 void Enemy::avoidMeteors()
@@ -408,7 +408,7 @@ void SpaceStation::draw(LayersHolder &layers)
     rect.setTexture(*m_textures.get("Station"));
     rect.setScale(m_size.x, m_size.y);
     // rect.setFillColor(sf::Color::Red);
-    target.drawSprite(rect, "Instanced");
+    target.drawSprite(rect);
 
     // sf::RectangleShape health_rect;
 
@@ -678,7 +678,7 @@ void Boss::draw(LayersHolder &layers)
     rect.setRotation(m_angle);
     rect.setScale(10, 10);
 
-    target.drawSprite(rect, "Instanced");
+    target.drawSprite(rect);
 
     Sprite booster;
     utils::Vector2f booster_size = {4, 2};
@@ -687,7 +687,7 @@ void Boss::draw(LayersHolder &layers)
     booster.setScale(booster_size.x, booster_size.y);
     booster.setPosition(m_pos - m_vel / norm(m_vel) * rect.getScale().y);
     booster.setRotation(rect.getRotation());
-    target.drawSprite(booster, "Instanced");
+    target.drawSprite(booster);
 
     //!
     if (m_is_recharging)

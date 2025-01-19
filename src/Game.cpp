@@ -5,12 +5,7 @@
 
 #include "Utils/RandomTools.h"
 
-// #include "ShaderUI.h"
 // #include "SoundModule.h"
-namespace Geometry
-{
-    constexpr float BOX[2] = {1000, 1000};
-}
 
 void Game::initializeLayers()
 {
@@ -25,37 +20,38 @@ void Game::initializeLayers()
     text_options.data_type = TextureDataTypes::UByte;
     text_options.format = TextureFormat::RGBA;
     text_options.internal_format = TextureFormat::RGBA;
+    std::cout << "TEST0!" << std::endl;
 
-    std::filesystem::path shaders_directory = {__FILE__};
-    shaders_directory.remove_filename().append("../Resources/Shaders/");
+    // std::filesystem::path shaders_directory = {__FILE__};
+    std::filesystem::path shaders_directory = {"../Resources/Shaders/"};
+    // shaders_directory.remove_filename().append();
+
     auto &unit_layer = m_layers.addLayer("Unit", 3, options);
     unit_layer.m_canvas.setShadersPath(shaders_directory);
+    std::cout << "TEST1!" << std::endl;
     unit_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
-    // unit_layer.addEffect(std::make_unique<Bloom2>(width, height));
+    std::cout << "TEST!" << std::endl;
 
     auto &shiny_layer = m_layers.addLayer("Bloom", 5, options);
     shiny_layer.m_canvas.setShadersPath(shaders_directory);
     shiny_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
     shiny_layer.addEffect(std::make_unique<Bloom3>(width, height));
 
-    // auto &light_layer = m_layers.addLayer("Light", 150, options);
-    // light_layer.m_canvas.m_blend_factors = {BlendFactor::SrcAlpha, BlendFactor::OneMinusSrcAlpha};
-    // light_layer.addEffect(std::make_unique<SmoothLight>(width, height));
-    // light_layer.addEffect(std::make_unique<LightCombine>(width, height));
-    // light_layer.m_canvas.addShader("VisionLight", "basictex.vert", "fullpassLight.frag");
-    // light_layer.m_canvas.addShader("combineBloomBetter", "basicinstanced.vert", "combineBloomBetter.frag");
+    // // auto &light_layer = m_layers.addLayer("Light", 150, options);
+    // // light_layer.m_canvas.m_blend_factors = {BlendFactor::SrcAlpha, BlendFactor::OneMinusSrcAlpha};
+    // // light_layer.addEffect(std::make_unique<SmoothLight>(width, height));
+    // // light_layer.addEffect(std::make_unique<LightCombine>(width, height));
+    // // light_layer.m_canvas.addShader("VisionLight", "basictex.vert", "fullpassLight.frag");
+    // // light_layer.m_canvas.addShader("combineBloomBetter", "basicinstanced.vert", "combineBloomBetter.frag");
 
-    // auto &ui_layer = m_layers.addLayer("UI", 1000, text_options);
-    // water_layer.addEffect(std::make_unique<WaterEffect>(width, height));
-    //
+    // // auto &ui_layer = m_layers.addLayer("UI", 1000, text_options);
+    // // water_layer.addEffect(std::make_unique<WaterEffect>(width, height));
+    // //
     m_window.setShadersPath(shaders_directory);
     m_window.addShader("Shiny", "basicinstanced.vert", "shiny.frag");
-    m_window.addShader("Instanced", "basicinstanced.vert", "texture.frag");
+    m_window.addShader("Arrow", "basicinstanced.vert", "texture.frag");
     m_window.addShader("LastPass", "basicinstanced.vert", "lastPass.frag");
-    m_window.addShader("VertexArrayDefault", "basictex.vert", "texture.frag");
-    m_window.addShader("Text", "basicinstanced.vert", "textBorder.frag");
-    m_window.addShader("Meteor", "basictex.vert", "Meteor.frag");
-    m_scene_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
+    m_scene_canvas.setShadersPath(shaders_directory);
 }
 
 using namespace utils;
@@ -75,12 +71,14 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     m_player->setPosition({500, 500});
     std::cout << "CREATED: " << 50 << " player" << std::endl;
 
-    std::filesystem::path texture_directory = {__FILE__};
+    // std::filesystem::path texture_directory = {__FILE__};
+    std::filesystem::path texture_directory = {};
     texture_directory.remove_filename().append("../Resources/Textures/");
-    m_textures.setBaseDirectory(texture_directory);
+    m_textures.setBaseDirectory(std::filesystem::path{"../Resources/Textures/"});
     m_textures.add("Arrow", "arrow.png");
-    
-    std::filesystem::path font_path = {__FILE__};
+
+    // std::filesystem::path font_path = {__FILE__};
+    std::filesystem::path font_path = {};
     font_path.remove_filename().append("../Resources/Fonts/arial.ttf");
     m_font = std::make_unique<Font>(font_path);
 
@@ -145,7 +143,7 @@ void Game::spawnBossObjective()
     t2.setCallback(
         [this]()
         {
-            if(m_score > 50 && rand()%2 == 0)
+            if (m_score > 50 && rand() % 2 == 0)
             {
                 spawnBossObjective();
             }
@@ -176,7 +174,6 @@ void Game::spawnNextObjective()
             auto &enemy = m_world->addObject(ObjectType::Enemy);
             enemy.setPosition(pos + randf(30, 50) * angle2dir(randf(0, 360)));
         }
-
     };
 
     auto objective = std::make_shared<ReachSpotObjective>(new_trigger, *m_font);
@@ -190,8 +187,7 @@ void Game::spawnNextObjective()
         if(m_score > 20 && rand()%3 == 0)
         {
             spawnBossObjective();
-        }
-         });
+        } });
 
     objective->m_on_completion_callback = [this, new_pos]()
     {
@@ -378,7 +374,7 @@ void Game::draw(Renderer &window)
                                   (int)(size.y * rel_pos.y),
                                   (int)(size.x * view_size_rel.x),
                                   (int)(size.y * view_size_rel.y)};
-    window.drawSprite(background_rect, "Instanced");
+    window.drawSprite(background_rect);
     window.drawAll();
     window.m_view = old_view;
 
@@ -388,7 +384,8 @@ void Game::draw(Renderer &window)
     //! clear and draw into scene
     m_scene_canvas.clear({0, 0, 0, 0});
     m_scene_canvas.m_view = old_view;
-    m_layers.draw(m_scene_canvas, m_window.m_view);
+    m_layers.setView(m_window.m_view);
+    m_layers.drawInto(m_scene_canvas);
 
     // //! draw everything to a window quad
     auto scene_size = m_scene_pixels.getSize();
@@ -407,14 +404,13 @@ void Game::draw(Renderer &window)
 
     m_window.m_blend_factors = old_factors;
 
-
     m_objective_system.draw(window);
     m_window.drawAll();
     // m_ui.draw(window);
 }
 
 void Game::drawUI(Renderer &window)
-{   
+{
     auto old_view = window.m_view;
     window.m_view = window.getDefaultView(); //! draw directly on screen
 
@@ -440,7 +436,7 @@ void Game::drawUI(Renderer &window)
     window.getShader("healthBar").use();
     window.getShader("healthBar").setUniform2("u_health_percentage", health_ratio);
     window.drawAll();
-    window.drawText(m_health_text, "Text");
+    window.drawText(m_health_text);
 
     utils::Vector2f booster_size = {window_size.x * 1.f / 6.f, health_rect.getScale().y * 2.f};
     utils::Vector2f booster_pos = {window_size.x * 1.f / 6.f, health_rect.getPosition().y};
@@ -460,7 +456,7 @@ void Game::drawUI(Renderer &window)
     m_health_text.setText("Score: " + std::to_string(m_score));
     m_health_text.centerAround(score_comp_min);
 
-    window.drawText(m_health_text, "Text");
+    window.drawText(m_health_text);
     window.drawAll();
     window.m_view = old_view;
 }

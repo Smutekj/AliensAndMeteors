@@ -221,7 +221,7 @@ void Bomb::draw(LayersHolder &layers)
     rect.setPosition(m_pos);
     rect.setRotation(m_angle);
     rect.setScale(2, 2);
-    target.drawSprite(rect, "Instanced");
+    target.drawSprite(rect);
 }
 
 Laser::Laser(GameWorld *world, TextureHolder &textures,

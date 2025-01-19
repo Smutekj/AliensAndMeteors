@@ -59,7 +59,7 @@ void MenuState::draw()
 {
 
   auto &window = *m_context.window;
-  window.drawSprite(m_background_rect, "Instanced");
+  window.drawSprite(m_background_rect);
   window.drawAll();
   m_menu.draw(window);
 }
@@ -101,7 +101,7 @@ void EndScreenState::draw()
   m_goodbye_text.setColor({0, 0, 255, 255});
   m_goodbye_text.setScale(2.f, 2.f);
   Menu::centerTextInWindow(window, m_goodbye_text, window.getTargetSize().y / 2.f);
-  window.drawText(m_goodbye_text, "Text");
+  window.drawText(m_goodbye_text);
 }
 
 PlayerDiedState::PlayerDiedState(StateStack &stack, Context &context)
@@ -165,14 +165,14 @@ void PlayerDiedState::draw()
   m_text.setScale(2.f, 2.f);
   m_text.centerAround({window_size.x / 2.f,
                        window_size.y * 6.f / 8.f});
-  window.drawText(m_text, "Text");
+  window.drawText(m_text);
 
   m_text.setText("Your score was: " + std::to_string(m_context.score->getCurrentScore()));
   m_text.setColor({0, 0, 255, 255});
   m_text.setScale(2.f, 2.f);
   m_text.centerAround({window_size.x / 2.f,
                        window_size.y * 4.f / 8.f});
-  window.drawText(m_text, "Text");
+  window.drawText(m_text);
 
   window.drawAll();
 }
@@ -245,6 +245,6 @@ void ScoreBoardState::drawScoreLine(Renderer &window,
 
   m_right_text.setText(text2);
   m_right_text.centerAround({window_size.x / 2.f + width, y_position});
-  window.drawText(m_left_text, "Text");
-  window.drawText(m_right_text, "Text");
+  window.drawText(m_left_text);
+  window.drawText(m_right_text);
 }

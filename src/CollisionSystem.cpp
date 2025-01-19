@@ -11,7 +11,6 @@ namespace Collisions
         {
             m_object_type2tree[static_cast<ObjectType>(i)] = {};
         }
-        // m_exceptions.insert({(int)ObjectType::Wall, (int)ObjectType::Wall});
     }
 
     void CollisionSystem::insertObject(std::shared_ptr<GameObject> &p_obj)

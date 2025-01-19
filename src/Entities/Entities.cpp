@@ -89,7 +89,7 @@ void Explosion::draw(LayersHolder& layers)
     m_explosion_sprite.setPosition(m_pos);
     m_explosion_sprite.setRotation(m_angle);
     m_explosion_sprite.setScale(2 * m_explosion_radius, 2 * m_explosion_radius);
-    target.drawSprite(m_explosion_sprite, "Instanced");
+    target.drawSprite(m_explosion_sprite);
 }
 
 EMP::EMP(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider)
@@ -188,7 +188,7 @@ void EMP::draw(LayersHolder& layers)
     }
     m_texture_rect.setPosition(m_pos);
     m_texture_rect.setRotation(m_angle);
-    target.drawSprite(m_texture_rect, "Instanced");
+    target.drawSprite(m_texture_rect);
 }
 
 ExplosionAnimation::ExplosionAnimation(GameWorld *world, TextureHolder &textures)
@@ -243,7 +243,7 @@ void ExplosionAnimation::draw(LayersHolder& layers)
     rect.setPosition(m_pos);
     rect.setRotation(m_angle);
     rect.setScale(2 * m_explosion_radius, 2 * m_explosion_radius);
-    target.drawSprite(rect, "Instanced");
+    target.drawSprite(rect);
 }
 
 Heart::Heart(GameWorld *world, TextureHolder &textures)
@@ -290,5 +290,5 @@ void Heart::draw(LayersHolder& layers)
     rect.setPosition(m_pos);
     rect.setRotation(dir2angle(m_vel));
     rect.setScale(3., 3.);
-    target.drawSprite(rect, "Instanced");
+    target.drawSprite(rect);
 }

@@ -39,7 +39,7 @@ void Meteor::draw(LayersHolder& layers)
     {
         target.addShader("Meteor", "basictex.vert", "Meteor.frag");
     }
-    VertexArray m_verts(target.getShader("Meteor"));
+    VertexArray m_verts;
     m_verts.resize(3*points.size());
     
     Color c = {1,0,0,1};
@@ -54,7 +54,8 @@ void Meteor::draw(LayersHolder& layers)
         m_verts[3*i+1] = {points[(i+1)%n_points], c, tex_coord_next};
         m_verts[3*i+2] = {center, c, {0.5,0.5}};
     }
-    target.drawVertices(m_verts, DrawType::Dynamic, m_textures.get("Meteor"));
+    
+    target.drawVertices(m_verts, "Meteor", DrawType::Dynamic, m_textures.get("Meteor"));
 }
 
 Meteor::~Meteor() {}

@@ -40,8 +40,8 @@ KeyBindingState::KeyBindingState(StateStack &stack, Context &context) : State(st
 
     auto change_key_1 = std::make_unique<ChangeKeyItem>("Forward", PlayerControl::MOVE_FORWARD, context);
     auto change_key_2 = std::make_unique<ChangeKeyItem>("Back", PlayerControl::MOVE_BACK, context);
-    auto change_key_3 = std::make_unique<ChangeKeyItem>("Steer right", PlayerControl::STEER_LEFT, context);
-    auto change_key_4 = std::make_unique<ChangeKeyItem>("Steer left", PlayerControl::STEER_RIGHT, context);
+    auto change_key_3 = std::make_unique<ChangeKeyItem>("Steer Right", PlayerControl::STEER_RIGHT, context);
+    auto change_key_4 = std::make_unique<ChangeKeyItem>("Steer Left", PlayerControl::STEER_LEFT, context);
     auto change_key_5 = std::make_unique<ChangeKeyItem>("Boost", PlayerControl::BOOST, context);
     auto change_key_6 = std::make_unique<ChangeKeyItem>("Throw Bomb", PlayerControl::THROW_BOMB, context);
     auto change_key_7 = std::make_unique<ChangeKeyItem>("Shoot Laser", PlayerControl::SHOOT_LASER, context);

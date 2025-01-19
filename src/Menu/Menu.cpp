@@ -133,7 +133,7 @@ void ChangeStateItem::draw(Renderer &window)
     Menu::centerTextInWindow(window, m_text, getPosition().y);
     m_text.setColor(m_text_color);
 
-    window.drawText(m_text, "Text", DrawType::Dynamic);
+    window.drawText(m_text);
 }
 
 ChangeKeyItem::ChangeKeyItem(std::string command_name, PlayerControl command, State::Context &context)
@@ -166,6 +166,9 @@ void ChangeKeyItem::handleEvent(SDL_Event event)
 
 void ChangeKeyItem::draw(Renderer &window)
 {
+
+
+    
     Text left_text;
     left_text.setFont(p_font);
     utils::Vector2f left_text_pos = {
@@ -193,8 +196,8 @@ void ChangeKeyItem::draw(Renderer &window)
         getPosition().y};
     right_text.setPosition(right_text_pos);
 
-    window.drawText(left_text, "Text");
-    window.drawText(right_text, "Text");
+    window.drawText(left_text);
+    window.drawText(right_text);
 }
 
 void Menu::centerTextInWindow(const Renderer &window, Text &m_text, float y_coord)
@@ -250,11 +253,11 @@ void EnterTextItem::draw(Renderer &window)
     right_text.setText(m_entered_text);
     right_text.centerAround(right_text_pos);
 
-    window.drawText(left_text, "Text");
-    window.drawText(right_text, "Text");
+    window.drawText(left_text);
+    window.drawText(right_text);
 }
 
-bool EnterTextItem::isLetter(u_int32_t code)
+bool EnterTextItem::isLetter(uint32_t code)
 {
     return (code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
 }
@@ -282,7 +285,7 @@ void CallBackItem::draw(Renderer &window)
 {
     m_text.centerAround({window.getTargetSize().x / 2.f, getPosition().y});
     m_text.setColor(m_text_color);
-    window.drawText(m_text, "Text");
+    window.drawText(m_text);
 }
 
 EnterNumberItem::EnterNumberItem(State::Context &context, std::string &text, std::string left_text)
@@ -343,6 +346,6 @@ void EnterNumberItem::draw(Renderer &window)
         getPosition().y};
     right_text.setPosition(right_text_pos);
 
-    window.drawText(left_text, "Text");
-    window.drawText(right_text, "Text");
+    window.drawText(left_text);
+    window.drawText(right_text);
 }

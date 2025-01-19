@@ -136,7 +136,7 @@ void PlayerEntity::draw(LayersHolder &layers)
     m_player_shape.setScale(2 * m_radius, 2 * m_radius);
     m_player_shape.setTexture(*m_textures.get("PlayerShip"));
 
-    target.drawSprite(m_player_shape, "Instanced");
+    target.drawSprite(m_player_shape);
 
     if (!is_boosting)
     {

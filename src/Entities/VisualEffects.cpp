@@ -32,7 +32,7 @@ void AnimatedSprite::draw(LayersHolder &target)
     the_sprite.setRotation(m_angle);
     the_sprite.setScale(m_size/2.f);
 
-    canvas.drawSprite(the_sprite, "Instanced");
+    canvas.drawSprite(the_sprite);
 }
 
 StarEmitter::StarEmitter(GameWorld *world, TextureHolder &textures)

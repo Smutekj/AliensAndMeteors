@@ -60,7 +60,7 @@ private:
     std::string &m_entered_text;
 
 private:
-    bool isLetter(u_int32_t code);
+    bool isLetter(uint32_t code);
 };
 
 //! \class item that changes key_bindings

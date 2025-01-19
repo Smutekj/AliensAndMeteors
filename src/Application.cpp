@@ -72,7 +72,7 @@ void inline gameLoop(void *mainLoopArg)
 
     if (s_frame_count++ > 1000)
     {
-        std::cout << "max frame time: " << p_app->m_avg_frame_time.getAverage() << " ms" << std::endl;
+        std::cout << "avg frame time: " << p_app->m_avg_frame_time.getAverage() << " ms" << std::endl;
         s_frame_count = 0;
     }
 
@@ -100,9 +100,7 @@ Application::Application(int width, int height)
     : m_window(width, height), m_window_canvas(m_window)
 {
     m_dt = 0.0166667f;
-
-    m_textures.add("background", "../Resources/Textures/background.png");
-
+    
     std::filesystem::path font_path = {"../Resources/Fonts/arial.ttf"};
     // std::filesystem::path font_path = {__FILE__};
     // font_path.remove_filename().append("../Resources/Fonts/arial.ttf");
