@@ -1,44 +1,10 @@
 include(FetchContent)
     
-### LUA (Needs special treatment for reasons I don't understand)
-if( ${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
-    add_custom_target(
-        BuildLua
-        COMMAND emmake make clean 
-        COMMAND emmake make generic CC='emcc -s WASM=1' ### THE FLAG IS NECESSARY!!!!!!
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/external/lua
-    )
-else()
-    message("HELLOMYFREIND\n\n\n")
-    add_custom_target(
-        BuildLua
-        COMMAND make clean
-        COMMAND make generic
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/external/lua/src/
-    )
-endif()
-
-add_library(LuaLib STATIC IMPORTED)
-set_target_properties(LuaLib
-        PROPERTIES
-        IMPORTED_LOCATION    ${CMAKE_SOURCE_DIR}/external/lua/src/liblua.a # Make sure to use absolute path here
-        INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_SOURCE_DIR}/external/lua/src/
-        INTERFACE_COMPILE_DEFINITIONS "USING_LUA;LUA_STATIC"
-)
-add_dependencies(LuaLib BuildLua) # So that anyone linking against LuaLib causes BuildLua to build first
-
-### LUABridge 
-FetchContent_Declare(
-    LuaBridge
-    GIT_REPOSITORY https://github.com/vinniefalco/LuaBridge
-    GIT_TAG master 
-)
-FetchContent_MakeAvailable(LuaBridge)
-            
+ 
 ### RENDERER
 FetchContent_Declare(
   renderer  
   GIT_REPOSITORY https://github.com/Smutekj/simple-emscripten-renderer
-  GIT_TAG master
+  GIT_TAG VAO
 )
 FetchContent_MakeAvailable(renderer)

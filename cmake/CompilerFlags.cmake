@@ -1,11 +1,9 @@
-#nothig here yet :()
+function(set_compiler_flags target_name)
+  if(MSVC)
+    target_compile_options(${target_name} PRIVATE $<$<CONFIG:Release>:/O2>)
+  else()
+    target_compile_options(${target_name} PRIVATE $<$<CONFIG:Release>:-O2>)
+  endif()
 
-
-if(CMAKE_BUILD_TYPE MATCHES "Debug")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
-elseif(CMAKE_BUILD_TYPE MATCHES "Release")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
-endif()
+endfunction()
 
