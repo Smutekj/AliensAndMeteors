@@ -20,13 +20,4 @@ void main()
     float edge_inside_alpha = smoothstep(0.5, 0.9, edge);
     vec3 color_res = edge*edge_inside_alpha * u_edge_color.rgb + (1. - edge_inside_alpha) * x * v_color.rgb;
     FragColor = vec4(color_res, max(edge, x)); 
-    // if(edge > 0.95)
-    // {
-    // }else{
-    //     FragColor = vec4(x*v_color.rgb, x); //vec4(vec3(1. - glyph_region), 1.); 
-    // }
-    // if(glyph_region > 0.45)
-    // {
-    // }?
-    // FragColor = vec4(v_color.rgb * x, x);
 }                                             
