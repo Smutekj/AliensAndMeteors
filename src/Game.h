@@ -38,7 +38,6 @@ public:
 private:
   void drawUI(Renderer &window);
   void moveView(Renderer &window);
-  void parseEvents(Renderer &window);
   void initializeLayers();
 
   void spawnNextObjective();
