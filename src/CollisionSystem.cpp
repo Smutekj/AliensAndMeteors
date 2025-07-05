@@ -80,16 +80,17 @@ namespace Collisions
                     continue;
                 }
                 auto &tree_j = m_object_type2tree.at(static_cast<ObjectType>(j));
-                auto close_pairs = tree_i.findClosePairsWith(tree_j);
 
-                auto close_pairs2 = tree_i.findClosePairsWith2(tree_j);
-                
+                auto close_pairs = tree_i.findClosePairsWith2(tree_j);
 
                 std::vector<std::pair<ObjectId, ObjectId>> pairs;
                 pairs.reserve(close_pairs.size());
                 for(auto& [ind1, ind2] : close_pairs)
                 {
+                    
                     pairs.push_back({{static_cast<ObjectType>(i), ind1}, {static_cast<ObjectType>(j), ind2}});
+                    assert(m_objects2.count(pairs.back().first) != 0);
+                    assert(m_objects2.count(pairs.back().second) != 0);
                 }
                 
                 narrowPhase(pairs);
@@ -102,14 +103,14 @@ namespace Collisions
     {
         for (auto [i1, i2] : colliding_pairs)
         {
-
-            auto &obj1 = *m_objects2.at(i1);
-            auto &obj2 = *m_objects2.at(i2);
-
-            if (m_collided.count({i1, i2}) > 0)
+            
+            if (i1 == i2 || m_collided.count({i1, i2}) > 0) //! no self collisions and evaluate each collision once
             {
                 continue;
             }
+
+            auto &obj1 = *m_objects2.at(i1);
+            auto &obj2 = *m_objects2.at(i2);
             m_collided.insert({i1, i2});
 
             CollisionData collision_data;

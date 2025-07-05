@@ -113,6 +113,7 @@ void BoundingVolumeTree::removeLeaf(int leaf_index)
     if (leaf_index == root_ind) //! there is just one leaf thus it is root
     {
         free_indices.insert(leaf_index);
+        root_ind = -1;
         return;
     }
 
@@ -698,7 +699,7 @@ std::vector<std::pair<int, int>> BoundingVolumeTree::findClosePairsWith2(Boundin
 {
     std::vector<std::pair<int, int>> close_pairs;
 
-    if(root_ind == -1 || tree.root_ind == -1)
+    if (root_ind == -1 || tree.root_ind == -1)
     {
         return {};
     }
@@ -718,16 +719,26 @@ std::vector<std::pair<int, int>> BoundingVolumeTree::findClosePairsWith2(Boundin
         {
             continue;
         }
-        if (node_i.isLeaf() && node_j.isLeaf())
-        {
-            close_pairs.push_back({node_i.object_index, node_j.object_index});
-        }
-        else
+        if (!node_i.isLeaf() && !node_j.isLeaf())
         {
             to_visit.emplace_back(node_i.child_index_1, node_j.child_index_1);
             to_visit.emplace_back(node_i.child_index_1, node_j.child_index_2);
             to_visit.emplace_back(node_i.child_index_2, node_j.child_index_1);
             to_visit.emplace_back(node_i.child_index_2, node_j.child_index_2);
+        }
+        if (!node_i.isLeaf() && node_j.isLeaf())
+        {
+            to_visit.emplace_back(node_i.child_index_1, node_ind_j);
+            to_visit.emplace_back(node_i.child_index_2, node_ind_j);
+        }
+        if (node_i.isLeaf() && !node_j.isLeaf())
+        {
+            to_visit.emplace_back(node_ind_i, node_j.child_index_1);
+            to_visit.emplace_back(node_ind_i, node_j.child_index_2);
+        }
+        if (node_i.isLeaf() && node_j.isLeaf())
+        {
+            close_pairs.push_back({node_i.object_index, node_j.object_index});
         }
     }
 
