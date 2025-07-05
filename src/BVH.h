@@ -51,7 +51,8 @@ public:
         return object2node_indices;
     }
 
-    std::vector<std::pair<int, int>> findClosePairsWith(BoundingVolumeTree &tree);
+    std::vector<std::pair<int, int>> findClosePairsWith(BoundingVolumeTree &tree) const;
+    std::vector<std::pair<int, int>> findClosePairsWith2(BoundingVolumeTree &tree) const;
     std::vector<int> findIntersectingLeaves(AABB rect) const;
 
     void clear();

@@ -26,8 +26,12 @@ enum class BulletType
 class Bullet : public GameObject
 {
 public:
-    Bullet(GameWorld *world, TextureHolder &textures, PlayerEntity *player = nullptr);
-    virtual ~Bullet() override;
+    Bullet() = default;
+    Bullet(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
+    Bullet(const Bullet &e) = default;
+    Bullet &operator=(Bullet &e) = default;
+    Bullet &operator=(Bullet &&e) = default;
+    virtual ~Bullet() override = default;
 
     virtual void update(float dt) override;
     virtual void onCreation() override;
@@ -41,9 +45,9 @@ public:
     GameObject *getTarget() const;
     void setBulletType(BulletType type);
 
-    
     float m_max_vel = 100.f;
     float m_max_acc = 30.f;
+
 private:
     static std::unordered_map<BulletType, std::string> m_type2shader_id;
 
@@ -61,13 +65,17 @@ private:
     std::deque<utils::Vector2f> m_past_positions;
 };
 
-
 class Bomb : public GameObject
 {
 
 public:
-    Bomb(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem &collider);
-    virtual ~Bomb() override;
+    Bomb() = default;
+    Bomb(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
+    Bomb(const Bomb &e) = default;
+    Bomb &operator=(Bomb &e) = default;
+    Bomb &operator=(Bomb &&e) = default;
+
+    virtual ~Bomb() override = default;
 
     virtual void update(float dt) override;
     virtual void onCreation() override;
@@ -78,8 +86,9 @@ public:
 public:
     float m_life_time = 3.;
     float m_acc = 10.;
+
 private:
-    std::unique_ptr<Animation> m_animation;
+    std::shared_ptr<Animation> m_animation;
 
     float m_explosion_radius = 5.f;
     float m_min_dmg = 0.f;
@@ -92,7 +101,14 @@ class Laser : public GameObject
 {
 
 public:
-    Laser(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem &collider);
+    Laser() = default;
+
+    Laser(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
+    Laser(const Laser &e) = default;
+    Laser(Laser &&other) = default;
+
+    Laser &operator=(Laser &e) = default;
+    Laser &operator=(Laser &&e) = default;
     virtual ~Laser() override;
 
     virtual void update(float dt) override;
@@ -117,6 +133,7 @@ public:
     float m_life_time = 1.;
 
     bool m_rotates_with_owner = true;
+
 private:
     float m_length = 0.f;
     float m_time = 0.;

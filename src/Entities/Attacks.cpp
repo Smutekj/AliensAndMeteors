@@ -12,7 +12,7 @@
 std::unordered_map<BulletType, std::string> Bullet::m_type2shader_id = {{BulletType::Lightning, "lightningBolt"},
                                                                         {BulletType::Fire, "fireBolt"}};
 
-Bullet::Bullet(GameWorld *world, TextureHolder &textures, PlayerEntity *player)
+Bullet::Bullet(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
     : GameObject(world, textures, ObjectType::Bullet)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
@@ -33,8 +33,6 @@ GameObject *Bullet::getTarget() const
 {
     return m_target;
 }
-
-Bullet::~Bullet() {}
 
 void Bullet::update(float dt)
 {
@@ -116,7 +114,7 @@ void Bullet::draw(LayersHolder &layers)
     auto &target = layers.getCanvas("Unit");
 
     Sprite rect;
-    rect.setTexture(*m_textures.get("Bomb"));
+    rect.setTexture(*m_textures->get("Bomb"));
     rect.setPosition(m_pos);
     rect.setRotation(glm::radians(dir2angle(m_vel)));
     rect.setScale(5., 5.);
@@ -138,9 +136,8 @@ void Bullet::draw(LayersHolder &layers)
     }
 }
 
-Bomb::Bomb(GameWorld *world, TextureHolder &textures,
-           Collisions::CollisionSystem &neighbour_searcher)
-    : m_neighbour_searcher(&neighbour_searcher), GameObject(world, textures, ObjectType::Bomb)
+Bomb::Bomb(GameWorld *world, TextureHolder &textures,Collisions::CollisionSystem *collider, PlayerEntity *player)
+    : m_neighbour_searcher(collider), GameObject(world, textures, ObjectType::Bomb)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
     m_collision_shape->setScale(2, 2);
@@ -149,22 +146,20 @@ Bomb::Bomb(GameWorld *world, TextureHolder &textures,
     // // m_rigid_body->angle_vel = 0.0;
     // m_rigid_body->inertia = 0.001f;
 
-    auto texture_size = static_cast<utils::Vector2i>(m_textures.get("Bomb")->getSize());
+    auto texture_size = static_cast<utils::Vector2i>(m_textures->get("Bomb")->getSize());
 
     m_animation = std::make_unique<Animation>(texture_size,
                                               7, 2, m_life_time);
 }
 
-Bomb::~Bomb() {}
-
 void Bomb::update(float dt)
 {
 
     auto old_speed = utils::norm(m_vel);
-    auto new_speed = old_speed -  m_acc * dt;
+    auto new_speed = old_speed - m_acc * dt;
     new_speed = std::max(0.f, new_speed);
-    
-    if(old_speed > 0.)
+
+    if (old_speed > 0.)
     {
         m_vel *= new_speed / old_speed;
     }
@@ -180,7 +175,6 @@ void Bomb::update(float dt)
 
 void Bomb::onCollisionWith(GameObject &obj, CollisionData &c_data)
 {
-
 }
 
 void Bomb::onCreation()
@@ -204,7 +198,7 @@ void Bomb::onDestruction()
         }
     }
 
-    auto &explosion = static_cast<Explosion&>(m_world->addObject(ObjectType::Explosion));
+    auto &explosion = m_world->addObject2<Explosion>();
     explosion.setPosition(m_pos);
     explosion.m_is_expanding = true;
     explosion.m_max_explosion_radius = 25.;
@@ -214,7 +208,7 @@ void Bomb::draw(LayersHolder &layers)
 {
     auto &target = layers.getCanvas("Unit");
     Sprite rect;
-    rect.setTexture(*m_textures.get("Bomb"));
+    rect.setTexture(*m_textures->get("Bomb"));
     rect.m_tex_rect = m_animation->getCurrentTextureRect();
 
     // rect.setOrigin(1, 1);
@@ -224,9 +218,8 @@ void Bomb::draw(LayersHolder &layers)
     target.drawSprite(rect);
 }
 
-Laser::Laser(GameWorld *world, TextureHolder &textures,
-             Collisions::CollisionSystem &neighbour_searcher)
-    : m_neighbour_searcher(&neighbour_searcher), GameObject(world, textures, ObjectType::Laser)
+Laser::Laser(GameWorld *world, TextureHolder &textures,Collisions::CollisionSystem *collider, PlayerEntity *player)
+    : m_neighbour_searcher(collider), GameObject(world, textures, ObjectType::Laser)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
 
@@ -243,7 +236,7 @@ void Laser::update(float dt)
     if (m_owner)
     {
         m_pos = m_owner->getPosition();
-        if(m_rotates_with_owner)
+        if (m_rotates_with_owner)
         {
             m_angle = m_owner->getAngle();
         }
@@ -270,7 +263,7 @@ void Laser::onCollisionWith(GameObject &obj, CollisionData &c_data)
     {
         if (&obj != getOwner())
         {
-            static_cast<Enemy&>(obj).m_health -= m_max_dmg;
+            static_cast<Enemy &>(obj).m_health -= m_max_dmg;
         }
         break;
     }
@@ -278,7 +271,7 @@ void Laser::onCollisionWith(GameObject &obj, CollisionData &c_data)
     {
         if (&obj != getOwner())
         {
-            static_cast<PlayerEntity&>(obj).health -= m_max_dmg;
+            static_cast<PlayerEntity &>(obj).health -= m_max_dmg;
         }
         break;
     }
@@ -300,7 +293,7 @@ void Laser::draw(LayersHolder &layers)
     auto &target = layers.getCanvas("Bloom");
 
     Sprite rect;
-    rect.setTexture(*m_textures.get("BoosterPurple"));
+    rect.setTexture(*m_textures->get("BoosterPurple"));
     rect.setPosition(m_collision_shape->getPosition());
     rect.setRotation(glm::radians(m_angle));
     rect.setScale(m_length / 2., m_width / 2.);

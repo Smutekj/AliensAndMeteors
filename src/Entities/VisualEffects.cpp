@@ -8,7 +8,7 @@ VisualEffect::VisualEffect(GameWorld *world, TextureHolder &textures)
 }
 
 AnimatedSprite::AnimatedSprite(GameWorld *world, TextureHolder &textures)
-    : VisualEffect(world, m_textures)
+    : VisualEffect(world, textures)
 {
 }
 
@@ -22,7 +22,7 @@ void AnimatedSprite::update(float dt)
 void AnimatedSprite::draw(LayersHolder &target)
 {
     auto& canvas = target.getCanvas("Unit");
-    auto texture = m_textures.get(m_texture_id);
+    auto texture = m_textures->get(m_texture_id);
     Sprite the_sprite;
     if(texture)
     {

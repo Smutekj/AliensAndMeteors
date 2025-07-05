@@ -28,7 +28,7 @@ void FollowAndShootAI2::update(float dt = 0.033)
         if (time_since_shot > cool_down)
         {
             time_since_shot = 0;
-            auto &bullet = static_cast<Bullet &>(p_world->addObject(ObjectType::Bullet));
+            auto &bullet = p_world->addObject2<Bullet>();
             bullet.setPosition(p_owner->getPosition());
 
             if (rand() % 2 == 0)
@@ -75,7 +75,7 @@ void FollowAndShootLasersAI::update(float dt = 0.033)
         //! shoots somwhere around players future positiion
         auto predicted_pos = p_player->getPosition() + utils::angle2dir(p_player->getAngle()) * p_player->speed * randf(0., 1.5);
 
-        auto &laser = static_cast<Laser &>(p_world->addObject(ObjectType::Laser));
+        Laser laser = p_world->addObject2<Laser>();
         laser.setPosition(p_owner->getPosition());
         laser.setOwner(p_owner);
         auto new_angle = utils::dir2angle(predicted_pos - p_owner->getPosition());
@@ -138,7 +138,7 @@ void BomberAI::update(float dt)
         frames_since_shot = 0;
         auto predicted_pos = p_player->getPosition() + utils::angle2dir(p_player->getAngle()) * p_player->speed * 0.5f;
         auto dir = (predicted_pos - p_owner->getPosition()) / utils::norm(predicted_pos - p_owner->getPosition());
-        auto &bullet = static_cast<Bullet &>(p_world->addObject(ObjectType::Bullet));
+        auto &bullet =p_world->addObject2<Bullet>();
         bullet.setPosition(p_owner->getPosition());
         bullet.m_vel = dir * 90.;
         bullet.m_max_vel = 120.;
@@ -149,7 +149,7 @@ void BomberAI::update(float dt)
 
     if (frames_since_shot > cool_down && state == State::SHOOTING)
     {
-        auto &bomb = static_cast<Bomb &>(p_world->addObject(ObjectType::Bomb));
+        auto &bomb = p_world->addObject2<Bomb>();
         bomb.setPosition(p_owner->getPosition());
 
         //! calculate velocity so as to hit the player in exactly bomb lifetime

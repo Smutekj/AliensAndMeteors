@@ -1,5 +1,4 @@
 #include "CollisionSystem.h"
-
 #include "GameObject.h"
 
 namespace Collisions
@@ -7,15 +6,29 @@ namespace Collisions
 
     CollisionSystem::CollisionSystem()
     {
+        m_exceptions.insert({static_cast<int>(ObjectType::Heart), static_cast<int>(ObjectType::Heart)});
+        m_exceptions.insert({static_cast<int>(ObjectType::Player), static_cast<int>(ObjectType::Player)});
+        m_exceptions.insert({static_cast<int>(ObjectType::Bullet), static_cast<int>(ObjectType::Bullet)});
+        m_exceptions.insert({static_cast<int>(ObjectType::Bullet), static_cast<int>(ObjectType::Enemy)});
+        m_exceptions.insert({static_cast<int>(ObjectType::Enemy), static_cast<int>(ObjectType::Bullet)});
         for (int i = 0; i < static_cast<int>(ObjectType::Count); ++i)
         {
             m_object_type2tree[static_cast<ObjectType>(i)] = {};
         }
     }
 
+    void CollisionSystem::insertObject(GameObject &object)
+    {
+        auto bounding_rect = object.getCollisionShape().getBoundingRect().inflate(1.2f);
+        m_object_type2tree[object.getType()].addRect(bounding_rect, object.getId());
+        
+        assert(m_objects2.count(getId(object)) == 0);
+        m_objects2[getId(object)] = &object;
+    }
+
     void CollisionSystem::insertObject(std::shared_ptr<GameObject> &p_obj)
     {
-        assert(p_obj);
+        assert(false);
         auto &object = *p_obj;
         auto bounding_rect = object.getCollisionShape().getBoundingRect().inflate(1.2f);
         m_object_type2tree[object.getType()].addRect(bounding_rect, object.getId());
@@ -24,22 +37,27 @@ namespace Collisions
         m_objects[object.getId()] = p_obj;
     }
 
+    CollisionSystem::ObjectId CollisionSystem::getId(GameObject& object) const
+    {
+        return {object.getType(), object.getId()};
+    }
+
     void CollisionSystem::removeObject(GameObject &object)
     {
         m_object_type2tree.at(object.getType()).removeObject(object.getId());
 
-        assert(m_objects.count(object.getId()) > 0);
-
-        m_objects.erase(object.getId());
+        assert(m_objects2.count(getId(object)) > 0);
+        m_objects2.erase(getId(object));
+        assert(m_objects.size() == 0);
     }
 
     void CollisionSystem::update()
     {
 
-        for (auto &[ind, p_entity] : m_objects)
+        for (auto &[id, p_entity] : m_objects2)
         {
-            auto &entity = *p_entity.lock();
-            auto type = entity.getType();
+            auto [type, ind] = id;
+            auto &entity = *p_entity;
             auto &tree = m_object_type2tree.at(type);
             auto fitting_rect = entity.getCollisionShape().getBoundingRect();
             auto big_bounding_rect = tree.getObjectRect(ind);
@@ -54,7 +72,6 @@ namespace Collisions
 
         for (int i = 0; i < static_cast<int>(ObjectType::Count); ++i)
         {
-
             auto &tree_i = m_object_type2tree.at(static_cast<ObjectType>(i));
             for (int j = i; j < static_cast<int>(ObjectType::Count); ++j)
             { //! for all pairs of object trees;
@@ -63,22 +80,31 @@ namespace Collisions
                     continue;
                 }
                 auto &tree_j = m_object_type2tree.at(static_cast<ObjectType>(j));
-
                 auto close_pairs = tree_i.findClosePairsWith(tree_j);
 
-                narrowPhase(close_pairs);
+                auto close_pairs2 = tree_i.findClosePairsWith2(tree_j);
+                
+
+                std::vector<std::pair<ObjectId, ObjectId>> pairs;
+                pairs.reserve(close_pairs.size());
+                for(auto& [ind1, ind2] : close_pairs)
+                {
+                    pairs.push_back({{static_cast<ObjectType>(i), ind1}, {static_cast<ObjectType>(j), ind2}});
+                }
+                
+                narrowPhase(pairs);
             }
         }
         m_collided.clear();
     }
 
-    void CollisionSystem::narrowPhase(const std::vector<std::pair<int, int>> &colliding_pairs)
+    void CollisionSystem::narrowPhase(const std::vector<std::pair<ObjectId, ObjectId>> &colliding_pairs)
     {
         for (auto [i1, i2] : colliding_pairs)
         {
 
-            auto &obj1 = *m_objects.at(i1).lock();
-            auto &obj2 = *m_objects.at(i2).lock();
+            auto &obj1 = *m_objects2.at(i1);
+            auto &obj2 = *m_objects2.at(i2);
 
             if (m_collided.count({i1, i2}) > 0)
             {
@@ -95,7 +121,6 @@ namespace Collisions
                 {
                     bounce(obj1, obj2, collision_data);
                 }
-
                 obj1.onCollisionWith(obj2, collision_data);
                 obj2.onCollisionWith(obj1, collision_data);
             }
@@ -121,20 +146,20 @@ namespace Collisions
             c_data.separation_axis *= -1.f;
         }
 
-        // auto col_feats1 = obtainFeatures(c_data.separation_axis, points_a);
-        // auto col_feats2 = obtainFeatures(-1.f * c_data.separation_axis, points_b);
+        auto col_feats1 = obtainFeatures(c_data.separation_axis, points_a);
+        auto col_feats2 = obtainFeatures(-1.f * c_data.separation_axis, points_b);
 
-        // auto clipped_edge = clipEdges(col_feats1, col_feats2, c_data.separation_axis);
-        // if (clipped_edge.size() == 0) //! clipping failed so we don't do collision
-        // {
-        //     c_data.minimum_translation = -1.f;
-        //     return c_data;
-        // }
-        // for (auto ce : clipped_edge)
-        // {
-        //     c_data.contact_point += ce;
-        // }
-        // c_data.contact_point /= (float)clipped_edge.size();
+        auto clipped_edge = clipEdges(col_feats1, col_feats2, c_data.separation_axis);
+        if (clipped_edge.size() == 0) //! clipping failed so we don't do collision
+        {
+            c_data.minimum_translation = -1.f;
+            return c_data;
+        }
+        for (auto ce : clipped_edge)
+        {
+            c_data.contact_point += ce;
+        }
+        c_data.contact_point /= (float)clipped_edge.size();
 
         return c_data;
     }
@@ -156,7 +181,7 @@ namespace Collisions
         std::vector<GameObject *> objects;
         for (auto ind : nearest_inds)
         {
-            auto &obj = *m_objects.at(ind).lock();
+            auto &obj = *m_objects2.at({type, ind});
             auto mvt = obj.getCollisionShape().getMVTOfSphere(center, radius);
             if (norm2(mvt) > 0.001f)
             {
@@ -175,7 +200,7 @@ namespace Collisions
         std::vector<GameObject *> objects;
         for (auto ind : nearest_inds)
         {
-            auto &obj = *m_objects.at(ind).lock();
+            auto &obj = *m_objects2.at({type, ind});
             auto collision_data = getCollisionData(obj.getCollisionShape(), p2);
             if (collision_data.minimum_translation > 0) //! there is a collision
             {
@@ -198,7 +223,7 @@ namespace Collisions
             auto nearest_inds = tree.findIntersectingLeaves(collision_rect);
             for (auto ind : nearest_inds)
             {
-                auto &obj = *m_objects.at(ind).lock();
+                auto &obj = *m_objects2.at({static_cast<ObjectType>(i), ind});
                 // auto collision_data = getCollisionData(obj.getCollisionShape(), p2);
                 // if (collision_data.minimum_translation > 0) //! there is a collision
                 {
@@ -206,7 +231,7 @@ namespace Collisions
                 }
             }
         }
-            return objects;
+        return objects;
     }
 
     utils::Vector2f CollisionSystem::findClosestIntesection(ObjectType type, utils::Vector2f at, utils::Vector2f dir, float length)
@@ -216,7 +241,7 @@ namespace Collisions
         auto inters = m_object_type2tree.at(type).rayCast(at, dir, length);
         for (auto ent_ind : inters)
         {
-            auto &obj = *m_objects.at(ent_ind).lock();
+            auto &obj = *m_objects2.at({type, ent_ind});
             auto points = obj.getCollisionShape().getPointsInWorld();
 
             int next = 1;

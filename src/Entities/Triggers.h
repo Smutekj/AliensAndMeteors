@@ -52,6 +52,7 @@ protected:
     std::function<void()> m_callback = []() {};
 
 public:
+    
     Trigger(GameWorld *world, TextureHolder &textures);
 
     virtual void update(float dt) = 0;

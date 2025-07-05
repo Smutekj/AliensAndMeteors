@@ -22,8 +22,6 @@ namespace Collisions
 
     struct Circle : public Transform
     {
-
-
     };
 
     struct Edge
@@ -32,11 +30,10 @@ namespace Collisions
         utils::Vector2f t;
         float l;
         Edge() = default;
-        Edge(utils::Vector2f from, utils::Vector2f to) : 
-        from(from)
+        Edge(utils::Vector2f from, utils::Vector2f to) : from(from)
         {
             t = to - from;
-            l = norm(t);   
+            l = norm(t);
             t /= l;
         }
         utils::Vector2f to() const { return from + t * l; }
@@ -54,8 +51,19 @@ namespace Collisions
     class CollisionSystem
     {
 
-        std::unordered_map<ObjectType, BoundingVolumeTree> m_object_type2tree;
+        struct ObjectId
+        {
+            ObjectType type;
+            int id;
+
+            constexpr bool operator==(const ObjectId& other) const
+            {
+                return type == other.type && id == other.id;
+            }
+        };
+
         std::unordered_map<int, std::weak_ptr<GameObject>> m_objects;
+        std::unordered_map<ObjectType, BoundingVolumeTree> m_object_type2tree;
 
         struct pair_hash
         {
@@ -64,24 +72,42 @@ namespace Collisions
                 return v.first * 31 + v.second;
             }
         };
+        struct pair_hash2
+        {
+            inline std::size_t operator()(const ObjectId &v) const
+            {
+                return v.id * static_cast<int>(ObjectType::Count) + static_cast<int>(v.type);
+            }
+        };
+        struct pair_hash3
+        {
+            inline std::size_t operator()(const std::pair<ObjectId, ObjectId> &v) const
+            {
+                return v.first.id * static_cast<int>(ObjectType::Count) + static_cast<int>(v.first.type) +
+                       v.second.id * static_cast<int>(ObjectType::Count) * 1000 + static_cast<int>(v.second.type) * 595;
+            }
+        };
+        std::unordered_map<ObjectId, GameObject *, pair_hash2> m_objects2;
 
-        std::unordered_set<std::pair<int, int>, pair_hash> m_collided;
+        std::unordered_set<std::pair<ObjectId, ObjectId>, pair_hash3> m_collided;
         std::unordered_set<std::pair<int, int>, pair_hash> m_exceptions;
 
     public:
         CollisionSystem();
 
         void insertObject(std::shared_ptr<GameObject> &p_object);
+        void insertObject(GameObject &obj);
         void removeObject(GameObject &object);
         void update();
         std::vector<int> findNearestObjectInds(ObjectType type, utils::Vector2f center, float radius) const;
         std::vector<GameObject *> findNearestObjects(ObjectType type, utils::Vector2f center, float radius) const;
         std::vector<GameObject *> findNearestObjects(ObjectType type, AABB colllision_rect) const;
         std::vector<GameObject *> findNearestObjects(AABB colllision_rect) const;
-        utils::Vector2f findClosestIntesection(ObjectType type, utils::Vector2f at, utils::Vector2f dir, float length) ;
+        utils::Vector2f findClosestIntesection(ObjectType type, utils::Vector2f at, utils::Vector2f dir, float length);
 
     private:
-        void narrowPhase(const std::vector<std::pair<int, int>> &colliding_pairs);
+        ObjectId getId(GameObject &object) const;
+        void narrowPhase(const std::vector<std::pair<ObjectId, ObjectId>> &colliding_pairs);
         CollisionData getCollisionData(Polygon &pa, Polygon &pb) const;
     };
 

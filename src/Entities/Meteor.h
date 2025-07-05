@@ -2,12 +2,15 @@
 
 #include "../GameObject.h"
 
-
 class Meteor : public GameObject
 {
 
 public:
-    explicit Meteor(GameWorld *world, TextureHolder &textures);
+    Meteor() = default;
+    Meteor(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
+    Meteor(const Meteor &e) = default;
+    Meteor &operator=(Meteor &e) = default;
+    Meteor &operator=(Meteor &&e) = default;
     virtual ~Meteor() override;
 
     virtual void update(float dt) override;
@@ -21,6 +24,6 @@ private:
 
     Polygon generateRandomConvexPolygon(int n) const;
 
-    const float max_vel = 40.f;
-    const float max_impulse_vel = 10.f;
+    float max_vel = 40.f;
+    float max_impulse_vel = 10.f;
 };

@@ -9,7 +9,6 @@ class GameWorld;
 class TextureHolder;
 class LayersHolder;
 
-
 enum class Multiplier
 {
     SCATTER,
@@ -67,18 +66,30 @@ struct RigidBody
     float angle_vel;
 };
 
+class PlayerEntity;
+namespace Collisions
+{
+    class CollisionSystem;
+}
 class GameObject
 {
 
 public:
-    GameObject(GameWorld *world, TextureHolder &textures, ObjectType type);
+    GameObject(){};
+    GameObject(GameWorld *world, TextureHolder &textures,
+               ObjectType type = ObjectType::Count, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
+    GameObject(const GameObject &other) = default;
+    GameObject(GameObject &&other) = default;
+    GameObject &operator=(GameObject &other) = default;
+    GameObject &operator=(GameObject &&other) = default;
 
-    virtual void update(float dt) = 0;
-    virtual void onCreation() = 0;
-    virtual void onDestruction() {m_on_destruction_callback(m_id, m_type);}
-    virtual void draw(LayersHolder &target) = 0;
-    virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) = 0;
-    virtual ~GameObject() {}
+    virtual ~GameObject() = default;
+
+    virtual void update(float dt) {};
+    virtual void onCreation() {};
+    virtual void onDestruction() { m_on_destruction_callback(m_id, m_type); }
+    virtual void draw(LayersHolder &target) {};
+    virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) {};
 
     void removeCollider();
     bool isBloomy() const;
@@ -92,16 +103,15 @@ public:
 
     float getAngle() const;
     void setAngle(float angle);
-    
+
     bool collides() const;
     Polygon &getCollisionShape();
-    
-    bool doesPhysics()const;
+
+    bool doesPhysics() const;
     RigidBody &getRigidBody();
-    
+
     int getId() const;
     ObjectType getType() const;
-
 
     void setSize(utils::Vector2f size);
 
@@ -111,28 +121,27 @@ public:
     }
 
 public:
-
     utils::Vector2f m_vel = {0, 0};
     int m_id;
 
 protected:
-    TextureHolder &m_textures;
-    
-    std::unique_ptr<Polygon> m_collision_shape = nullptr;
-    std::unique_ptr<RigidBody> m_rigid_body = nullptr;
-    
+    TextureHolder *m_textures;
+
+    std::shared_ptr<Polygon> m_collision_shape = nullptr;
+    std::shared_ptr<RigidBody> m_rigid_body = nullptr;
+
     utils::Vector2f m_pos;
     float m_angle = 0;
-    
+
     GameWorld *m_world;
-    
+
     bool m_is_dead = false;
     bool m_is_bloomy = false;
-    
+
     utils::Vector2f m_size = {1, 1};
 
 private:
-    std::function<void(int, ObjectType)> m_on_destruction_callback = [](int, ObjectType){};
+    std::function<void(int, ObjectType)> m_on_destruction_callback = [](int, ObjectType) {};
 
     ObjectType m_type;
 };

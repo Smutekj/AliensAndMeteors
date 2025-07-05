@@ -2,18 +2,14 @@
 
 #include <chrono>
 
-#include "Entities/Entities.h"
-#include "Entities/Enemy.h"
-#include "Entities/Player.h"
-#include "Entities/Attacks.h"
 #include "Utils/RandomTools.h"
 
 GameWorld::GameWorld()
 {
 
-    for (int i = 0; i < 69; ++i)
+    for (int i = 0; i < 0; ++i)
     {
-        auto &meteor = addObject(ObjectType::Meteor);
+        auto &meteor = addObject2<Meteor>();
     }
 
     loadTextures();
@@ -31,9 +27,8 @@ GameWorld::GameWorld()
 std::size_t GameWorld::getNActiveEntities(ObjectType type)
 {
     auto &entities = m_entities.getObjects();
-    auto n_enemies = std::count_if(entities.begin(), entities.end(), [type](auto &obj) {
-        return obj->getType() == type;
-    });
+    auto n_enemies = std::count_if(entities.begin(), entities.end(), [type](auto &obj)
+                                   { return obj->getType() == type; });
     return n_enemies;
 }
 
@@ -43,47 +38,11 @@ GameObject &GameWorld::addObject(ObjectType type)
 
     switch (type)
     {
-    case ObjectType::Enemy:
-        new_object = std::make_shared<Enemy>(this, m_textures, m_collision_system, *m_neighbour_searcher, m_player);
-        break;
-    case ObjectType::Meteor:
-        new_object = std::make_shared<Meteor>(this, m_textures);
-        break;
-    case ObjectType::Bullet:
-        new_object = std::make_shared<Bullet>(this, m_textures, m_player);
-        break;
-    case ObjectType::Laser:
-        new_object = std::make_shared<Laser>(this, m_textures, m_collision_system);
-        break;
-    case ObjectType::Bomb:
-        new_object = std::make_shared<Bomb>(this, m_textures, m_collision_system);
-        break;
-    case ObjectType::Explosion:
-        new_object = std::make_shared<Explosion>(this, m_textures);
-        break;
-    case ObjectType::Player:
-    {
-        new_object = std::make_shared<PlayerEntity>(this, m_textures);
-        m_player = &static_cast<PlayerEntity &>(*new_object);
-        break;
-    }
-    case ObjectType::Heart:
-        new_object = std::make_shared<Heart>(this, m_textures);
-        break;
-    case ObjectType::SpaceStation:
-        new_object = std::make_shared<SpaceStation>(this, m_textures);
-        break;
-    case ObjectType::Boss:
-        new_object = std::make_shared<Boss>(this, m_textures, m_player);
-        break;
     case ObjectType::Trigger:
         new_object = std::make_shared<ReachPlace>(this, m_textures, m_player);
         break;
-    case ObjectType::EMP:
-        new_object = std::make_shared<EMP>(this, m_textures, &m_collision_system);
-        break;
-    default:
-        throw std::runtime_error("You forgot to add the new object here!");
+    // default:
+    //     throw std::runtime_error("You forgot to add the new object here!");
     }
 
     m_to_add.push(new_object);
@@ -99,7 +58,7 @@ void GameWorld::addQueuedEntities()
         m_entities.at(new_id)->m_id = new_id;
         if (m_entities.at(new_id)->collides())
         {
-            m_collision_system.insertObject(m_entities.at(new_id));
+            m_collision_system.insertObject(*m_entities.at(new_id));
         }
 
         m_entities.at(new_id)->onCreation();
@@ -137,11 +96,12 @@ void GameWorld::destroyObject(int entity_id)
 void GameWorld::update(float dt)
 {
 
-    m_collision_system.update();
+    // m_collision_system.update();
 
     for (auto &obj : m_entities.getObjects())
     {
         obj->updateAll(dt);
+        obj->update(dt);
         if (obj->isDead())
         {
             destroyObject(obj->getId());
@@ -156,7 +116,6 @@ void GameWorld::update(float dt)
         auto player_obj_dist = utils::dist(obj_pos, player_pos);
         if (obj_moves_away && player_obj_dist > 450)
         {
-
             auto rand_radius = randf(400, 500);
             auto rand_angle = randf(0, 360);
             // auto x = randomPosInBox(player_pos - utils::Vector2f(300.),player_pos + utils::Vector2f(300.));

@@ -22,8 +22,13 @@ class Enemy : public GameObject
 {
 
 public:
+    Enemy() = default;
     Enemy(GameWorld *world, TextureHolder &textures,
-          Collisions::CollisionSystem &collider, GridNeighbourSearcher &m_ns, PlayerEntity *player);
+          Collisions::CollisionSystem *collider, PlayerEntity *player);
+    Enemy(const Enemy &e) = default;
+    Enemy &operator=(Enemy &e) = default;
+    Enemy &operator=(Enemy &&e) = default;
+
     virtual ~Enemy() override;
 
     virtual void update(float dt) override;
@@ -58,7 +63,7 @@ private:
     float m_boid_radius = 30.f;
     utils::Vector2f m_acc;
 
-    std::unique_ptr<BoidAI2> m_behaviour;
+    std::shared_ptr<BoidAI2> m_behaviour;
     PlayerEntity *m_player = nullptr;
     GridNeighbourSearcher *m_neighbour_searcher;
     Collisions::CollisionSystem *m_collision_system;
@@ -72,7 +77,11 @@ class SpaceStation : public GameObject
 {
 
 public:
-    SpaceStation(GameWorld *world, TextureHolder &textures);
+    SpaceStation() = default;
+    SpaceStation(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
+    SpaceStation(const SpaceStation &e) = default;
+    SpaceStation &operator=(SpaceStation &e) = default;
+    SpaceStation &operator=(SpaceStation &&e) = default;
     virtual ~SpaceStation() override;
 
     virtual void update(float dt) override;
@@ -122,14 +131,14 @@ class Boss : public GameObject
     int m_bomb_count = 0;
     float m_shooting_timer = 0.f;
     float m_shooting_timer2 = 0.f;
-    
+
     bool m_is_recharging = false;
     float m_recharge_time = 7.;
 
 public:
-    const float m_orig_max_vel = 90.f;
+    float m_orig_max_vel = 90.f;
     float m_max_vel = 90.f;
-    const float max_acc = 130.f;
+    float max_acc = 130.f;
     float m_vision_radius = 70.f;
 
     float m_health = 50;
@@ -137,7 +146,11 @@ public:
     utils::Vector2f m_impulse = {0, 0};
     utils::Vector2f m_target_pos;
 
-    Boss(GameWorld *world, TextureHolder &textures, PlayerEntity *player);
+    Boss() = default;
+    Boss(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
+    Boss(const Boss &e) = default;
+    Boss &operator=(Boss &e) = default;
+    Boss &operator=(Boss &&e) = default;
     virtual ~Boss() override;
 
     virtual void update(float dt) override;

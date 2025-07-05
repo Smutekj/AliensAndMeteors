@@ -5,7 +5,8 @@
 #include "../DrawLayer.h"
 #include "../Utils/RandomTools.h"
 
-Meteor::Meteor(GameWorld *world, TextureHolder &textures) : GameObject(world, textures, ObjectType::Meteor)
+Meteor::Meteor(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider,  PlayerEntity *player)
+ : GameObject(world, textures, ObjectType::Meteor)
 {
     m_collision_shape = std::make_unique<Polygon>();
     m_rigid_body = std::make_unique<RigidBody>();
@@ -22,7 +23,7 @@ void Meteor::onCreation()
 }
 void Meteor::onDestruction()
 {
-    auto& new_meteor = m_world->addObject(ObjectType::Meteor);
+    const auto& new_meteor = m_world->addObject2<Meteor>();
     // new_meteor.setPosition(randomPosInBox({0,0}, {Geometry::Box[0], Geometry::Box[1]}));
 }
 
@@ -55,7 +56,7 @@ void Meteor::draw(LayersHolder& layers)
         m_verts[3*i+2] = {center, c, {0.5,0.5}};
     }
     
-    target.drawVertices(m_verts, "Meteor", DrawType::Dynamic, m_textures.get("Meteor"));
+    target.drawVertices(m_verts, "Meteor", DrawType::Dynamic, m_textures->get("Meteor"));
 }
 
 Meteor::~Meteor() {}

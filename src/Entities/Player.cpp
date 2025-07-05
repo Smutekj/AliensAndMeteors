@@ -6,7 +6,7 @@
 #include "Entities.h"
 #include "Attacks.h"
 
-PlayerEntity::PlayerEntity(GameWorld *world, TextureHolder &textures)
+PlayerEntity::PlayerEntity(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
     : GameObject(world, textures, ObjectType::Player)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
@@ -134,7 +134,7 @@ void PlayerEntity::draw(LayersHolder &layers)
     m_player_shape.setPosition(m_pos);
     m_player_shape.setRotation(glm::radians(m_angle));
     m_player_shape.setScale(2 * m_radius, 2 * m_radius);
-    m_player_shape.setTexture(*m_textures.get("PlayerShip"));
+    m_player_shape.setTexture(*m_textures->get("PlayerShip"));
 
     target.drawSprite(m_player_shape);
 

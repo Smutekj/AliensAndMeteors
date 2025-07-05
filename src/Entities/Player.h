@@ -1,26 +1,29 @@
 #pragma once
 
-
 // #include "../Geometry.h"
 #include "../GameObject.h"
 
 #include <Renderer.h>
 #include <Particles.h>
 
-
 class GameWorld;
 
 struct PlayerEntity : public GameObject
 {
 public:
-    PlayerEntity(GameWorld *world, TextureHolder &textures);
+    PlayerEntity() = default;
+    PlayerEntity(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
+    PlayerEntity(const PlayerEntity &e) = default;
+    PlayerEntity &operator=(PlayerEntity &e) = default;
+    PlayerEntity &operator=(PlayerEntity &&e) = default;
+
     virtual ~PlayerEntity() = default;
 
     virtual void update(float dt) override;
     virtual void draw(LayersHolder &target) override;
     virtual void onCreation() override;
     virtual void onDestruction() override;
-    virtual void onCollisionWith(GameObject& obj, CollisionData& c_data) override;
+    virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
 
 private:
     void fixAngle();
@@ -37,7 +40,7 @@ public:
     bool m_is_shooting_laser = false;
     bool m_is_turning_left = false;
     bool m_is_turning_right = false;
-    
+
     float boost_factor = 2.6f;
     float slowing_factor = 0.03f;
     float acceleration = 1.5f;
@@ -57,7 +60,6 @@ public:
     float m_deactivated_time = -1.f;
 
     Sprite m_player_shape;
-    std::unique_ptr<Particles> m_particles_left;
-    std::unique_ptr<Particles> m_particles_right;
-
+    std::shared_ptr<Particles> m_particles_left;
+    std::shared_ptr<Particles> m_particles_right;
 };

@@ -2,11 +2,7 @@
 
 #include "../DrawLayer.h"
 #include "../CollisionSystem.h"
-// #include "../GridNeighbourSearcher.h"
 #include "../BehaviourBase.h"
-// #include "../ResourceManager.h"
-// #include "../ResourceHolder.h"
-// #include "../Geom"
 #include "../GameWorld.h"
 #include "../Animation.h"
 #include "../Polygon.h"
@@ -17,7 +13,7 @@
 #include "Attacks.h"
 
 
-Explosion::Explosion(GameWorld *world, TextureHolder &textures)
+Explosion::Explosion(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider,  PlayerEntity *player)
     : GameObject(world, textures, ObjectType::Explosion)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
@@ -32,15 +28,15 @@ void Explosion::setType(std::string texture_id)
     //! TODO: ADD some animation manager
     if (texture_id == "Explosion2")
     {
-        m_explosion_sprite.setTexture(*m_textures.get(texture_id));
-        auto texture_size = static_cast<utils::Vector2i>(m_textures.get(texture_id)->getSize());
+        m_explosion_sprite.setTexture(*m_textures->get(texture_id));
+        auto texture_size = static_cast<utils::Vector2i>(m_textures->get(texture_id)->getSize());
         m_animation = std::make_unique<Animation>(texture_size,
                                                   12, 1, m_life_time, 1, true);
     }
     else if (texture_id == "Explosion")
     {
-        m_explosion_sprite.setTexture(*m_textures.get(texture_id));
-        auto texture_size = static_cast<utils::Vector2i>(m_textures.get(texture_id)->getSize());
+        m_explosion_sprite.setTexture(*m_textures->get(texture_id));
+        auto texture_size = static_cast<utils::Vector2i>(m_textures->get(texture_id)->getSize());
         m_life_time = 0.5f;
         m_animation = std::make_unique<Animation>(texture_size,
                                                   4, 4, m_life_time , 1, false);
@@ -92,17 +88,17 @@ void Explosion::draw(LayersHolder& layers)
     target.drawSprite(m_explosion_sprite);
 }
 
-EMP::EMP(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider)
+EMP::EMP(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider,  PlayerEntity *player)
     : m_collider(collider), GameObject(world, textures, ObjectType::EMP)
 {
     m_collision_shape = std::make_unique<Polygon>(8);
     m_collision_shape->setScale(2, 2);
-    auto texture_size = static_cast<utils::Vector2i>(m_textures.get("Bomb")->getSize());
+    auto texture_size = static_cast<utils::Vector2i>(m_textures->get("Bomb")->getSize());
 
     m_animation = std::make_unique<Animation>(texture_size,
                                               7, 2, m_life_time, 0);
 
-    m_texture_rect.setTexture(*m_textures.get("Bomb"));
+    m_texture_rect.setTexture(*m_textures->get("Bomb"));
     m_texture_rect.setScale(2, 2);
 }
 
@@ -122,8 +118,8 @@ void EMP::update(float dt)
             m_collision_shape = nullptr;
             m_collider->removeObject(*this);
 
-            auto texture_size = static_cast<utils::Vector2i>(m_textures.get("Emp")->getSize());
-            m_texture_rect.setTexture(*m_textures.get("Emp"));
+            auto texture_size = static_cast<utils::Vector2i>(m_textures->get("Emp")->getSize());
+            m_texture_rect.setTexture(*m_textures->get("Emp"));
             m_animation = std::make_unique<Animation>(texture_size,
                                                       8, 1, m_life_time, 0, true);
 
@@ -191,13 +187,13 @@ void EMP::draw(LayersHolder& layers)
     target.drawSprite(m_texture_rect);
 }
 
-ExplosionAnimation::ExplosionAnimation(GameWorld *world, TextureHolder &textures)
+ExplosionAnimation::ExplosionAnimation(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider,  PlayerEntity *player)
     : GameObject(world, textures, ObjectType::Explosion)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
     m_collision_shape->setScale(2 * m_explosion_radius, 2 * m_explosion_radius);
 
-    auto texture_size = static_cast<utils::Vector2i>(m_textures.get("Explosion")->getSize());
+    auto texture_size = static_cast<utils::Vector2i>(m_textures->get("Explosion")->getSize());
 
     m_animation = std::make_unique<Animation>(texture_size,
                                               4, 4, m_life_time, 1, false);
@@ -236,7 +232,7 @@ void ExplosionAnimation::draw(LayersHolder& layers)
     auto& target = layers.getCanvas("Unit");
 
     Sprite rect;
-    rect.setTexture(*m_textures.get("Explosion"));
+    rect.setTexture(*m_textures->get("Explosion"));
     rect.m_tex_rect = m_animation->getCurrentTextureRect();
     rect.m_color = {255, 255, 255, 155};
 
@@ -246,7 +242,7 @@ void ExplosionAnimation::draw(LayersHolder& layers)
     target.drawSprite(rect);
 }
 
-Heart::Heart(GameWorld *world, TextureHolder &textures)
+Heart::Heart(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider,  PlayerEntity *player)
     : GameObject(world, textures, ObjectType::Heart)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
@@ -286,7 +282,7 @@ void Heart::draw(LayersHolder& layers)
     auto& target = layers.getCanvas("Unit");
 
     Sprite rect;
-    rect.setTexture(*m_textures.get("Heart"));
+    rect.setTexture(*m_textures->get("Heart"));
     rect.setPosition(m_pos);
     rect.setRotation(dir2angle(m_vel));
     rect.setScale(3., 3.);

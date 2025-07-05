@@ -14,12 +14,12 @@
 #include "Player.h"
 
 Enemy::Enemy(GameWorld *world, TextureHolder &textures,
-             Collisions::CollisionSystem &collider, GridNeighbourSearcher &m_ns, PlayerEntity *player)
-    : m_collision_system(&collider), m_neighbour_searcher(&m_ns), m_player(player), GameObject(world, textures, ObjectType::Enemy)
+             Collisions::CollisionSystem* collider, PlayerEntity *player)
+    : m_collision_system(collider), m_player(player),
+     GameObject(world, textures, ObjectType::Enemy, collider, player)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
     m_collision_shape->setScale(4, 4);
-    setBehaviour();
     m_target_pos = player->getPosition();
 }
 
@@ -99,18 +99,20 @@ void Enemy::onCollisionWith(GameObject &obj, CollisionData &c_data)
         }
         break;
     }
+    default:
+        break;
     }
 }
 
 void Enemy::onCreation()
 {
-    // m_neighbour_searcher->insertEntity(*this);
+    setBehaviour();
 }
 void Enemy::onDestruction()
 {
     // m_neighbour_searcher->removeEntity(getId());
 
-    auto &new_explosion = static_cast<Explosion &>(m_world->addObject(ObjectType::Explosion));
+    auto &new_explosion = m_world->addObject2<Explosion>();
     new_explosion.removeCollider();
     new_explosion.m_is_expanding = false;
     new_explosion.setPosition(m_pos);
@@ -133,7 +135,7 @@ void Enemy::draw(LayersHolder &layers)
     Sprite booster;
     utils::Vector2f booster_size = {4, 2};
 
-    booster.setTexture(*m_textures.get("BoosterPurple"));
+    booster.setTexture(*m_textures->get("BoosterPurple"));
     booster.setScale(booster_size.x, 1.3*booster_size.y);
     booster.setPosition(m_pos - m_vel / norm(m_vel) * m_sprite.getScale().y);
     booster.setRotation(m_sprite.getRotation());
@@ -220,7 +222,6 @@ void Enemy::boidSteering()
 
     auto range_align = std::pow(Enemy::m_force_ranges[Multiplier::ALIGN], 2);
     auto range_scatter = std::pow(Enemy::m_force_ranges[Multiplier::SCATTER], 2);
-    ;
 
     for (auto p_neighbour : neighbours)
     {
@@ -287,21 +288,21 @@ void Enemy::setBehaviour()
     if (dice_roll < 2)
     {
         m_behaviour = std::make_unique<FollowAndShootAI2>(m_player, this, m_world);
-        m_sprite.setTexture(*m_textures.get("EnemyShip"));
+        m_sprite.setTexture(*m_textures->get("EnemyShip"));
     }
     else if (dice_roll <= 3)
     {
         m_behaviour = std::make_unique<BomberAI>(m_player, this, m_world);
-        m_sprite.setTexture(*m_textures.get("EnemyBomber"));
+        m_sprite.setTexture(*m_textures->get("EnemyBomber"));
     }
     else
     {
         m_behaviour = std::make_unique<FollowAndShootLasersAI>(m_player, this, m_world);
-        m_sprite.setTexture(*m_textures.get("EnemyLaser"));
+        m_sprite.setTexture(*m_textures->get("EnemyLaser"));
     }
 }
 
-SpaceStation::SpaceStation(GameWorld *world, TextureHolder &textures)
+SpaceStation::SpaceStation(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider,  PlayerEntity *player)
     : GameObject(world, textures, ObjectType::SpaceStation)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
@@ -322,8 +323,7 @@ void SpaceStation::update(float dt)
     if (m_time > m_spawn_timer && m_produced_ships.size() < 3)
     {
         m_time = 0.f;
-        auto &new_enemy = static_cast<Enemy &>(m_world->addObject(ObjectType::Enemy));
-        new_enemy.setBehaviour();
+        auto &new_enemy = m_world->addObject2<Enemy>();
         float rand_angle = randf(-180, 180);
 
         new_enemy.setPosition(m_pos + 10.f * utils::angle2dir(rand_angle));
@@ -405,7 +405,7 @@ void SpaceStation::draw(LayersHolder &layers)
     Sprite rect;
     rect.setPosition(m_pos);
     rect.setRotation(dir2angle(m_vel));
-    rect.setTexture(*m_textures.get("Station"));
+    rect.setTexture(*m_textures->get("Station"));
     rect.setScale(m_size.x, m_size.y);
     // rect.setFillColor(sf::Color::Red);
     target.drawSprite(rect);
@@ -422,7 +422,7 @@ void SpaceStation::draw(LayersHolder &layers)
     // target.draw(health_rect);
 }
 
-Boss::Boss(GameWorld *world, TextureHolder &textures, PlayerEntity *player)
+Boss::Boss(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem* collider, PlayerEntity *player)
     : m_player(player),
       GameObject(world, textures, ObjectType::Boss)
 {
@@ -549,7 +549,7 @@ void Boss::shootAtPlayer()
     for (int i = -10; i <= 10; ++i)
     {
         auto angle = bullet_angle + i * (2.f);
-        auto &bullet = static_cast<Bullet &>(m_world->addObject(ObjectType::Bullet));
+        auto &bullet = m_world->addObject2<Bullet>();
         auto dir = utils::angle2dir(angle);
         bullet.setPosition(m_pos + 12.f * dir);
         bullet.setTarget(m_player);
@@ -561,7 +561,7 @@ void Boss::throwBombsAtPlayer()
     float bullet_angle = utils::dir2angle(m_player->getPosition() - m_pos);
 
     auto angle = bullet_angle + m_bomb_count * (30.f);
-    auto &bomb = m_world->addObject(ObjectType::Bomb);
+    auto &bomb = m_world->addObject2<Bomb>();
     auto dir = utils::angle2dir(angle);
     bomb.setPosition(m_pos + 12.f * dir);
     bomb.m_vel = dir * 100.f;
@@ -573,7 +573,7 @@ void Boss::shootLasers()
     for (int i = 0; i < 15; ++i)
     {
         auto angle = player_angle + i / 15.f * 360.f;
-        auto &laser = static_cast<Laser &>(m_world->addObject(ObjectType::Laser));
+        auto &laser = m_world->addObject2<Laser>();
         auto dir = utils::angle2dir(angle);
         laser.setPosition(m_pos + 12.f * dir);
         laser.setAngle(angle);
@@ -589,7 +589,7 @@ void Boss::shootLaserAtPlayer()
     for (int i = -1; i <= 1; ++i)
     {
         auto angle = player_angle + i / 3.f * 10.f;
-        auto &laser = static_cast<Laser &>(m_world->addObject(ObjectType::Laser));
+        auto &laser = m_world->addObject2<Laser>();
         auto dir = utils::angle2dir(angle);
         laser.setPosition(m_pos + 12.f * dir);
         laser.setAngle(angle);
@@ -656,7 +656,7 @@ void Boss::onCreation()
 }
 void Boss::onDestruction()
 {
-    auto &new_explosion = static_cast<Explosion &>(m_world->addObject(ObjectType::Explosion));
+    auto &new_explosion = m_world->addObject2<Explosion>();
     new_explosion.removeCollider();
     new_explosion.setPosition(m_pos);
     new_explosion.m_explosion_radius = 10.f;
@@ -671,7 +671,7 @@ void Boss::draw(LayersHolder &layers)
     auto &target = layers.getCanvas("Unit");
     Sprite rect;
 
-    rect.setTexture(*m_textures.get("BossShip"));
+    rect.setTexture(*m_textures->get("BossShip"));
 
     m_angle = glm::radians(dir2angle(m_vel));
     rect.setPosition(m_pos);
@@ -683,7 +683,7 @@ void Boss::draw(LayersHolder &layers)
     Sprite booster;
     utils::Vector2f booster_size = {4, 2};
 
-    booster.setTexture(*m_textures.get("BoosterPurple"));
+    booster.setTexture(*m_textures->get("BoosterPurple"));
     booster.setScale(booster_size.x, booster_size.y);
     booster.setPosition(m_pos - m_vel / norm(m_vel) * rect.getScale().y);
     booster.setRotation(rect.getRotation());
@@ -694,7 +694,7 @@ void Boss::draw(LayersHolder &layers)
     {
         utils::Vector2f booster_size = {20, 7.69};
         Sprite booster_rect;
-        booster_rect.setTexture(*m_textures.get("Arrow"));
+        booster_rect.setTexture(*m_textures->get("Arrow"));
         float booster_ratio = std::min({1.f, 1.f - m_shooting_timer / m_recharge_time});
         booster_rect.setPosition(m_pos.x - booster_size.x / 2.f * (1. - booster_ratio), m_pos.y + 20.);
         booster_rect.setScale(booster_size.x / 2.f * booster_ratio, booster_size.y / 2.f);
@@ -706,7 +706,7 @@ void Boss::draw(LayersHolder &layers)
     //! draw health bar
     utils::Vector2f health_bar_size = {30., 5.69};
     Sprite health_bar;
-    health_bar.setTexture(*m_textures.get("Arrow"));
+    health_bar.setTexture(*m_textures->get("Arrow"));
     float booster_ratio = std::min({1.f, m_health / m_max_health});
     health_bar.setPosition(m_pos.x - health_bar_size.x / 2.f * (1. - booster_ratio), m_pos.y + 10.);
     health_bar.setScale(health_bar_size.x / 2.f * booster_ratio, health_bar_size.y / 2.f);

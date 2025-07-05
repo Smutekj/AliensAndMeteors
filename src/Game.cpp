@@ -67,9 +67,9 @@ Game::Game(Renderer &window, KeyBindings &bindings)
 
     m_world = std::make_unique<GameWorld>();
 
-    m_player = &static_cast<PlayerEntity &>(m_world->addObject(ObjectType::Player));
+    m_player = &m_world->addObjectForced<PlayerEntity>();
     m_player->setPosition({500, 500});
-    std::cout << "CREATED: " << 50 << " player" << std::endl;
+    m_world->m_player = m_player;
 
     // std::filesystem::path texture_directory = {__FILE__};
     std::filesystem::path texture_directory = {};
@@ -82,16 +82,20 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     font_path.remove_filename().append("../Resources/Fonts/arial.ttf");
     m_font = std::make_unique<Font>(font_path);
 
-    spawnNextObjective();
+    // spawnNextObjective();
     // addDestroyNObjective(ObjectType::SpaceStation, 2);
 
     auto &heart_spawner = m_world->addTrigger<Timer>();
     heart_spawner.setCallback(
         [this]()
         {
-            auto &heart = m_world->addObject(ObjectType::Heart);
+             auto &heart = m_world->addObject2<Heart>();
             auto spawn_pos = m_player->getPosition() + randf(20, 200) * angle2dir(randf(0, 360));
             heart.setPosition(spawn_pos);
+
+            // auto &enemy = m_world->addObject2<Enemy>();
+            //     spawn_pos = m_player->getPosition() + randf(50, 200) * angle2dir(randf(0, 360));
+            //     enemy.setPosition(spawn_pos);
         });
 
     auto &enemy_spawner = m_world->addTrigger<Timer>();
@@ -99,11 +103,11 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     enemy_spawner.setCallback(
         [this]()
         {
-            if (m_world->getNActiveEntities(ObjectType::Enemy) < 35) //! max 50 enemies
+            // if (m_world->getNActiveEntities(ObjectType::Enemy) < 35) //! max 50 enemies
             {
-                auto &enemy = m_world->addObject(ObjectType::Enemy);
-                auto spawn_pos = m_player->getPosition() + randf(50, 200) * angle2dir(randf(0, 360));
-                enemy.setPosition(spawn_pos);
+                // auto &enemy = m_world->addObject2<Enemy>();
+                // auto spawn_pos = m_player->getPosition() + randf(50, 200) * angle2dir(randf(0, 360));
+                // enemy.setPosition(spawn_pos);
             }
         });
 
@@ -137,7 +141,7 @@ void Game::addDestroyNObjective(ObjectType type, int count)
 
 void Game::spawnBossObjective()
 {
-    auto &boss = m_world->addObject(ObjectType::Boss);
+    auto &boss = m_world->addObject2<Boss>();
     boss.setPosition(m_player->getPosition() + 50.f * angle2dir(randf(0, 150)));
     auto &t2 = m_world->addTrigger<EntityDestroyed>(&boss);
     t2.setCallback(
@@ -171,7 +175,7 @@ void Game::spawnNextObjective()
     {
         for (int i = 0; i < 10; ++i)
         {
-            auto &enemy = m_world->addObject(ObjectType::Enemy);
+            auto &enemy = m_world->addObject2<Enemy>();
             enemy.setPosition(pos + randf(30, 50) * angle2dir(randf(0, 360)));
         }
     };
@@ -259,7 +263,7 @@ void Game::handleEvent(const SDL_Event &event)
         auto dir = utils::angle2dir(m_player->getAngle());
         if (event.key.keysym.sym == m_key_binding[PlayerControl::SHOOT_LASER])
         {
-            auto &laser = static_cast<Laser &>(m_world->addObject(ObjectType::Laser));
+            auto &laser = m_world->addObject2<Laser>();
             laser.setPosition(m_player->getPosition());
             laser.setAngle(m_player->getAngle());
             laser.setOwner(m_player);
@@ -270,14 +274,14 @@ void Game::handleEvent(const SDL_Event &event)
         }
         if (event.key.keysym.sym == m_key_binding[PlayerControl::THROW_BOMB])
         {
-            auto &bomb = m_world->addObject(ObjectType::Bomb);
+            auto &bomb = m_world->addObject2<Bomb>();
             bomb.setPosition(m_player->getPosition());
             bomb.m_vel = (50.f + m_player->speed) * angle2dir(m_player->getAngle());
             bomb.setAngle(m_player->getAngle());
         }
         if (event.key.keysym.sym == SDLK_e) // m_key_binding[PlayerControl::THROW_EMP])
         {
-            auto &bomb = m_world->addObject(ObjectType::EMP);
+            auto &bomb = m_world->addObject2<EMP>();
             bomb.setPosition(m_player->getPosition());
             bomb.m_vel = (50.f + m_player->speed) * angle2dir(m_player->getAngle());
             bomb.setAngle(m_player->getAngle());
@@ -300,7 +304,7 @@ void Game::handleEvent(const SDL_Event &event)
 
         if (event.button.button == SDL_BUTTON_RIGHT)
         {
-            auto &new_enemy = m_world->addObject(ObjectType::Boss);
+            auto &new_enemy = m_world->addObject2<Boss>();
             new_enemy.setPosition(mouse_position);
         }
     }
@@ -308,7 +312,7 @@ void Game::handleEvent(const SDL_Event &event)
     {
         if (event.button.button == SDL_BUTTON_RIGHT)
         {
-            auto &station = m_world->addObject(ObjectType::SpaceStation);
+            auto &station = m_world->addObject2<SpaceStation>();
             station.setPosition(mouse_position);
         }
     }
@@ -353,6 +357,7 @@ void Game::update(const float dt, Renderer &window)
         m_state = GameState::PLAYER_DIED;
     }
 
+    m_world->update2(dt);
     m_world->update(dt);
     m_objective_system.update();
 };
@@ -380,6 +385,7 @@ void Game::draw(Renderer &window)
 
     m_layers.clearAllLayers();
     m_world->draw(m_layers);
+    m_world->draw2(m_layers);
 
     //! clear and draw into scene
     m_scene_canvas.clear({0, 0, 0, 0});

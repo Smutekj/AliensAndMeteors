@@ -12,7 +12,7 @@
 
 class GridNeighbourSearcher
 {
-
+    
 public:
     GridNeighbourSearcher(  float max_dist = 30,
                              utils::Vector2f center_pos= {500, 500},
