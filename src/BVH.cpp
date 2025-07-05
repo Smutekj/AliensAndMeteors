@@ -318,9 +318,13 @@ bool BoundingVolumeTree::isLeaf(int node_index) const
     return nodes.at(node_index).child_index_1 == -1 && nodes.at(node_index).child_index_2 == -1;
 }
 
-//! \brief checks if tree contains cycles thus not being a tree (good for debugging :D)
+//! \brief checks if tree contains cycles thus not being a tree (good for debugging)
 bool BoundingVolumeTree::containsCycle() const
 {
+    if(root_ind == -1)
+    {
+        return false; //! no cycles in empty trees
+    }
     std::vector<bool> visited(nodes.size(), false);
     std::stack<int> to_visit;
     to_visit.push(root_ind);
@@ -345,6 +349,10 @@ bool BoundingVolumeTree::containsCycle() const
 //! \brief for every node checks if the child of the node has parent that is the node
 bool BoundingVolumeTree::isConsistent() const
 {
+    if(root_ind == -1)
+    {
+        return true;
+    }
     std::vector<bool> visited(nodes.size(), false);
     std::stack<int> to_visit;
     to_visit.push(root_ind);
