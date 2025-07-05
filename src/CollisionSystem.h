@@ -56,7 +56,7 @@ namespace Collisions
             ObjectType type;
             int id;
 
-            constexpr bool operator==(const ObjectId& other) const
+            constexpr bool operator==(const ObjectId &other) const
             {
                 return type == other.type && id == other.id;
             }
@@ -104,6 +104,28 @@ namespace Collisions
         std::vector<GameObject *> findNearestObjects(ObjectType type, AABB colllision_rect) const;
         std::vector<GameObject *> findNearestObjects(AABB colllision_rect) const;
         utils::Vector2f findClosestIntesection(ObjectType type, utils::Vector2f at, utils::Vector2f dir, float length);
+
+        template <class EntityType1, class EntityType2>
+        void doCollisions(ObjectType type_1, ObjectType type_2, std::function<void(EntityType1&, EntityType2&)> callback)
+        {
+            std::vector<std::pair<int, int>> close_pairs;
+            if constexpr (std::is_same_v<EntityType1, EntityType2>)
+            {
+                assert(type_1 == type_2);
+                close_pairs = m_object_type2tree.at(type_1).findClosePairsWithin();
+                
+            }else 
+            {
+                close_pairs = m_object_type2tree.at(type_1).findClosePairsWith2(m_object_type2tree.at(type_2));
+            }
+
+            for (auto [ind1, ind2] : close_pairs)
+            {
+                auto &obj1 = *m_objects2.at({type_1, ind1});
+                auto &obj2 = *m_objects2.at({type_2, ind2});
+                callback(static_cast<EntityType1&>(obj1), static_cast<EntityType2&>(obj2));
+            }
+        }
 
     private:
         ObjectId getId(GameObject &object) const;
