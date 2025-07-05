@@ -67,6 +67,11 @@ Game::Game(Renderer &window, KeyBindings &bindings)
 
     m_world = std::make_unique<GameWorld>();
 
+    for (int i = 0; i < 40; ++i)
+    {
+        auto &meteor = m_world->addObject2<Meteor>();
+    }
+
     m_player = &m_world->addObjectForced<PlayerEntity>();
     m_player->setPosition({500, 500});
     m_world->m_player = m_player;
@@ -82,7 +87,7 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     font_path.remove_filename().append("../Resources/Fonts/arial.ttf");
     m_font = std::make_unique<Font>(font_path);
 
-    // spawnNextObjective();
+    spawnNextObjective();
     // addDestroyNObjective(ObjectType::SpaceStation, 2);
 
     auto &heart_spawner = m_world->addTrigger<Timer>();
@@ -92,10 +97,6 @@ Game::Game(Renderer &window, KeyBindings &bindings)
              auto &heart = m_world->addObject2<Heart>();
             auto spawn_pos = m_player->getPosition() + randf(20, 200) * angle2dir(randf(0, 360));
             heart.setPosition(spawn_pos);
-
-            // auto &enemy = m_world->addObject2<Enemy>();
-            //     spawn_pos = m_player->getPosition() + randf(50, 200) * angle2dir(randf(0, 360));
-            //     enemy.setPosition(spawn_pos);
         });
 
     auto &enemy_spawner = m_world->addTrigger<Timer>();
@@ -105,9 +106,9 @@ Game::Game(Renderer &window, KeyBindings &bindings)
         {
             // if (m_world->getNActiveEntities(ObjectType::Enemy) < 35) //! max 50 enemies
             {
-                // auto &enemy = m_world->addObject2<Enemy>();
-                // auto spawn_pos = m_player->getPosition() + randf(50, 200) * angle2dir(randf(0, 360));
-                // enemy.setPosition(spawn_pos);
+                auto &enemy = m_world->addObject2<Enemy>();
+                auto spawn_pos = m_player->getPosition() + randf(50, 200) * angle2dir(randf(0, 360));
+                enemy.setPosition(spawn_pos);
             }
         });
 

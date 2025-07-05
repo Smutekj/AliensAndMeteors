@@ -50,7 +50,7 @@ void BoundingVolumeTree::addRect(AABB rect, int object_index)
     // nodes.push_back(new_node);
 
     //! find best sibling
-    int best_index = findBestSibling(rect);
+    int best_index = findBestSiblingGreedy(rect);
 
     int old_parent = nodes.at(best_index).parent_index;
     nodes.at(new_parent).height = nodes.at(best_index).height + 1;

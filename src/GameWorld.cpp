@@ -7,11 +7,6 @@
 GameWorld::GameWorld()
 {
 
-    for (int i = 0; i < 0; ++i)
-    {
-        auto &meteor = addObject2<Meteor>();
-    }
-
     loadTextures();
 
     m_neighbour_searcher = std::make_unique<GridNeighbourSearcher>();
