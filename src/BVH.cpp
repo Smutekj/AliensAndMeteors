@@ -701,6 +701,54 @@ std::vector<std::pair<int, int>> BoundingVolumeTree::findClosePairsWith(Bounding
     return close_pairs;
 }
 
+
+std::vector<std::pair<int, int>> BoundingVolumeTree::findClosePairsWithin() const
+{
+    if(root_ind == -1)
+    {
+        return {};
+    }
+
+    std::vector<std::pair<int, int>> close_pairs;
+    
+    const auto& root = nodes.at(root_ind);
+    std::vector<std::pair<int, int>> to_visit = {{root.child_index_1, root.child_index_2}};
+    to_visit.reserve(nodes.size());
+    while(!to_visit.empty())
+    {
+        auto [node_ind_i, node_ind_j] = to_visit.back();
+        to_visit.pop_back();
+
+        const auto& node_i = nodes.at(node_ind_i);
+        const auto& node_j = nodes.at(node_ind_j);
+        
+        if(!intersects(node_i.rect, node_j.rect))
+        {
+            continue;
+        }
+        if(!node_i.isLeaf() && !node_j.isLeaf())
+        {
+            to_visit.emplace_back(node_i.child_index_1, node_j.child_index_1);
+            to_visit.emplace_back(node_i.child_index_1, node_j.child_index_2);
+            to_visit.emplace_back(node_i.child_index_2, node_j.child_index_1);
+            to_visit.emplace_back(node_i.child_index_2, node_j.child_index_2);
+        }else if(!node_i.isLeaf() && node_j.isLeaf())
+        {
+            to_visit.emplace_back(node_i.child_index_1, node_ind_j);
+            to_visit.emplace_back(node_i.child_index_2, node_ind_j);
+        }
+        else if (node_i.isLeaf() && !node_j.isLeaf())
+        {
+            to_visit.emplace_back(node_ind_i, node_j.child_index_1);
+            to_visit.emplace_back(node_ind_i, node_j.child_index_2);
+        }else{
+            close_pairs.emplace_back(node_ind_i, node_ind_j);
+        }
+    }
+
+    return close_pairs;
+}
+
 //! \brief finds intersectings bounding rectangles accross this and \p tree
 //! \returns list of object indices whose bounding rects intersect
 std::vector<std::pair<int, int>> BoundingVolumeTree::findClosePairsWith2(BoundingVolumeTree &tree) const
