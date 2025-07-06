@@ -73,9 +73,13 @@ public:
     } 
 
     //! returns number of free spots
-    int freeCount() const
+    std::size_t freeCount() const
     {
         return BLOCK_CAPACITY - active_count;
+    }
+    std::size_t activeCount() const
+    {
+        return active_count;
     }
 
     int insert(ComponentType comp)

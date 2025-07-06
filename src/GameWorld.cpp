@@ -101,26 +101,6 @@ void GameWorld::update(float dt)
         {
             destroyObject(obj->getId());
         }
-
-        //! move objects far away from player somewhere around the player
-        auto player_pos = m_player->getPosition();
-        auto player_vel = m_player->m_vel;
-        auto obj_pos = obj->getPosition();
-        auto obj_vel = obj->m_vel;
-        auto obj_moves_away = utils::dot(player_vel, obj_vel) < 0;
-        auto player_obj_dist = utils::dist(obj_pos, player_pos);
-        if (obj_moves_away && player_obj_dist > 450)
-        {
-            auto rand_radius = randf(400, 500);
-            auto rand_angle = randf(0, 360);
-            // auto x = randomPosInBox(player_pos - utils::Vector2f(300.),player_pos + utils::Vector2f(300.));
-            auto new_obj_pos = player_pos + rand_radius * utils::angle2dir(rand_angle);
-            obj->setPosition(new_obj_pos);
-            if (obj->getType() == ObjectType::Enemy)
-            {
-                obj->kill();
-            }
-        }
     }
 
     addQueuedEntities();

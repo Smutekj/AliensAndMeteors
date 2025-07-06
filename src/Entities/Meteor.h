@@ -24,6 +24,8 @@ private:
 
     Polygon generateRandomConvexPolygon(int n) const;
 
+    float max_dist_from_player = 1000;
+    GameObject* p_player = nullptr;
     float max_vel = 40.f;
     float max_impulse_vel = 10.f;
 };

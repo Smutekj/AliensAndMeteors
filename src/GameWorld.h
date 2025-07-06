@@ -186,7 +186,7 @@ public:
         std::apply([this, dt](auto &...entity_queue)
                    { ((updateX(entity_queue, dt)), ...); }, m_entities2);
 
-        
+
 
         addQueuedEntities2();
         removeQueuedEntities2();
@@ -214,6 +214,12 @@ public:
     TriggerType &addTrigger(Args... args);
 
     std::size_t getNActiveEntities(ObjectType type);
+    
+    template <class EntityType>
+    std::size_t getActiveCount()
+    {
+        return std::get<ComponentBlock<EntityType>>(m_entities2).activeCount();
+    }
 
     void update(float dt);
     void draw(LayersHolder &window);

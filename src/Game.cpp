@@ -97,27 +97,27 @@ Game::Game(Renderer &window, KeyBindings &bindings)
         enemy.setPosition(spawn_pos);
     }
 
-    // auto &heart_spawner = m_world->addTrigger<Timer>();
-    // heart_spawner.setCallback(
-    //     [this]()
-    //     {
-    //          auto &heart = m_world->addObject2<Heart>();
-    //         auto spawn_pos = m_player->getPosition() + randf(20, 200) * angle2dir(randf(0, 360));
-    //         heart.setPosition(spawn_pos);
-    //     });
+    auto &heart_spawner = m_world->addTrigger<Timer>();
+    heart_spawner.setCallback(
+        [this]()
+        {
+             auto &heart = m_world->addObject2<Heart>();
+            auto spawn_pos = m_player->getPosition() + randf(20, 200) * angle2dir(randf(0, 360));
+            heart.setPosition(spawn_pos);
+        });
 
-    // auto &enemy_spawner = m_world->addTrigger<Timer>();
-    // enemy_spawner.m_cooldown = 5.f;
-    // enemy_spawner.setCallback(
-    //     [this]()
-    //     {
-    //         // if (m_world->getNActiveEntities(ObjectType::Enemy) < 35) //! max 50 enemies
-    //         {
-    //             auto &enemy = m_world->addObject2<Enemy>();
-    //             auto spawn_pos = m_player->getPosition() + randf(50, 200) * angle2dir(randf(0, 360));
-    //             enemy.setPosition(spawn_pos);
-    //         }
-    //     });
+    auto &enemy_spawner = m_world->addTrigger<Timer>();
+    enemy_spawner.m_cooldown = 5.f;
+    enemy_spawner.setCallback(
+        [this]()
+        {
+            if (m_world->getActiveCount<Enemy>() < 100) //! max 100 enemies
+            {
+                auto &enemy = m_world->addObject2<Enemy>();
+                auto spawn_pos = m_player->getPosition() + randf(50, 200) * angle2dir(randf(0, 360));
+                enemy.setPosition(spawn_pos);
+            }
+        });
 
     auto view = window.m_view;
     view.setCenter(m_player->getPosition());

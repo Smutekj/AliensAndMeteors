@@ -5,8 +5,8 @@
 #include "../DrawLayer.h"
 #include "../Utils/RandomTools.h"
 
-Meteor::Meteor(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider,  PlayerEntity *player)
- : GameObject(world, textures, ObjectType::Meteor)
+Meteor::Meteor(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
+    : p_player(player), GameObject(world, textures, ObjectType::Meteor)
 {
     m_collision_shape = std::make_unique<Polygon>();
     m_rigid_body = std::make_unique<RigidBody>();
@@ -17,13 +17,25 @@ void Meteor::update(float dt)
 {
     truncate(m_vel, max_vel);
     m_pos += m_vel * dt;
+
+    auto player_pos = p_player->getPosition();
+    auto player_vel = p_player->m_vel;
+    auto obj_moves_away = utils::dot(player_vel, m_vel) < 0;
+    auto player_obj_dist = utils::dist(m_pos, player_pos);
+    if (obj_moves_away && player_obj_dist > max_dist_from_player)
+    {
+        auto rand_radius = randf(max_dist_from_player * 0.6, max_dist_from_player * 0.9);
+        auto rand_angle = randf(0, 360);
+        auto new_obj_pos = player_pos + rand_radius * utils::angle2dir(rand_angle);
+        setPosition(new_obj_pos);
+    }
 }
 void Meteor::onCreation()
 {
 }
 void Meteor::onDestruction()
 {
-    const auto& new_meteor = m_world->addObject2<Meteor>();
+    const auto &new_meteor = m_world->addObject2<Meteor>();
     // new_meteor.setPosition(randomPosInBox({0,0}, {Geometry::Box[0], Geometry::Box[1]}));
 }
 
@@ -31,31 +43,31 @@ void Meteor::onCollisionWith(GameObject &obj, CollisionData &c_data)
 {
 }
 
-void Meteor::draw(LayersHolder& layers)
+void Meteor::draw(LayersHolder &layers)
 {
 
     auto points = m_collision_shape->getPointsInWorld();
-    auto& target = layers.getCanvas("Unit");
-    if(!target.hasShader("Meteor"))
+    auto &target = layers.getCanvas("Unit");
+    if (!target.hasShader("Meteor"))
     {
         target.addShader("Meteor", "basictex.vert", "Meteor.frag");
     }
     VertexArray m_verts;
-    m_verts.resize(3*points.size());
-    
-    Color c = {1,0,0,1};
+    m_verts.resize(3 * points.size());
+
+    Color c = {1, 0, 0, 1};
     auto center = m_collision_shape->getCenter();
     auto n_points = points.size();
-    for(int i = 0; i < n_points; ++i)
+    for (int i = 0; i < n_points; ++i)
     {
-        auto tex_coord = ((points[i] - center)/m_collision_shape->getScale().x + 1.)/2.;
-        auto tex_coord_next = ((points[(i+1)%n_points] - center)/m_collision_shape->getScale().x + 1.)/2.;
+        auto tex_coord = ((points[i] - center) / m_collision_shape->getScale().x + 1.) / 2.;
+        auto tex_coord_next = ((points[(i + 1) % n_points] - center) / m_collision_shape->getScale().x + 1.) / 2.;
 
-        m_verts[3*i+0] = {points[i], c, tex_coord};
-        m_verts[3*i+1] = {points[(i+1)%n_points], c, tex_coord_next};
-        m_verts[3*i+2] = {center, c, {0.5,0.5}};
+        m_verts[3 * i + 0] = {points[i], c, tex_coord};
+        m_verts[3 * i + 1] = {points[(i + 1) % n_points], c, tex_coord_next};
+        m_verts[3 * i + 2] = {center, c, {0.5, 0.5}};
     }
-    
+
     target.drawVertices(m_verts, "Meteor", DrawType::Dynamic, m_textures->get("Meteor"));
 }
 
@@ -186,7 +198,7 @@ void Meteor::initializeRandomMeteor()
     auto polygon = generateRandomConvexPolygon(12 + rand() % 3);
     auto radius = randf(5, 20);
     polygon.setScale(radius, radius);
-    auto rand_pos = randomPosInBox(utils::Vector2f{0,0}, utils::Vector2f{500, 500});
+    auto rand_pos = randomPosInBox(utils::Vector2f{0, 0}, utils::Vector2f{500, 500});
     polygon.setPosition(rand_pos.x, rand_pos.y);
 
     m_pos = polygon.getPosition();

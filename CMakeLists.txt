@@ -22,11 +22,8 @@ file(GLOB SRC
      "src/Entities/*.cpp"
 )
 
-include_directories(SYSTEM external/stbimage)
-include_directories(SYSTEM external/magic_enum)
 include_directories(SYSTEM external)
-# include_directories(SYSTEM external/freetype/include)
-message(${PROJECT_BINARY_DIR})
+
 include_directories("${PROJECT_BINARY_DIR}" ${IMGUI_DIR} ${IMGUI_DIR}/backends )
 add_executable(${CMAKE_PROJECT_NAME} ${SRC} )
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE 
