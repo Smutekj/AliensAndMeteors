@@ -6,13 +6,12 @@
 #include <unordered_map>
 #include <memory>
 
-#include <Window.h>
+#include "Window.h"
+#include "DrawLayer.h"
 
 #include "Menu/StateStack.h"
 #include "Menu/ScoreBoard.h"
 #include "Utils/Statistics.h"
-#include "DrawLayer.h"
-#include "Enviroment.h"
 #include "Commands.h"
 
 void gameLoop(void *mainLoopArg);

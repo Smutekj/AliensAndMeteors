@@ -16,7 +16,7 @@ namespace Collisions
     class CollisionSystem;
 }
 
-class GridNeighbourSearcher;
+class SparseGridNeighbourSearcher;
 
 class Enemy : public GameObject
 {
@@ -39,6 +39,8 @@ public:
 
     void setBehaviour();
 
+    // static void doBoidSteering(Enemy& e1, Enemy& e2);
+
 private:
     void avoidMeteors();
     void boidSteering();
@@ -59,13 +61,13 @@ public:
     utils::Vector2f m_target_pos;
     std::vector<utils::Vector2f> m_cm;
 
+    static SparseGridNeighbourSearcher m_neighbour_searcher;
 private:
     float m_boid_radius = 30.f;
     utils::Vector2f m_acc;
 
     std::shared_ptr<BoidAI2> m_behaviour;
     PlayerEntity *m_player = nullptr;
-    GridNeighbourSearcher *m_neighbour_searcher;
     Collisions::CollisionSystem *m_collision_system;
 
     bool m_is_avoiding = false;

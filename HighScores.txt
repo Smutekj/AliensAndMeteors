@@ -1,4 +1,6 @@
 qq 15
+dd 12
+ssddgg 9
 asdf 2
 sfd 2
 wd 1
@@ -8,6 +10,4 @@ sdfg 0
 s 0
 dsf 0
 sdf 0
-qqww 0
 qq 0
-qq\\ 0

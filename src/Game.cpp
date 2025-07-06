@@ -67,7 +67,7 @@ Game::Game(Renderer &window, KeyBindings &bindings)
 
     m_world = std::make_unique<GameWorld>();
 
-    for (int i = 0; i < 40; ++i)
+    for (int i = 0; i < 3; ++i)
     {
         auto &meteor = m_world->addObject2<Meteor>();
     }
@@ -90,27 +90,34 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     spawnNextObjective();
     // addDestroyNObjective(ObjectType::SpaceStation, 2);
 
-    auto &heart_spawner = m_world->addTrigger<Timer>();
-    heart_spawner.setCallback(
-        [this]()
-        {
-             auto &heart = m_world->addObject2<Heart>();
-            auto spawn_pos = m_player->getPosition() + randf(20, 200) * angle2dir(randf(0, 360));
-            heart.setPosition(spawn_pos);
-        });
+    for (int i = 0; i < 500; ++i)
+    {
+        auto &enemy = m_world->addObject2<Enemy>();
+        auto spawn_pos = m_player->getPosition() + randf(100, 400) * angle2dir(randf(0, 360));
+        enemy.setPosition(spawn_pos);
+    }
 
-    auto &enemy_spawner = m_world->addTrigger<Timer>();
-    enemy_spawner.m_cooldown = 5.f;
-    enemy_spawner.setCallback(
-        [this]()
-        {
-            // if (m_world->getNActiveEntities(ObjectType::Enemy) < 35) //! max 50 enemies
-            {
-                auto &enemy = m_world->addObject2<Enemy>();
-                auto spawn_pos = m_player->getPosition() + randf(50, 200) * angle2dir(randf(0, 360));
-                enemy.setPosition(spawn_pos);
-            }
-        });
+    // auto &heart_spawner = m_world->addTrigger<Timer>();
+    // heart_spawner.setCallback(
+    //     [this]()
+    //     {
+    //          auto &heart = m_world->addObject2<Heart>();
+    //         auto spawn_pos = m_player->getPosition() + randf(20, 200) * angle2dir(randf(0, 360));
+    //         heart.setPosition(spawn_pos);
+    //     });
+
+    // auto &enemy_spawner = m_world->addTrigger<Timer>();
+    // enemy_spawner.m_cooldown = 5.f;
+    // enemy_spawner.setCallback(
+    //     [this]()
+    //     {
+    //         // if (m_world->getNActiveEntities(ObjectType::Enemy) < 35) //! max 50 enemies
+    //         {
+    //             auto &enemy = m_world->addObject2<Enemy>();
+    //             auto spawn_pos = m_player->getPosition() + randf(50, 200) * angle2dir(randf(0, 360));
+    //             enemy.setPosition(spawn_pos);
+    //         }
+    //     });
 
     auto view = window.m_view;
     view.setCenter(m_player->getPosition());
@@ -387,6 +394,7 @@ void Game::draw(Renderer &window)
     m_layers.clearAllLayers();
     m_world->draw(m_layers);
     m_world->draw2(m_layers);
+    Enemy::m_neighbour_searcher.drawGrid(*m_layers.getLayer("Unit"));
 
     //! clear and draw into scene
     m_scene_canvas.clear({0, 0, 0, 0});

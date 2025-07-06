@@ -2,7 +2,7 @@
 
 #include <functional>
 #include <array>
-#include <cstdint>
+// #include <cstdint>
 #include <variant>
 
 template <class ComponentType>
@@ -14,7 +14,7 @@ public:
     virtual void deactivate(int ind) = 0;
 };
 
-template <class ComponentType, int BLOCK_CAPACITY = 1000>
+template <class ComponentType, int BLOCK_CAPACITY = 3000>
 class ComponentBlock : public ComponentBlockI<ComponentType>
 {
 public:

@@ -14,20 +14,22 @@
 #include "Player.h"
 
 Enemy::Enemy(GameWorld *world, TextureHolder &textures,
-             Collisions::CollisionSystem* collider, PlayerEntity *player)
+             Collisions::CollisionSystem *collider, PlayerEntity *player)
     : m_collision_system(collider), m_player(player),
-     GameObject(world, textures, ObjectType::Enemy, collider, player)
+      GameObject(world, textures, ObjectType::Enemy, collider, player)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
     m_collision_shape->setScale(4, 4);
     m_target_pos = player->getPosition();
 }
 
+SparseGridNeighbourSearcher Enemy::m_neighbour_searcher = {50.f};
+
 Enemy::~Enemy() {}
 
 void Enemy::update(float dt)
 {
-    // m_neighbour_searcher->moveEntity(*this);
+    m_neighbour_searcher.move(getPosition(), m_id);
     m_behaviour->update(dt);
 
     boidSteering();
@@ -107,10 +109,11 @@ void Enemy::onCollisionWith(GameObject &obj, CollisionData &c_data)
 void Enemy::onCreation()
 {
     setBehaviour();
+    m_neighbour_searcher.insertAt(getPosition(), m_id);
 }
 void Enemy::onDestruction()
 {
-    // m_neighbour_searcher->removeEntity(getId());
+    m_neighbour_searcher.remove(m_id);
 
     auto &new_explosion = m_world->addObject2<Explosion>();
     new_explosion.removeCollider();
@@ -136,7 +139,7 @@ void Enemy::draw(LayersHolder &layers)
     utils::Vector2f booster_size = {4, 2};
 
     booster.setTexture(*m_textures->get("BoosterPurple"));
-    booster.setScale(booster_size.x, 1.3*booster_size.y);
+    booster.setScale(booster_size.x, 1.3 * booster_size.y);
     booster.setPosition(m_pos - m_vel / norm(m_vel) * m_sprite.getScale().y);
     booster.setRotation(m_sprite.getRotation());
 
@@ -189,19 +192,74 @@ void Enemy::avoidMeteors()
 std::unordered_map<Multiplier, float> Enemy::m_force_multipliers = {
     {Multiplier::ALIGN, 0.f},
     {Multiplier::AVOID, 25000.f},
-    {Multiplier::SCATTER, 10.f},
+    {Multiplier::SCATTER, 2000.f},
     {Multiplier::SEEK, 10.f}};
 std::unordered_map<Multiplier, float> Enemy::m_force_ranges = {
     {Multiplier::ALIGN, 20.f},
-    {Multiplier::AVOID, 30.f},
-    {Multiplier::SCATTER, 300.f},
+    {Multiplier::AVOID, 50.f},
+    {Multiplier::SCATTER, 30.f},
     {Multiplier::SEEK, 10.f}};
+
+// void Enemy::doBoidSteeringPre(Enemy &e)
+// {
+// }
+// void Enemy::doBoidSteering(Enemy &e1, Enemy &e2)
+// {
+//     const float scatter_multiplier = Enemy::m_force_multipliers[Multiplier::SCATTER];
+//     const float align_multiplier = Enemy::m_force_multipliers[Multiplier::ALIGN];
+//     const float seek_multiplier = Enemy::m_force_multipliers[Multiplier::SEEK];
+
+//     const auto range_align = std::pow(Enemy::m_force_ranges[Multiplier::ALIGN], 2);
+//     const auto range_scatter = std::pow(Enemy::m_force_ranges[Multiplier::SCATTER], 2);
+
+// }
+// void Enemy::applyBoidSteeringForce(Enemy &e)
+// {
+// }
+
+
+
+class BoidSystem
+{
+
+    struct BoidComponent
+    {
+        float radius;
+        utils::Vector2f pos;
+        utils::Vector2f vel;
+        utils::Vector2f boid_force;
+    };
+
+public:
+    BoidSystem(Collisions::CollisionSystem &collider) : collider(collider)
+    {
+
+    }
+
+    void update(float dt)
+    {
+        //! construct neighbour list
+        auto pairs = proximity_tree.findClosePairsWithin();
+        
+        //! calculate forces
+
+
+        //! update component owners
+    }
+
+    ComponentBlock<BoidComponent, 1000> m_data_block;
+
+    std::array<std::vector<BoidComponent>, 1000> neighbour_lists;
+private:
+    BoundingVolumeTree proximity_tree;
+    Collisions::CollisionSystem& collider;
+};
 
 void Enemy::boidSteering()
 {
-    // auto neighbours = m_neighbour_searcher->getNeighboursOfExcept(m_pos, m_boid_radius, m_id);
+    auto neighbours2 = m_neighbour_searcher.getNeighbourList( m_id, m_pos, 50.);
 
-    auto neighbours = m_collision_system->findNearestObjects(ObjectType::Enemy, m_pos, m_boid_radius);
+    // auto neighbours = m_collision_system->findNearestObjects(ObjectType::Enemy, m_pos, 50.);
 
     utils::Vector2f repulsion_force(0, 0);
     utils::Vector2f push_force(0, 0);
@@ -223,20 +281,22 @@ void Enemy::boidSteering()
     auto range_align = std::pow(Enemy::m_force_ranges[Multiplier::ALIGN], 2);
     auto range_scatter = std::pow(Enemy::m_force_ranges[Multiplier::SCATTER], 2);
 
-    for (auto p_neighbour : neighbours)
+    for (auto [neighbour_pos, id]  : neighbours2)
     {
-        if (p_neighbour == this)
+        // if (p_neighbour == this)
+        if (m_id == id)
         {
             continue;
         }
-        auto &neighbour_boid = *p_neighbour;
+        // auto &neighbour_boid =*p_neighbour;
         // if(ind_j == boid_ind){continue;}
-        const auto dr = neighbour_boid.getPosition() - m_pos;
+        // const auto dr = neighbour_boid.getPosition() - m_pos;
+        const auto dr = neighbour_pos - m_pos;
         const auto dist2 = norm2(dr);
 
         if (dist2 < range_align)
         {
-            align_direction += neighbour_boid.m_vel;
+            // align_direction += neighbour_boid.m_vel;
             align_neighbours_count++;
         }
 
@@ -266,17 +326,18 @@ void Enemy::boidSteering()
         // cohesion_force =   * average_neighbour_position - m_vel;
     }
 
+    auto dr_to_target = m_target_pos - m_pos;
+    if (norm(dr_to_target) > 3.f)
+    {
+        seek_force = seek_multiplier * max_vel * dr_to_target / norm(dr_to_target) - m_vel;
+    }
+
     utils::Vector2f align_force = {0, 0};
     if (align_neighbours_count > 0 && norm2(align_direction) >= 0.001f)
     {
         align_force = align_multiplier * align_direction / norm(align_direction) - m_vel;
     }
 
-    auto dr_to_target = m_target_pos - m_pos;
-    if (norm(dr_to_target) > 3.f)
-    {
-        seek_force = seek_multiplier * max_vel * dr_to_target / norm(dr_to_target) - m_vel;
-    }
 
     m_acc += (scatter_force + align_force + seek_force + cohesion_force);
     truncate(m_acc, max_acc);
@@ -302,7 +363,7 @@ void Enemy::setBehaviour()
     }
 }
 
-SpaceStation::SpaceStation(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider,  PlayerEntity *player)
+SpaceStation::SpaceStation(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
     : GameObject(world, textures, ObjectType::SpaceStation)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
@@ -422,7 +483,7 @@ void SpaceStation::draw(LayersHolder &layers)
     // target.draw(health_rect);
 }
 
-Boss::Boss(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem* collider, PlayerEntity *player)
+Boss::Boss(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
     : m_player(player),
       GameObject(world, textures, ObjectType::Boss)
 {

@@ -30,7 +30,6 @@ void Application::run()
 
 void Application::iterate()
 {
-
     m_state_stack->update(m_dt);
 
     //! poll and events let state stack handle them
@@ -70,7 +69,7 @@ void inline gameLoop(void *mainLoopArg)
     // Swap front/back framebuffers
     SDL_GL_SwapWindow(p_app->m_window.getHandle());
 
-    if (s_frame_count++ > 1000)
+    if (s_frame_count++ > 200)
     {
         std::cout << "avg frame time: " << p_app->m_avg_frame_time.getAverage() << " ms" << std::endl;
         s_frame_count = 0;
@@ -100,10 +99,11 @@ Application::Application(int width, int height)
     : m_window(width, height), m_window_canvas(m_window)
 {
     m_dt = 0.0166667f;
-    
     std::filesystem::path font_path = {"../Resources/Fonts/arial.ttf"};
+    std::cout << std::filesystem::current_path() << "\n";
     // std::filesystem::path font_path = {__FILE__};
     // font_path.remove_filename().append("../Resources/Fonts/arial.ttf");
+
     m_font = std::make_shared<Font>(font_path);
     State::Context context(m_window_canvas, m_window, m_textures, m_bindings, *m_font, m_score);
     m_state_stack = std::make_unique<StateStack>(context);

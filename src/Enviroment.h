@@ -85,6 +85,7 @@
 //     Color m_fire_color = {1000, 2, 0, 1};
 //     Color m_fire_edge_color = {1000, 2, 0, 0};
 // };
+
 // class FloatingText : public EnviromentEffect
 // {
 
