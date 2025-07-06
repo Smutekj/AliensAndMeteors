@@ -182,8 +182,11 @@ public:
     {
         m_collision_system.update();
 
+
         std::apply([this, dt](auto &...entity_queue)
                    { ((updateX(entity_queue, dt)), ...); }, m_entities2);
+
+        
 
         addQueuedEntities2();
         removeQueuedEntities2();
