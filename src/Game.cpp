@@ -66,16 +66,16 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     initializeLayers();
 
     m_world = std::make_unique<GameWorld>();
-
+    //! PLAYER NEEDS TO BE FIRST BECAUSE OTHER OBJECTS MIGHT REFERENCE IT!
+    m_player = &m_world->addObjectForced<PlayerEntity>();
+    m_player->setPosition({500, 500});
+    m_world->m_player = m_player;
+    
     for (int i = 0; i < 3; ++i)
     {
         auto &meteor = m_world->addObject2<Meteor>();
     }
-
-    m_player = &m_world->addObjectForced<PlayerEntity>();
-    m_player->setPosition({500, 500});
-    m_world->m_player = m_player;
-
+    
     // std::filesystem::path texture_directory = {__FILE__};
     std::filesystem::path texture_directory = {};
     texture_directory.remove_filename().append("../Resources/Textures/");
