@@ -49,7 +49,8 @@ void FollowAndShootAI2::update(float dt = 0.033)
 }
 
 FollowAndShootLasersAI::FollowAndShootLasersAI(PlayerEntity *player, Enemy *owner, GameWorld *world)
-    : BoidAI2(player, owner, world), orig_max_vel(owner->max_vel), orig_max_acc(owner->max_acc) {}
+    : BoidAI2(player, owner, world), orig_max_vel(owner->max_vel), orig_max_acc(owner->max_acc)
+     {}
 
 void FollowAndShootLasersAI::update(float dt = 0.033)
 {
@@ -75,7 +76,7 @@ void FollowAndShootLasersAI::update(float dt = 0.033)
         //! shoots somwhere around players future positiion
         auto predicted_pos = p_player->getPosition() + utils::angle2dir(p_player->getAngle()) * p_player->speed * randf(0., 1.5);
 
-        Laser laser = p_world->addObject2<Laser>();
+        Laser& laser = p_world->addObject2<Laser>();
         laser.setPosition(p_owner->getPosition());
         laser.setOwner(p_owner);
         auto new_angle = utils::dir2angle(predicted_pos - p_owner->getPosition());
