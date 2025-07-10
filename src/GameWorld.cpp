@@ -6,7 +6,6 @@
 
 GameWorld::GameWorld()
 {
-
     loadTextures();
 
     m_neighbour_searcher = std::make_unique<GridNeighbourSearcher>();
@@ -36,8 +35,8 @@ GameObject &GameWorld::addObject(ObjectType type)
     case ObjectType::Trigger:
         new_object = std::make_shared<ReachPlace>(this, m_textures, m_player);
         break;
-    // default:
-    //     throw std::runtime_error("You forgot to add the new object here!");
+        // default:
+        //     throw std::runtime_error("You forgot to add the new object here!");
     }
 
     m_to_add.push(new_object);
@@ -152,4 +151,6 @@ void GameWorld::loadTextures()
     m_textures.add("Arrow", "../Resources/Textures/arrow.png");
     m_textures.add("Emp", "../Resources/Textures/emp.png");
     m_textures.add("Star", "../Resources/Textures/star.png");
+    m_textures.add("Fuel", "../Resources/Textures/fuel.png");
+    m_textures.add("FireNoise", "../Resources/Textures/fireNoise.png");
 }
