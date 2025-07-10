@@ -64,16 +64,16 @@ void PlayerEntity::update(float dt)
         }
     }
 
+    bool is_boosting = booster == BoosterState::Boosting;
     auto acc = acceleration + 20 * acceleration * is_boosting;
     speed += acc * dt;
-    // std::cout << "Speed: " << speed << "\n";
     m_vel = (speed)*utils::angle2dir(m_angle);
     // utils::truncate(m_vel, max_speed + is_boosting * max_speed);
     if (m_deactivated_time > 0)
     {
         m_deactivated_time -= dt;
         m_vel /= 2.f;
-        is_boosting = false;
+        booster = BoosterState::Ready;
     }
     m_pos += m_vel * dt;
     //! speed fallout
@@ -132,21 +132,25 @@ void PlayerEntity::draw(LayersHolder &layers)
     auto &shiny_target = layers.getCanvas("Bloom");
 
     m_player_shape.setPosition(m_pos);
-    m_player_shape.setRotation(glm::radians(m_angle));
     m_player_shape.setScale(2 * m_radius, 2 * m_radius);
+    m_player_shape.setTexture(*m_textures->get("FireNoise"));
+    
+    // shiny_target.drawSprite(m_player_shape, "boostBar");
+    
+    m_player_shape.setScale(4 * m_radius, 4 * m_radius);
+    m_player_shape.setRotation(glm::radians(m_angle));
     m_player_shape.setTexture(*m_textures->get("PlayerShip"));
-
     target.drawSprite(m_player_shape);
 
-    if (!is_boosting)
+    if (booster == BoosterState::Boosting)
     {
-        m_particles_left->setInitColor({5., 2., 0, 0.2});
-        m_particles_right->setInitColor({5., 2., 0, 0.2});
+        m_particles_left->setInitColor({500, 1, 0, 1.0});
+        m_particles_right->setInitColor({500, 1, 0, 1.0});
     }
     else
     {
-        m_particles_left->setInitColor({205, 30, 0, 1.0});
-        m_particles_right->setInitColor({250, 30, 0, 1.0});
+        m_particles_left->setInitColor({5., 2., 0, 0.2});
+        m_particles_right->setInitColor({5., 2., 0, 0.2});
     }
 
     m_particles_left->draw(shiny_target);
@@ -169,22 +173,30 @@ void PlayerEntity::fixAngle()
 
 void PlayerEntity::boost()
 {
-    if (is_boosting)
+    if (booster == BoosterState::Boosting && m_fuel > 0)
     {
-        boost_time++;
-        boost_heat++;
+        boost_heat += 1;
+        m_fuel -= 0.1;
 
         if (boost_heat > max_boost_heat)
         {
-            is_boosting = false;
-            boost_time = 0;
+            booster = BoosterState::Disabled;
         }
     }
-    else
+    if (booster != BoosterState::Boosting)
     {
-        if (boost_heat > 0.f)
-        {
-            boost_heat--;
-        }
+        boost_heat -= 0.75;
+    }
+    
+    if(m_fuel < 0)
+    {
+        m_fuel = 0.;
+        booster = BoosterState::Disabled;
+    }
+
+    if (boost_heat < 0.)
+    {
+        boost_heat = 0.;
+        booster = BoosterState::Ready;
     }
 }

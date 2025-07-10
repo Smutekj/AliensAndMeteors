@@ -6,6 +6,16 @@
 #include <Renderer.h>
 #include <Particles.h>
 
+
+enum class BoosterState
+    {
+        Boosting,
+        Ready,
+        CoolingDown,
+        Disabled,
+    };
+
+
 class GameWorld;
 
 struct PlayerEntity : public GameObject
@@ -25,15 +35,31 @@ public:
     virtual void onDestruction() override;
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
 
+    void onBoostDown()
+    {
+        if (m_fuel > 0. && booster != BoosterState::CoolingDown && booster != BoosterState::Disabled)
+        {
+            booster = BoosterState::Boosting;
+        }
+    }
+    void onBoostUp()
+    {
+        if (booster != BoosterState::CoolingDown && booster != BoosterState::Disabled)
+        {
+            booster = BoosterState::Ready;
+        }
+    }
+
 private:
     void fixAngle();
     void boost();
 
+    
 public:
     float speed = 0.f;
     float boost_max_speed = 80.f;
     float max_speed = 50.f;
-    bool is_boosting = false;
+    BoosterState booster = BoosterState::Ready;
 
     float m_laser_timer = 0.f;
 
@@ -45,6 +71,9 @@ public:
     float slowing_factor = 0.03f;
     float acceleration = 1.5f;
     float m_angle_vel = 270.69f;
+
+    float m_max_fuel = 100.;
+    float m_fuel = 100.;
 
     float boost_time = 0.f;
     float max_boost_time = 100.f;
