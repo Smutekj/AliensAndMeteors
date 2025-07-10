@@ -139,12 +139,19 @@ private:
     float m_life_time = 1.;
 };
 
+enum class Pickup
+{
+    Heart,
+    Fuel
+};
+
 class Heart : public GameObject
 {
 
 public:
     Heart() = default;
-    Heart(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
+    Heart(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr,
+          Pickup type = Pickup::Heart);
     Heart(const Heart &e) = default;
     Heart &operator=(Heart &e) = default;
     Heart &operator=(Heart &&e) = default;
@@ -157,6 +164,8 @@ public:
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
 
 private:
+    Pickup type;
+
     utils::Vector2f m_acc;
     float max_vel = 100.f;
     float max_acc = 20.f;

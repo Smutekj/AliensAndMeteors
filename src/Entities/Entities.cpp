@@ -242,12 +242,12 @@ void ExplosionAnimation::draw(LayersHolder& layers)
     target.drawSprite(rect);
 }
 
-Heart::Heart(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider,  PlayerEntity *player)
+Heart::Heart(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider,  PlayerEntity *player, Pickup type)
     : GameObject(world, textures, ObjectType::Heart)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
     m_collision_shape->setScale(3, 3);
-
+    
     // m_rigid_body = std::make_unique<RigidBody>();
     // m_rigid_body->mass = 0.01f;
 }
@@ -282,9 +282,14 @@ void Heart::draw(LayersHolder& layers)
     auto& target = layers.getCanvas("Unit");
 
     Sprite rect;
-    rect.setTexture(*m_textures->get("Heart"));
+    if(type==Pickup::Heart)
+    {
+        rect.setTexture(*m_textures->get("Heart"));
+    }else if(type == Pickup::Fuel)
+    {
+        rect.setTexture(*m_textures->get("Fuel"));
+    }
     rect.setPosition(m_pos);
-    rect.setRotation(dir2angle(m_vel));
     rect.setScale(3., 3.);
     target.drawSprite(rect);
 }
