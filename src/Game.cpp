@@ -7,6 +7,180 @@
 
 // #include "SoundModule.h"
 
+class BloomFromAss : public PostEffect
+{
+
+public:
+    BloomFromAss(int width, int height, TextureOptions options = {});
+
+    virtual void process(Texture &source, Renderer &target) override;
+    virtual ~BloomFromAss() = default;
+
+    void initMips(int n_levels, int width, int height, TextureOptions option);
+    struct TexMip
+    {
+        TexMip(int width, int height, TextureOptions option)
+            : pixels(width, height, option), canvas(pixels), pixels_tmp(width, height, option), canvas_tmp(pixels_tmp)
+        {
+        }
+        FrameBuffer pixels;
+        Renderer canvas;
+        FrameBuffer pixels_tmp;
+        Renderer canvas_tmp;
+    };
+
+private:
+    FrameBuffer test_pixels;
+    Renderer test_canvas;
+
+    std::vector<TexMip> m_mips;
+};
+
+BloomFromAss::BloomFromAss(int width, int height, TextureOptions options)
+    : test_pixels(width, height, options), test_canvas(test_pixels)
+{
+    std::filesystem::path shaders_path = {__FILE__};
+    shaders_path.remove_filename().append("../Resources/Shaders/");
+    test_canvas.setShadersPath(shaders_path);
+
+    initMips(3, width, height, options);
+}
+
+using bf = BlendFactor;
+
+void BloomFromAss::initMips(int n_levels, int width, int height, TextureOptions options)
+{
+    std::filesystem::path shaders_path = {__FILE__};
+    shaders_path.remove_filename().append("../Resources/Shaders/");
+
+    m_mips.clear();
+    m_mips.reserve(n_levels);
+    for (int i = 0; i < n_levels; ++i)
+    {
+        m_mips.emplace_back(width, height, options);
+        m_mips.back().canvas.setShadersPath(shaders_path);
+        m_mips.back().canvas_tmp.setShadersPath(shaders_path);
+        m_mips.back().canvas.m_blend_factors = {bf::One, bf::OneMinusSrcAlpha, bf::One, bf::Zero};
+        m_mips.back().canvas_tmp.m_blend_factors = {bf::One, bf::OneMinusSrcAlpha, bf::One, bf::Zero};
+        width /= 2;
+        height /= 2;
+    }
+}
+
+void BloomFromAss::process(Texture &source, Renderer &target)
+{
+
+    if (!target.hasShader("combineBloom"))
+    {
+        target.addShader("combineBloom", "basicinstanced.vert", "combineBloom.frag");
+    }
+    writeTextureToFile("../", "source_image.png", source);
+
+    auto old_view = target.m_view;
+    auto old_factors = target.m_blend_factors;
+
+    auto target_size = target.getTargetSize();
+    Sprite screen_sprite(source);
+    screen_sprite.setPosition(target_size / 2.f);
+    screen_sprite.setScale(target_size / 2.f);
+    auto size = target_size;
+
+    //! BRIGHTNESS PASS
+    screen_sprite.setTexture(source);
+    auto &first_mip = m_mips.front();
+    first_mip.canvas.clear({0, 0, 0, 0});
+    first_mip.canvas.m_view.setCenter(screen_sprite.getPosition());
+    first_mip.canvas.m_view.setSize(screen_sprite.getScale() * 2.);
+    first_mip.canvas.drawSprite(screen_sprite, "brightness", DrawType::Dynamic);
+    first_mip.canvas.drawAll();
+    writeTextureToFile("../", "brightness_pass.png", first_mip.pixels);
+
+    for (int pass = 0; pass < 1; ++pass)
+    {
+        // Sprite ss1(first_mip.pixels.getTexture());
+        screen_sprite.setPosition(first_mip.pixels.getSize() / 2.f);
+        screen_sprite.setScale(first_mip.pixels.getSize() / 2.f);
+        first_mip.canvas_tmp.clear({0, 0, 0, 0});
+        screen_sprite.setTexture(first_mip.pixels.getTexture());
+        first_mip.canvas_tmp.m_view.setCenter(screen_sprite.getPosition());
+        first_mip.canvas_tmp.m_view.setSize(screen_sprite.getScale() * 2.);
+        first_mip.canvas_tmp.drawSprite(screen_sprite, "gaussVert", DrawType::Dynamic);
+        first_mip.canvas_tmp.drawAll();
+
+        // Sprite ss2(first_mip.pixels_tmp.getTexture());
+        first_mip.canvas.clear({0, 0, 0, 0});
+        screen_sprite.setTexture(first_mip.pixels_tmp.getTexture());
+        first_mip.canvas.m_view.setCenter(screen_sprite.getPosition());
+        first_mip.canvas.m_view.setSize(screen_sprite.getScale() * 2.);
+        first_mip.canvas.drawSprite(screen_sprite, "gaussHoriz", DrawType::Dynamic);
+        first_mip.canvas.drawAll();
+    }
+    writeTextureToFile("../", "first_mip.png", first_mip.pixels);
+
+    size = target_size / 2;
+    for (size_t mip_id = 1; mip_id < m_mips.size(); ++mip_id)
+    {
+        auto &prev_mip = m_mips.at(mip_id - 1);
+        auto &mip = m_mips.at(mip_id);
+        mip.canvas.m_view.setCenter(screen_sprite.getPosition());
+        mip.canvas.m_view.setSize(target_size);
+
+        screen_sprite.setTexture(prev_mip.pixels.getTexture());
+        screen_sprite.setPosition(screen_sprite.getPosition());
+        screen_sprite.setScale(size / 2.f);
+        mip.canvas.m_view.setCenter(screen_sprite.getPosition());
+        mip.canvas.m_view.setSize(screen_sprite.getScale() * 2.);
+        mip.canvas.clear({0, 0, 0, 0});
+        mip.canvas.drawSprite(screen_sprite, "gaussHoriz", DrawType::Dynamic);
+        mip.canvas.drawAll();
+
+        // auto& c1 = mip
+        for (int pass = 0; pass < 3; ++pass)
+        {
+            mip.canvas_tmp.clear({0, 0, 0, 0});
+            screen_sprite.setTexture(mip.pixels.getTexture());
+            mip.canvas_tmp.m_view.setCenter(screen_sprite.getPosition());
+            mip.canvas_tmp.m_view.setSize(screen_sprite.getScale() * 2.);
+            mip.canvas_tmp.drawSprite(screen_sprite, "gaussVert", DrawType::Dynamic);
+            mip.canvas_tmp.drawAll();
+
+            mip.canvas.clear({0, 0, 0, 0});
+            screen_sprite.setTexture(mip.pixels_tmp.getTexture());
+
+            mip.canvas.drawSprite(screen_sprite, "gaussHoriz", DrawType::Dynamic);
+            mip.canvas.drawAll();
+        }
+
+        size = size / 2;
+    }
+    writeTextureToFile("../", "last_mip.png", m_mips.back().pixels);
+
+    Sprite ss;
+    ss.m_color = {255, 255, 255, 255};
+    target.m_blend_factors = {bf::One, bf::OneMinusSrcAlpha};
+    // for (auto &mip : m_mips)
+    {
+        auto &mip = m_mips.back();
+        screen_sprite.setTexture(1, mip.pixels.getTexture());
+        screen_sprite.setTexture(0, source);            //! DO NOT CHANGE ORDER OF SETTEXTURES!!
+        auto pixels_size = test_canvas.getTargetSize(); // mip.pixels.getSize();
+        screen_sprite.setPosition(pixels_size / 2.f);
+        screen_sprite.setScale(pixels_size / 2.f);
+        target.m_view.setCenter(pixels_size / 2.f);
+        target.m_view.setSize(pixels_size);
+        target.drawSprite(screen_sprite, "combineLightBloom2", DrawType::Dynamic);
+
+        test_canvas.clear({0, 0, 1, 0});
+        test_canvas.drawSprite(screen_sprite, "combineLightBloom2", DrawType::Dynamic);
+        test_canvas.drawAll();
+        writeTextureToFile("../", "result.png", test_pixels.getTexture());
+        target.drawAll();
+    }
+
+    target.m_blend_factors = old_factors;
+    target.m_view = old_view;
+}
+
 void Game::initializeLayers()
 {
     auto width = m_window.getTargetSize().x;
@@ -37,20 +211,25 @@ void Game::initializeLayers()
     shiny_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
     shiny_layer.addEffect(std::make_unique<Bloom3>(width, height));
 
-    // // auto &light_layer = m_layers.addLayer("Light", 150, options);
-    // // light_layer.m_canvas.m_blend_factors = {BlendFactor::SrcAlpha, BlendFactor::OneMinusSrcAlpha};
-    // // light_layer.addEffect(std::make_unique<SmoothLight>(width, height));
-    // // light_layer.addEffect(std::make_unique<LightCombine>(width, height));
-    // // light_layer.m_canvas.addShader("VisionLight", "basictex.vert", "fullpassLight.frag");
-    // // light_layer.m_canvas.addShader("combineBloomBetter", "basicinstanced.vert", "combineBloomBetter.frag");
+    // auto &shiny_layer = m_layers.addLayer("Bloom", 5, options);
+    // shiny_layer.m_canvas.setShadersPath(shaders_directory);
+    // shiny_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
+    // shiny_layer.addEffect(std::make_unique<BloomFromAss>(width, height));
 
-    // // auto &ui_layer = m_layers.addLayer("UI", 1000, text_options);
-    // // water_layer.addEffect(std::make_unique<WaterEffect>(width, height));
+    auto &base_layer = m_ui_layers.addLayer("Base", 0, options);
+    base_layer.m_canvas.setShadersPath(shaders_directory);
+    auto &bloom_layer = m_ui_layers.addLayer("Bloom", 1, options);
+    bloom_layer.m_canvas.setShadersPath(shaders_directory);
+    bloom_layer.m_canvas.addShader("boostBar2", "basicinstanced.vert", "boostBar2.frag");
+    bloom_layer.addEffect(std::make_unique<Bloom>(width, height));
+
     // //
     m_window.setShadersPath(shaders_directory);
     m_window.addShader("Shiny", "basicinstanced.vert", "shiny.frag");
     m_window.addShader("Arrow", "basicinstanced.vert", "texture.frag");
     m_window.addShader("LastPass", "basicinstanced.vert", "lastPass.frag");
+    m_window.addShader("boostBar", "basicinstanced.vert", "boostBar.frag");
+    m_window.addShader("boostBar2", "basicinstanced.vert", "boostBar2.frag");
     m_scene_canvas.setShadersPath(shaders_directory);
 }
 
@@ -70,17 +249,20 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     m_player = &m_world->addObjectForced<PlayerEntity>();
     m_player->setPosition({500, 500});
     m_world->m_player = m_player;
-    
-    for (int i = 0; i < 3; ++i)
+
+    for (int i = 0; i < 200; ++i)
     {
         auto &meteor = m_world->addObject2<Meteor>();
+        auto spawn_pos = m_player->getPosition() + randf(100, 1000) * angle2dir(randf(0, 360));
+        meteor.setPosition(spawn_pos);
     }
-    
+
     // std::filesystem::path texture_directory = {__FILE__};
     std::filesystem::path texture_directory = {};
     texture_directory.remove_filename().append("../Resources/Textures/");
     m_textures.setBaseDirectory(std::filesystem::path{"../Resources/Textures/"});
     m_textures.add("Arrow", "arrow.png");
+    m_textures.add("FireNoise", "fireNoise.png");
 
     // std::filesystem::path font_path = {__FILE__};
     std::filesystem::path font_path = {};
@@ -90,18 +272,18 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     spawnNextObjective();
     // addDestroyNObjective(ObjectType::SpaceStation, 2);
 
-    for (int i = 0; i < 500; ++i)
-    {
-        auto &enemy = m_world->addObject2<Enemy>();
-        auto spawn_pos = m_player->getPosition() + randf(100, 400) * angle2dir(randf(0, 360));
-        enemy.setPosition(spawn_pos);
-    }
+    // for (int i = 0; i < 100; ++i)
+    // {
+    //     auto &enemy = m_world->addObject2<Enemy>();
+    //     auto spawn_pos = m_player->getPosition() + randf(100, 400) * angle2dir(randf(0, 360));
+    //     enemy.setPosition(spawn_pos);
+    // }
 
     auto &heart_spawner = m_world->addTrigger<Timer>();
     heart_spawner.setCallback(
         [this]()
         {
-             auto &heart = m_world->addObject2<Heart>();
+            auto &heart = m_world->addObject2<Heart>();
             auto spawn_pos = m_player->getPosition() + randf(20, 200) * angle2dir(randf(0, 360));
             heart.setPosition(spawn_pos);
         });
@@ -113,9 +295,9 @@ Game::Game(Renderer &window, KeyBindings &bindings)
         {
             if (m_world->getActiveCount<Enemy>() < 100) //! max 100 enemies
             {
-                auto &enemy = m_world->addObject2<Enemy>();
-                auto spawn_pos = m_player->getPosition() + randf(50, 200) * angle2dir(randf(0, 360));
-                enemy.setPosition(spawn_pos);
+                // auto &enemy = m_world->addObject2<Enemy>();
+                // auto spawn_pos = m_player->getPosition() + randf(50, 200) * angle2dir(randf(0, 360));
+                // enemy.setPosition(spawn_pos);
             }
         });
 
@@ -255,7 +437,7 @@ void Game::handleEvent(const SDL_Event &event)
     {
         if (event.key.keysym.sym == m_key_binding[PlayerControl::BOOST])
         {
-            m_player->is_boosting = true;
+            m_player->onBoostDown();
         }
         if (event.key.keysym.sym == m_key_binding[PlayerControl::STEER_LEFT])
         {
@@ -296,7 +478,7 @@ void Game::handleEvent(const SDL_Event &event)
         }
         if (event.key.keysym.sym == m_key_binding[PlayerControl::BOOST])
         {
-            m_player->is_boosting = false;
+            m_player->onBoostUp();
         }
         if (event.key.keysym.sym == m_key_binding[PlayerControl::STEER_LEFT])
         {
@@ -396,6 +578,12 @@ void Game::draw(Renderer &window)
     m_world->draw2(m_layers);
     Enemy::m_neighbour_searcher.drawGrid(*m_layers.getLayer("Unit"));
 
+    auto &test_canvas = m_layers.getCanvas("Bloom");
+    Sprite fire_sprite(*m_textures.get("FireNoise"));
+    fire_sprite.setPosition(m_player->getPosition());
+    fire_sprite.setScale(100, 100);
+    test_canvas.drawSprite(fire_sprite, "fireEffect");
+
     //! clear and draw into scene
     m_scene_canvas.clear({0, 0, 0, 0});
     m_scene_canvas.m_view = old_view;
@@ -410,13 +598,14 @@ void Game::draw(Renderer &window)
     screen_sprite.setScale(scene_size / 2.f);
     m_window.m_view.setCenter(screen_sprite.getPosition());
     m_window.m_view.setSize(scene_size);
-    m_window.drawSprite(screen_sprite, "LastPass", DrawType::Dynamic);
+    m_window.drawSprite(screen_sprite, "LastPass");
+
+    //! draw the scene into the window
     auto old_factors = m_window.m_blend_factors;
     m_window.m_blend_factors = {BlendFactor::One, BlendFactor::OneMinusSrcAlpha};
     m_window.drawAll();
     drawUI(window);
     m_window.m_view = old_view;
-
     m_window.m_blend_factors = old_factors;
 
     m_objective_system.draw(window);
@@ -429,40 +618,42 @@ void Game::drawUI(Renderer &window)
     auto old_view = window.m_view;
     window.m_view = window.getDefaultView(); //! draw directly on screen
 
-    std::string hp_text = "HP: " + std::to_string(static_cast<int>(m_player->health));
-
-    Sprite health_rect;
+    m_ui_layers.setView(window.getDefaultView());
+    m_ui_layers.clearAllLayers();
 
     utils::Vector2f window_size = window.getTargetSize();
     utils::Vector2f healt_comp_uisize = {window_size.x * 1.f / 6.f, window_size.y * 1.f / 10.f};
     utils::Vector2f healt_comp_min = {window_size.x * 5.f / 6.f, window_size.y * 9.f / 10.f};
 
-    auto mouse_pos = m_window.getMouseInWorld();
-    m_health_text.setText(hp_text);
-    m_health_text.centerAround(healt_comp_min);
-
+    std::string hp_text = "HP: " + std::to_string(static_cast<int>(m_player->health));
+    Sprite health_rect;
     health_rect.setPosition(healt_comp_min.x, healt_comp_min.y);
     float health_ratio = m_player->health / (float)m_player->max_health;
     health_rect.setScale(healt_comp_uisize.x * 3.f / 4.f, healt_comp_uisize.y / 3.f);
     health_rect.m_tex_rect = {0, 0, 1, 1};
     health_rect.m_tex_size = {1, 1};
-    // health_rect.m_color = {255, 0, 0, 255};
     window.drawSprite(health_rect, "healthBar");
     window.getShader("healthBar").use();
     window.getShader("healthBar").setUniform2("u_health_percentage", health_ratio);
     window.drawAll();
+
+    m_health_text.setText(hp_text);
+    m_health_text.centerAround(healt_comp_min);
     window.drawText(m_health_text);
 
-    utils::Vector2f booster_size = {window_size.x * 1.f / 6.f, health_rect.getScale().y * 2.f};
-    utils::Vector2f booster_pos = {window_size.x * 1.f / 6.f, health_rect.getPosition().y};
+    //! mirror w.r.t. health rect and same size
+    utils::Vector2f booster_size = health_rect.getScale() * 2.0;
+    utils::Vector2f booster_pos = {window_size.x - health_rect.getPosition().x, health_rect.getPosition().y};
     Sprite booster_rect;
-    booster_rect.setTexture(*m_textures.get("Arrow"));
+    booster_rect.setTexture(*m_textures.get("FireNoise"));
+    booster_rect.setPosition(booster_pos);
+    booster_rect.setScale(booster_size.x / 2.f, booster_size.y / 2.f);
+    booster_rect.m_tex_rect = {0, 0, 1, 1};
+    booster_rect.m_tex_size = {1, 1};
     float booster_ratio = std::min({1.f, m_player->boost_heat / m_player->max_boost_heat});
-    booster_rect.setPosition(booster_pos.x - booster_size.x / 2.f * (1. - booster_ratio), booster_pos.y);
-    booster_rect.setScale(booster_size.x / 2.f * booster_ratio, booster_size.y / 2.f);
-    unsigned char factor = 255 * (booster_ratio);
-    unsigned char factor2 = 255 * (1. - booster_ratio);
-    booster_rect.m_color = ColorByte{factor, factor2, 0, 255};
+    window.getShader("boostBar").use();
+    window.getShader("boostBar").setUniform2("u_booster_disabled", (int)(m_player->booster == BoosterState::Disabled));
+    window.getShader("boostBar").setUniform2("u_booster_ratio", booster_ratio);
     window.drawSprite(booster_rect, "boostBar");
 
     utils::Vector2f score_comp_uisize = {window_size.x * 1.f / 6.f, (float)window.getTargetSize().y * 1.f / 10.f};
@@ -473,6 +664,18 @@ void Game::drawUI(Renderer &window)
 
     window.drawText(m_health_text);
     window.drawAll();
+    
+    // window.clear({0., 0., 0., 1.});
+    // if(m_player->booster == BoosterState::Boosting)
+    {
+        auto& ui_canvas = m_ui_layers.getCanvas("Bloom");
+        ui_canvas.getShader("boostBar2").use();
+        ui_canvas.getShader("boostBar2").setUniform2("u_booster_disabled", m_player->booster == BoosterState::Disabled);
+        ui_canvas.getShader("boostBar2").setUniform2("u_booster_ratio", booster_ratio);
+        ui_canvas.drawSprite(booster_rect, "boostBar2");
+        m_ui_layers.drawInto(window);
+    }
+    
     window.m_view = old_view;
 }
 

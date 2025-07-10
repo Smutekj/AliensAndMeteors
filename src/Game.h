@@ -69,6 +69,7 @@ private:
   TextureHolder m_textures;
   Texture m_background;
   LayersHolder m_layers;
+  LayersHolder m_ui_layers;
 
   // friend UI;
   // UI m_ui;
