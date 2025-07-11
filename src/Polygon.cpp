@@ -53,6 +53,7 @@ void Polygon::rotate(float by)
   setRotation(getRotation() + by * 180. / M_PI);
 }
 
+
 utils::Vector2f Polygon::getMVTOfSphere(utils::Vector2f center, float radius)
 {
 

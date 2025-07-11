@@ -16,7 +16,7 @@ struct Polygon : public Transform
   AABB getBoundingRect() const
   {
     auto r = getPosition();
-    auto dr = utils::Vector2f{getScale().x, getScale().y};
+    auto dr = utils::Vector2f{std::max(getScale().x, getScale().y)};
     return {r - dr, r + dr};
   }
 
