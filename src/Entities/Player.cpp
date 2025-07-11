@@ -131,13 +131,10 @@ void PlayerEntity::draw(LayersHolder &layers)
     auto &target = layers.getCanvas("Unit");
     auto &shiny_target = layers.getCanvas("Bloom");
 
-    m_player_shape.setPosition(m_pos);
-    m_player_shape.setScale(2 * m_radius, 2 * m_radius);
-    m_player_shape.setTexture(*m_textures->get("FireNoise"));
-    
     // shiny_target.drawSprite(m_player_shape, "boostBar");
     
-    m_player_shape.setScale(4 * m_radius, 4 * m_radius);
+    m_player_shape.setPosition(m_pos);
+    m_player_shape.setScale(2*m_radius, 2*m_radius);
     m_player_shape.setRotation(glm::radians(m_angle));
     m_player_shape.setTexture(*m_textures->get("PlayerShip"));
     target.drawSprite(m_player_shape);
