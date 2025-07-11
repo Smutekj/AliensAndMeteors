@@ -214,9 +214,8 @@ EnterTextItem::EnterTextItem(State::Context &context, std::string &text, std::st
 void EnterTextItem::handleEvent(SDL_Event event)
 {
 
-    if (event.type == SDL_KEYUP || event.type == SDL_KEYDOWN)
+    if (event.type == SDL_KEYDOWN)
     {
-
         if (event.key.keysym.sym == SDLK_BACKSPACE && m_entered_text.size() > 0)
         {
             m_entered_text.pop_back();
@@ -226,7 +225,7 @@ void EnterTextItem::handleEvent(SDL_Event event)
             m_entered_text.push_back('.');
         }
     }
-    else if (event.type == SDL_TEXTINPUT)
+    if (event.type == SDL_TEXTINPUT)
     {
         m_entered_text += event.text.text;
     }

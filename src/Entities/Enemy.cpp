@@ -217,8 +217,6 @@ std::unordered_map<Multiplier, float> Enemy::m_force_ranges = {
 // {
 // }
 
-
-
 class BoidSystem
 {
 
@@ -230,17 +228,24 @@ class BoidSystem
         utils::Vector2f boid_force;
     };
 
+    using GridIndT = std::pair<int, int>;
+    using GridNodeType = ContiguousColony<BoidComponent, int>;
+
 public:
-    BoidSystem(Collisions::CollisionSystem &collider) : collider(collider)
+    BoidSystem() 
+    : m_neighbour_searcher(50.)
     {
 
     }
 
+    // void insert();
+
     void update(float dt)
     {
         //! construct neighbour list
-        auto pairs = proximity_tree.findClosePairsWithin();
-        
+        // auto pairs = m_neighbour_searcher.getNeighbourList();
+
+
         //! calculate forces
 
 
@@ -248,11 +253,19 @@ public:
     }
 
     ComponentBlock<BoidComponent, 1000> m_data_block;
-
     std::array<std::vector<BoidComponent>, 1000> neighbour_lists;
 private:
-    BoundingVolumeTree proximity_tree;
-    Collisions::CollisionSystem& collider;
+    utils::Vector2f grid_size;
+    struct pair_hash
+    {
+        std::size_t operator()(GridIndT grid_ind) const
+        {
+            return (grid_ind.first ^ grid_ind.second) << 16 + (grid_ind.first - grid_ind.second);
+        }
+    };
+    std::unordered_map<GridIndT, std::shared_ptr<GridNodeType>, pair_hash> m_grid;
+
+    SparseGridNeighbourSearcher m_neighbour_searcher;
 };
 
 void Enemy::boidSteering()

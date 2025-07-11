@@ -128,7 +128,7 @@ void PlayerDiedState::handleEvent(const SDL_Event &event)
   if (event.type == SDL_KEYUP)
   {
     bool key_is_enter = event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_KP_ENTER;
-    if (key_is_enter)
+    if (key_is_enter || event.key.keysym.sym == SDLK_ESCAPE)
     {
       if (m_entered_name.length() != 0)
       {
@@ -137,15 +137,8 @@ void PlayerDiedState::handleEvent(const SDL_Event &event)
       m_stack->popState();
       m_stack->pushState(States::ID::Menu);
     }
-    else if (event.key.keysym.sym == SDLK_BACKSPACE && m_entered_name.size() > 0)
-    {
-      m_entered_name.pop_back();
-    }
   }
-  else if (event.type == SDL_TEXTINPUT)
-  {
-    m_entered_name = m_entered_name + event.text.text[0];
-  }
+
 
   m_menu.handleEvent(event);
 }
