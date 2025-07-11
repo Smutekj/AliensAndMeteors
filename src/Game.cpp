@@ -110,6 +110,7 @@ Game::Game(Renderer &window, KeyBindings &bindings)
         [this]()
         {
             auto &heart = m_world->addObject2<Heart>();
+            heart.type = Pickup::Fuel;
             auto spawn_pos = m_player->getPosition() + randf(20, 200) * angle2dir(randf(0, 360));
             heart.setPosition(spawn_pos);
         });
@@ -401,13 +402,13 @@ void Game::draw(Renderer &window)
 
     m_layers.clearAllLayers();
     m_world->draw(m_layers);
-    m_world->draw2(m_layers);
+    m_world->draw2(m_layers, window.m_view);
     Enemy::m_neighbour_searcher.drawGrid(*m_layers.getLayer("Unit"));
 
     auto &test_canvas = m_layers.getCanvas("Bloom");
     Sprite fire_sprite(*m_textures.get("FireNoise"));
     fire_sprite.setPosition(m_player->getPosition());
-    fire_sprite.setScale(100, 100);
+    fire_sprite.setScale(utils::Vector2f{m_player->m_radius*5.});
     test_canvas.drawSprite(fire_sprite, "fireEffect");
 
     //! clear and draw into scene

@@ -121,7 +121,7 @@ public:
             if (new_entity.collides())
             {
                 m_collision_system.insertObject(new_entity);
-            } 
+            }
             new_entity.onCreation();
             to_add.pop();
         }
@@ -182,29 +182,36 @@ public:
     {
         m_collision_system.update();
 
-
         std::apply([this, dt](auto &...entity_queue)
                    { ((updateX(entity_queue, dt)), ...); }, m_entities2);
-
-
 
         addQueuedEntities2();
         removeQueuedEntities2();
     }
     template <class EntityType>
-    void drawX(ComponentBlock<EntityType> &entity_block, LayersHolder &layers)
+    void drawX(ComponentBlock<EntityType> &entity_block, LayersHolder &layers, View camera_view)
     {
+        camera_view.setSize(camera_view.getSize() * 1.2); //! draw also a little bit beyond the camera
+
         auto &block = entity_block.getData();
         int first_ind = block.at(0).next;
         for (int ind = first_ind; ind <= 750; ind += block[ind].next) // block[ind].next)
         {
-            block.at(ind).comp.draw(layers);
+            auto &drawable = block.at(ind).comp;
+
+            Rectf bounding_rect = {drawable.getPosition().x, drawable.getPosition().y,
+                                   drawable.getSize().x, drawable.getSize().y};
+
+            if (camera_view.intersects(bounding_rect))
+            {
+                drawable.draw(layers);
+            }
         }
     }
-    void draw2(LayersHolder &layers)
+    void draw2(LayersHolder &layers, View camera_view)
     {
-        std::apply([this, &layers](auto &&...ents)
-                   { ((drawX(ents, layers)), ...); }, m_entities2);
+        std::apply([this, &layers, camera_view](auto &&...ents)
+                   { ((drawX(ents, layers, camera_view)), ...); }, m_entities2);
     }
 
     void destroyObject(int entity_id);
@@ -214,7 +221,7 @@ public:
     TriggerType &addTrigger(Args... args);
 
     std::size_t getNActiveEntities(ObjectType type);
-    
+
     template <class EntityType>
     std::size_t getActiveCount()
     {

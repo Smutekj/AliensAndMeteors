@@ -114,6 +114,7 @@ public:
     ObjectType getType() const;
 
     void setSize(utils::Vector2f size);
+    const utils::Vector2f& getSize() const;
 
     void setDestructionCallback(std::function<void(int, ObjectType)> callback)
     {
