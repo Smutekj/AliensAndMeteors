@@ -18,11 +18,6 @@ uniform vec3 u_color = vec3(1.,1.2,0.);
 uniform vec3 u_color_edge = vec3(1.,0.,1.);
 uniform float u_time = 0.;
 
-float squareSDF(vec2 tex, vec2 center, vec2 size)
-{
-    return min(tex.x - center.x - size.x, tex.y - center.y - size.y);
-}
-
 float sdBox( vec2 p, vec2 b )
 {
     vec2 d = abs(p)-b;

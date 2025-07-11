@@ -55,6 +55,7 @@ void Game::initializeLayers()
     m_window.addShader("Arrow", "basicinstanced.vert", "texture.frag");
     m_window.addShader("LastPass", "basicinstanced.vert", "lastPass.frag");
     m_window.addShader("boostBar", "basicinstanced.vert", "boostBar.frag");
+    m_window.addShader("fuelBar", "basicinstanced.vert", "fuelBar.frag");
     m_window.addShader("boostBar2", "basicinstanced.vert", "boostBar2.frag");
     m_scene_canvas.setShadersPath(shaders_directory);
 }
@@ -482,6 +483,20 @@ void Game::drawUI(Renderer &window)
     window.getShader("boostBar").setUniform2("u_booster_disabled", (int)(m_player->booster == BoosterState::Disabled));
     window.getShader("boostBar").setUniform2("u_booster_ratio", booster_ratio);
     window.drawSprite(booster_rect, "boostBar");
+    
+    auto& ui_canvas = m_ui_layers.getCanvas("Bloom");
+    ui_canvas.getShader("boostBar2").use();
+    ui_canvas.getShader("boostBar2").setUniform2("u_booster_disabled", m_player->booster == BoosterState::Disabled);
+    ui_canvas.getShader("boostBar2").setUniform2("u_booster_ratio", booster_ratio);
+    ui_canvas.drawSprite(booster_rect, "boostBar2");
+    m_ui_layers.drawInto(window);
+
+    // draw fuel bar
+    booster_rect.setPosition(booster_pos.x, booster_pos.y - booster_size.y - 10.);
+    float fuel_ratio = std::min({1.f, m_player->m_fuel / m_player->m_max_fuel});
+    window.getShader("fuelBar").use();
+    window.getShader("fuelBar").setUniform2("u_fuel_ratio", fuel_ratio);
+    window.drawSprite(booster_rect, "fuelBar");
 
     utils::Vector2f score_comp_uisize = {window_size.x * 1.f / 6.f, (float)window.getTargetSize().y * 1.f / 10.f};
     utils::Vector2f score_comp_min = {window_size.x / 2.f,
@@ -492,16 +507,6 @@ void Game::drawUI(Renderer &window)
     window.drawText(m_health_text);
     window.drawAll();
     
-    // window.clear({0., 0., 0., 1.});
-    // if(m_player->booster == BoosterState::Boosting)
-    {
-        auto& ui_canvas = m_ui_layers.getCanvas("Bloom");
-        ui_canvas.getShader("boostBar2").use();
-        ui_canvas.getShader("boostBar2").setUniform2("u_booster_disabled", m_player->booster == BoosterState::Disabled);
-        ui_canvas.getShader("boostBar2").setUniform2("u_booster_ratio", booster_ratio);
-        ui_canvas.drawSprite(booster_rect, "boostBar2");
-        m_ui_layers.drawInto(window);
-    }
     
     window.m_view = old_view;
 }
