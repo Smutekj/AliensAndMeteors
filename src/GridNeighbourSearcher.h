@@ -56,6 +56,11 @@ struct ContiguousColony
         id2data_ind[id] = data.size() - 1;
     }
 
+    DataType& get(IdType id)
+    {
+        return data.at(id2data_ind.at(id));
+    }
+
     void erase(IdType id)
     {
         assert(id2data_ind.count(id) != 0);
@@ -85,11 +90,13 @@ private:
     std::unordered_map<IdType, std::size_t> id2data_ind;
 };
 
+
+template <class DataType = utils::Vector2f>
 class SparseGridNeighbourSearcher
 {
 
-    using GridIndT = std::pair<int, int>;
-    using GridNodeType = ContiguousColony<utils::Vector2f, int>;
+    using GridIndT = std::pair<int, int>; //! x and y coordinate of a grid
+    using GridNodeType = ContiguousColony<DataType, int>;
 
 public:
     SparseGridNeighbourSearcher(float max_radius = 30.f)
@@ -159,12 +166,14 @@ public:
 
         if (old_grid_ind != new_ind)
         {
+            auto datum = m_grid.at(old_grid_ind)->get(ind);
             remove(old_grid_ind, ind);
-            insertAt(new_pos, ind);
+            insertAt(new_pos, datum, ind);
         }
     }
 
-    void insertAt(utils::Vector2f pos, int ind)
+    
+    void insertAt(utils::Vector2f pos, DataType datum, int ind)
     {
         GridIndT grid_ind = {std::floor(pos.x / grid_size.x), std::floor(pos.y / grid_size.y)};
 
@@ -175,7 +184,7 @@ public:
 
         assert(m_id2grid_ind.count(ind) == 0);
         m_id2grid_ind[ind] = grid_ind;
-        m_grid.at(grid_ind)->insert(ind, pos);
+        m_grid.at(grid_ind)->insert(ind, datum);
     }
 
     void remove(int entity_ind)
@@ -214,7 +223,7 @@ private:
     {
         std::size_t operator()(GridIndT grid_ind) const
         {
-            return (grid_ind.first ^ grid_ind.second) << 16 + (grid_ind.first - grid_ind.second);
+            return ((grid_ind.first ^ grid_ind.second) << 16) + (grid_ind.first - grid_ind.second);
         }
     };
 
