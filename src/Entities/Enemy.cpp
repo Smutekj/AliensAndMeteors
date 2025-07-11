@@ -19,11 +19,12 @@ Enemy::Enemy(GameWorld *world, TextureHolder &textures,
       GameObject(world, textures, ObjectType::Enemy, collider, player)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
-    m_collision_shape->setScale(4, 4);
+    m_size = {16,16};
+    m_collision_shape->setScale(m_size / 2.);
     m_target_pos = player->getPosition();
 }
 
-SparseGridNeighbourSearcher Enemy::m_neighbour_searcher = {50.f};
+SparseGridNeighbourSearcher<utils::Vector2f> Enemy::m_neighbour_searcher = {50.f};
 
 Enemy::~Enemy() {}
 
@@ -109,7 +110,7 @@ void Enemy::onCollisionWith(GameObject &obj, CollisionData &c_data)
 void Enemy::onCreation()
 {
     setBehaviour();
-    m_neighbour_searcher.insertAt(getPosition(), m_id);
+    m_neighbour_searcher.insertAt(getPosition(), getPosition(), m_id);
 }
 void Enemy::onDestruction()
 {
@@ -131,12 +132,12 @@ void Enemy::draw(LayersHolder &layers)
     auto &target = layers.getCanvas("Unit");
     m_sprite.setPosition(m_pos);
     m_sprite.setRotation(glm::radians(m_angle));
-    m_sprite.setScale(4, 4);
+    m_sprite.setScale(m_size/2.f);
 
     target.drawSprite(m_sprite);
 
     Sprite booster;
-    utils::Vector2f booster_size = {4, 2};
+    utils::Vector2f booster_size = {6, 3};
 
     booster.setTexture(*m_textures->get("BoosterPurple"));
     booster.setScale(booster_size.x, 1.3 * booster_size.y);
@@ -219,7 +220,6 @@ std::unordered_map<Multiplier, float> Enemy::m_force_ranges = {
 
 class BoidSystem
 {
-
     struct BoidComponent
     {
         float radius;
@@ -232,45 +232,46 @@ class BoidSystem
     using GridNodeType = ContiguousColony<BoidComponent, int>;
 
 public:
-    BoidSystem() 
-    : m_neighbour_searcher(50.)
+    BoidSystem()
+        : m_neighbour_searcher(50.)
     {
-
     }
 
-    // void insert();
+    void insert(BoidComponent &new_comp, int entity_id)
+    {
+        m_neighbour_searcher.insertAt(new_comp.pos, new_comp, entity_id);
+    }
 
+    void remove(int entity_id)
+    {
+        m_neighbour_searcher.remove(entity_id);
+    }
+
+    void preUpdate()
+    {
+    }
     void update(float dt)
     {
         //! construct neighbour list
-        // auto pairs = m_neighbour_searcher.getNeighbourList();
-
 
         //! calculate forces
+    }
 
-
+    void postUpdate()
+    {
         //! update component owners
     }
 
     ComponentBlock<BoidComponent, 1000> m_data_block;
     std::array<std::vector<BoidComponent>, 1000> neighbour_lists;
-private:
-    utils::Vector2f grid_size;
-    struct pair_hash
-    {
-        std::size_t operator()(GridIndT grid_ind) const
-        {
-            return (grid_ind.first ^ grid_ind.second) << 16 + (grid_ind.first - grid_ind.second);
-        }
-    };
-    std::unordered_map<GridIndT, std::shared_ptr<GridNodeType>, pair_hash> m_grid;
 
-    SparseGridNeighbourSearcher m_neighbour_searcher;
+private:
+    SparseGridNeighbourSearcher<BoidComponent> m_neighbour_searcher;
 };
 
 void Enemy::boidSteering()
 {
-    auto neighbours2 = m_neighbour_searcher.getNeighbourList( m_id, m_pos, 50.);
+    auto neighbours2 = m_neighbour_searcher.getNeighbourList(m_id, m_pos, 50.);
 
     // auto neighbours = m_collision_system->findNearestObjects(ObjectType::Enemy, m_pos, 50.);
 
@@ -294,7 +295,7 @@ void Enemy::boidSteering()
     auto range_align = std::pow(Enemy::m_force_ranges[Multiplier::ALIGN], 2);
     auto range_scatter = std::pow(Enemy::m_force_ranges[Multiplier::SCATTER], 2);
 
-    for (auto [neighbour_pos, id]  : neighbours2)
+    for (auto [neighbour_pos, id] : neighbours2)
     {
         // if (p_neighbour == this)
         if (m_id == id)
@@ -305,7 +306,7 @@ void Enemy::boidSteering()
         // if(ind_j == boid_ind){continue;}
         // const auto dr = neighbour_boid.getPosition() - m_pos;
         const auto dr = neighbour_pos - m_pos;
-        const auto dist2 = norm2(dr);
+        const auto dist2 = utils::norm2(dr);
 
         if (dist2 < range_align)
         {
@@ -350,7 +351,6 @@ void Enemy::boidSteering()
     {
         align_force = align_multiplier * align_direction / norm(align_direction) - m_vel;
     }
-
 
     m_acc += (scatter_force + align_force + seek_force + cohesion_force);
     truncate(m_acc, max_acc);

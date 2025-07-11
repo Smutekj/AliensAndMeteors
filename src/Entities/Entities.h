@@ -163,8 +163,8 @@ public:
     virtual void draw(LayersHolder &target) override;
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
 
+    Pickup type = Pickup::Heart;
 private:
-    Pickup type;
 
     utils::Vector2f m_acc;
     float max_vel = 100.f;

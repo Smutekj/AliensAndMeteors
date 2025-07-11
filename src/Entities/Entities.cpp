@@ -246,10 +246,8 @@ Heart::Heart(GameWorld *world, TextureHolder &textures, Collisions::CollisionSys
     : GameObject(world, textures, ObjectType::Heart)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
-    m_collision_shape->setScale(3, 3);
-    
-    // m_rigid_body = std::make_unique<RigidBody>();
-    // m_rigid_body->mass = 0.01f;
+    m_size = 6.;
+    m_collision_shape->setScale(m_size / 2.);
 }
 
 Heart::~Heart() {}
@@ -290,6 +288,6 @@ void Heart::draw(LayersHolder& layers)
         rect.setTexture(*m_textures->get("Fuel"));
     }
     rect.setPosition(m_pos);
-    rect.setScale(3., 3.);
+    rect.setScale(m_size / 2.f);
     target.drawSprite(rect);
 }

@@ -16,6 +16,7 @@ namespace Collisions
     class CollisionSystem;
 }
 
+template <class T>
 class SparseGridNeighbourSearcher;
 
 class Enemy : public GameObject
@@ -52,8 +53,8 @@ public:
     bool m_deactivated = false;
     float m_deactivated_time = 1.f;
 
-    float max_vel = 50.f;
-    float max_acc = 70.f;
+    float max_vel = 30.f;
+    float max_acc = 50.f;
     float max_impulse_vel = 40.f;
 
     float m_health = 5;
@@ -61,7 +62,7 @@ public:
     utils::Vector2f m_target_pos;
     std::vector<utils::Vector2f> m_cm;
 
-    static SparseGridNeighbourSearcher m_neighbour_searcher;
+    static SparseGridNeighbourSearcher<utils::Vector2f> m_neighbour_searcher;
 private:
     float m_boid_radius = 30.f;
     utils::Vector2f m_acc;
