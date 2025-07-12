@@ -20,33 +20,26 @@ void Game::initializeLayers()
     text_options.data_type = TextureDataTypes::UByte;
     text_options.format = TextureFormat::RGBA;
     text_options.internal_format = TextureFormat::RGBA;
-    std::cout << "TEST0!" << std::endl;
 
     // std::filesystem::path shaders_directory = {__FILE__};
     std::filesystem::path shaders_directory = {"../Resources/Shaders/"};
     // shaders_directory.remove_filename().append();
 
-    auto &unit_layer = m_layers.addLayer("Unit", 3, options);
+    auto &unit_layer = m_layers.addLayer("Unit", 3, options, width, height);
     unit_layer.m_canvas.setShadersPath(shaders_directory);
-    std::cout << "TEST1!" << std::endl;
     unit_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
-    std::cout << "TEST!" << std::endl;
 
-    auto &shiny_layer = m_layers.addLayer("Bloom", 5, options);
+    auto &shiny_layer = m_layers.addLayer("Bloom", 5, options,  width, height);
     shiny_layer.m_canvas.setShadersPath(shaders_directory);
     shiny_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
     shiny_layer.addEffect(std::make_unique<Bloom3>(width, height));
 
-    // auto &shiny_layer = m_layers.addLayer("Bloom", 5, options);
-    // shiny_layer.m_canvas.setShadersPath(shaders_directory);
-    // shiny_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
-    // shiny_layer.addEffect(std::make_unique<BloomFromAss>(width, height));
-
-    auto &base_layer = m_ui_layers.addLayer("Base", 0, options);
+    auto &base_layer = m_ui_layers.addLayer("Base", 0, options,  width, height);
     base_layer.m_canvas.setShadersPath(shaders_directory);
-    auto &bloom_layer = m_ui_layers.addLayer("Bloom", 1, options);
+    auto &bloom_layer = m_ui_layers.addLayer("Bloom", 1, options, width, height);
     bloom_layer.m_canvas.setShadersPath(shaders_directory);
     bloom_layer.m_canvas.addShader("boostBar2", "basicinstanced.vert", "boostBar2.frag");
+    bloom_layer.m_canvas.addShader("fuelBar", "basicinstanced.vert", "fuelBar.frag");
     bloom_layer.addEffect(std::make_unique<Bloom>(width, height));
 
     // //
@@ -131,7 +124,7 @@ Game::Game(Renderer &window, KeyBindings &bindings)
 
     auto view = window.m_view;
     view.setCenter(m_player->getPosition());
-    view.setSize(150.f, 150.f * window.getTargetSize().y / window.getTargetSize().x);
+    view.setSize(200.f, 200.f * window.getTargetSize().y / window.getTargetSize().x);
     window.m_view = view;
     m_default_view = view;
 
@@ -330,7 +323,7 @@ void Game::handleEvent(const SDL_Event &event)
     {
         if (event.button.button == SDL_BUTTON_RIGHT)
         {
-            auto &station = m_world->addObject2<SpaceStation>();
+            auto &station = m_world->addObject2<Turret>();
             station.setPosition(mouse_position);
         }
     }
@@ -402,6 +395,7 @@ void Game::draw(Renderer &window)
     window.m_view = old_view;
 
     m_layers.clearAllLayers();
+    m_player->draw(m_layers);
     m_world->draw(m_layers);
     m_world->draw2(m_layers, window.m_view);
     Enemy::m_neighbour_searcher.drawGrid(*m_layers.getLayer("Unit"));
@@ -450,7 +444,9 @@ void Game::drawUI(Renderer &window)
     m_ui_layers.clearAllLayers();
 
     utils::Vector2f window_size = window.getTargetSize();
-    utils::Vector2f healt_comp_uisize = {window_size.x * 1.f / 6.f, window_size.y * 1.f / 10.f};
+    // utils::Vector2f healt_comp_uisize = {window_size.x * 1.f / 6.f, window_size.y * 1.f / 10.f};
+    // utils::Vector2f healt_comp_min = {window_size.x * 5.f / 6.f, window_size.y * 9.f / 10.f};
+    utils::Vector2f healt_comp_uisize = {100, 60}; //{window_size.x * 1.f / 6.f, window_size.y * 1.f / 10.f};
     utils::Vector2f healt_comp_min = {window_size.x * 5.f / 6.f, window_size.y * 9.f / 10.f};
 
     std::string hp_text = "HP: " + std::to_string(static_cast<int>(m_player->health));
@@ -489,14 +485,16 @@ void Game::drawUI(Renderer &window)
     ui_canvas.getShader("boostBar2").setUniform2("u_booster_disabled", m_player->booster == BoosterState::Disabled);
     ui_canvas.getShader("boostBar2").setUniform2("u_booster_ratio", booster_ratio);
     ui_canvas.drawSprite(booster_rect, "boostBar2");
-    m_ui_layers.drawInto(window);
-
+    
     // draw fuel bar
     booster_rect.setPosition(booster_pos.x, booster_pos.y - booster_size.y - 10.);
     float fuel_ratio = std::min({1.f, m_player->m_fuel / m_player->m_max_fuel});
-    window.getShader("fuelBar").use();
-    window.getShader("fuelBar").setUniform2("u_fuel_ratio", fuel_ratio);
-    window.drawSprite(booster_rect, "fuelBar");
+    ui_canvas.getShader("fuelBar").use();
+    ui_canvas.getShader("fuelBar").setUniform2("u_fuel_ratio", fuel_ratio);
+    ui_canvas.drawSprite(booster_rect, "fuelBar");
+    
+    m_ui_layers.drawInto(window);
+
 
     utils::Vector2f score_comp_uisize = {window_size.x * 1.f / 6.f, (float)window.getTargetSize().y * 1.f / 10.f};
     utils::Vector2f score_comp_min = {window_size.x / 2.f,
