@@ -11,32 +11,6 @@ PlayerEntity::PlayerEntity(GameWorld *world, TextureHolder &textures, Collisions
 {
     m_collision_shape = std::make_unique<Polygon>(4);
     m_collision_shape->setScale(2 * m_radius, 2 * m_radius);
-
-    m_particles_left = std::make_unique<Particles>(100);
-    m_particles_right = std::make_unique<Particles>(100);
-
-    auto basic_emitter = [this](utils::Vector2f spawn_pos)
-    {
-        Particle new_part;
-        new_part.pos = spawn_pos;
-        new_part.color = {1, 0, 1, 1};
-        new_part.vel = 0. * m_vel - 0.8 * utils::angle2dir(m_angle - 180 + randf(-60, 60));
-        return new_part;
-    };
-
-    auto basic_updater = [](Particle &part, float dt)
-    {
-        part.pos = part.pos + part.vel * dt;
-        part.scale += utils::Vector2f{0.075, 0.075};
-    };
-
-    m_particles_left->setEmitter(basic_emitter);
-    m_particles_right->setEmitter(basic_emitter);
-    m_particles_left->setUpdater(basic_updater);
-    m_particles_right->setUpdater(basic_updater);
-
-    m_particles_left->setFinalColor({0, 0, 0, 0});
-    m_particles_right->setFinalColor({0, 0, 0, 0});
 }
 
 void PlayerEntity::update(float dt)
@@ -132,28 +106,55 @@ void PlayerEntity::draw(LayersHolder &layers)
     auto &shiny_target = layers.getCanvas("Bloom");
 
     // shiny_target.drawSprite(m_player_shape, "boostBar");
-    
+
     m_player_shape.setPosition(m_pos);
-    m_player_shape.setScale(2*m_radius, 2*m_radius);
+    m_player_shape.setScale(2 * m_radius, 2 * m_radius);
     m_player_shape.setRotation(glm::radians(m_angle));
     m_player_shape.setTexture(*m_textures->get("PlayerShip"));
     target.drawSprite(m_player_shape);
 
     if (booster == BoosterState::Boosting)
     {
-        m_particles_left->setInitColor({500, 1, 0, 1.0});
-        m_particles_right->setInitColor({500, 1, 0, 1.0});
+        m_particles_left->setInitColor({50., 1, 0, 1.0});
+        m_particles_right->setInitColor({50., 1, 0, 1.0});
     }
     else
     {
-        m_particles_left->setInitColor({5., 2., 0, 0.2});
-        m_particles_right->setInitColor({5., 2., 0, 0.2});
+        m_particles_left->setInitColor({1., 1., 0, 1.0});
+        m_particles_right->setInitColor({1., 1., 0, 1.0});
     }
 
     m_particles_left->draw(shiny_target);
     m_particles_right->draw(shiny_target);
 }
-void PlayerEntity::onCreation() {}
+void PlayerEntity::onCreation()
+{
+    m_particles_left = std::make_unique<Particles>(100);
+    m_particles_right = std::make_unique<Particles>(100);
+
+    auto basic_emitter = [this](utils::Vector2f spawn_pos)
+    {
+        Particle new_part;
+        new_part.pos = spawn_pos;
+        new_part.color = {1, 0, 1, 1};
+        new_part.vel = 0. * m_vel - 0.8 * utils::angle2dir(m_angle - 180 + randf(-60, 60));
+        return new_part;
+    };
+
+    auto basic_updater = [](Particle &part, float dt)
+    {
+        part.pos = part.pos + part.vel * dt;
+        part.scale += utils::Vector2f{0.075, 0.075};
+    };
+
+    m_particles_left->setEmitter(basic_emitter);
+    m_particles_right->setEmitter(basic_emitter);
+    m_particles_left->setUpdater(basic_updater);
+    m_particles_right->setUpdater(basic_updater);
+
+    m_particles_left->setFinalColor({1, 0, 0, 0.1});
+    m_particles_right->setFinalColor({1, 0, 0, 0.1});
+}
 void PlayerEntity::onDestruction() {}
 
 void PlayerEntity::fixAngle()
@@ -184,8 +185,8 @@ void PlayerEntity::boost()
     {
         boost_heat -= 0.75;
     }
-    
-    if(m_fuel < 0)
+
+    if (m_fuel < 0)
     {
         m_fuel = 0.;
         booster = BoosterState::Disabled;
