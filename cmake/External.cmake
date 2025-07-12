@@ -4,6 +4,6 @@ include(FetchContent)
 FetchContent_Declare(
   renderer  
   GIT_REPOSITORY https://github.com/Smutekj/simple-emscripten-renderer
-  GIT_TAG VAO
+  GIT_TAG master
 )
 FetchContent_MakeAvailable(renderer)
