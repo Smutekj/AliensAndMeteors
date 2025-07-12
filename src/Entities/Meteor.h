@@ -28,4 +28,5 @@ private:
     GameObject* p_player = nullptr;
     float max_vel = 40.f;
     float max_impulse_vel = 10.f;
+    float m_angle_vel = 0.;
 };

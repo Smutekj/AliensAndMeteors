@@ -18,6 +18,8 @@ void Meteor::update(float dt)
     truncate(m_vel, max_vel);
     m_pos += m_vel * dt;
 
+    setAngle(m_angle + m_rigid_body->angle_vel * dt);
+
     auto player_pos = p_player->getPosition();
     auto player_vel = p_player->m_vel;
     auto obj_moves_away = utils::dot(player_vel, m_vel) < 0;
@@ -45,6 +47,15 @@ void Meteor::onCollisionWith(GameObject &obj, CollisionData &c_data)
 
 void Meteor::draw(LayersHolder &layers)
 {
+    //! find center of mass in the base coordinates
+    auto points_orig = m_collision_shape->points;
+    auto n_points = points_orig.size();
+    utils::Vector2f center_orig = std::accumulate(points_orig.begin(), points_orig.end(), utils::Vector2f{0, 0},
+                                                  [](utils::Vector2f prev_sum, const utils::Vector2f &val)
+                                                  {
+                                                      return prev_sum + val;
+                                                  });
+    center_orig /= n_points;
 
     auto points = m_collision_shape->getPointsInWorld();
     auto &target = layers.getCanvas("Unit");
@@ -57,15 +68,11 @@ void Meteor::draw(LayersHolder &layers)
 
     Color c = {1, 0, 0, 1};
     auto center = m_collision_shape->getCenter();
-    auto n_points = points.size();
     for (int i = 0; i < n_points; ++i)
     {
-        auto tex_coord = ((points[i] - center) / m_collision_shape->getScale().x + 1.) / 2.;
-        auto tex_coord_next = ((points[(i + 1) % n_points] - center) / m_collision_shape->getScale().x + 1.) / 2.;
-
-        m_verts[3 * i + 0] = {points[i], c, tex_coord};
-        m_verts[3 * i + 1] = {points[(i + 1) % n_points], c, tex_coord_next};
-        m_verts[3 * i + 2] = {center, c, {0.5, 0.5}};
+        m_verts[3 * i + 0] = {points[i], c, points_orig[i]};
+        m_verts[3 * i + 1] = {points[(i + 1) % n_points], c, points_orig[(i + 1) % n_points]};
+        m_verts[3 * i + 2] = {center, c, center_orig};
     }
 
     target.drawVertices(m_verts, "Meteor", DrawType::Dynamic, m_textures->get("Meteor"));
@@ -206,9 +213,9 @@ void Meteor::initializeRandomMeteor()
 
     m_vel = {randf(-6, 6), randf(-6, 6)};
 
-    m_rigid_body->angle_vel = randf(-0.02, 0.02);
+    m_rigid_body->angle_vel = randf(-50.09, 50.09);
     m_rigid_body->mass = radius * radius;
-    m_rigid_body->inertia = radius * radius * m_rigid_body->mass;
+    m_rigid_body->inertia = 0.1 * radius * radius * m_rigid_body->mass;
 
     m_collision_shape = std::make_unique<Polygon>(polygon);
 }
