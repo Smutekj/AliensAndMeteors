@@ -169,3 +169,36 @@ private:
     void shootLasers();
     void shootLaserAtPlayer();
 };
+
+
+class Turret : public GameObject
+{
+
+public:
+    Turret() = default;
+    Turret(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
+    Turret(const Turret &e) = default;
+    Turret &operator=(Turret &e) = default;
+    Turret &operator=(Turret &&e) = default;
+    virtual ~Turret() override;
+
+    virtual void update(float dt) override;
+    virtual void onCreation() override;
+    virtual void onDestruction() override;
+    virtual void draw(LayersHolder &target) override;
+    virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
+
+private:
+    PlayerEntity* p_player = nullptr;
+
+    float m_shooting_range = 169.;
+
+    float m_turn_speed = 49; //! degrees per second;
+
+    std::vector<Enemy *> m_produced_ships;
+    float m_time = 0.f;
+    float m_spawn_timer = 2.f;
+
+    float m_max_health = 100.f;
+    float m_health = m_max_health;
+};

@@ -15,8 +15,9 @@ std::unordered_map<BulletType, std::string> Bullet::m_type2shader_id = {{BulletT
 Bullet::Bullet(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
     : GameObject(world, textures, ObjectType::Bullet)
 {
+    m_size = 2.5;
     m_collision_shape = std::make_unique<Polygon>(4);
-    m_collision_shape->setScale(1, 1);
+    m_collision_shape->setScale(m_size);
 }
 
 float Bullet::getTime() const
@@ -117,7 +118,7 @@ void Bullet::draw(LayersHolder &layers)
     rect.setTexture(*m_textures->get("Bomb"));
     rect.setPosition(m_pos);
     rect.setRotation(glm::radians(dir2angle(m_vel)));
-    rect.setScale(5., 5.);
+    rect.setScale(m_size);
     rect.m_color = {255, 0, 0, 255};
 
     assert(m_type2shader_id.count(m_type) > 0);
@@ -131,7 +132,7 @@ void Bullet::draw(LayersHolder &layers)
         alpha = std::max(0, alpha);
         rect.setPosition(pos);
         rect.m_color = {255, 0, 0, static_cast<unsigned char>(alpha)};
-        rect.setScale(3.5, 3.5);
+        rect.setScale(m_size * 0.69);
         target.drawSprite(rect, shader_id);
     }
 }

@@ -19,7 +19,7 @@ Enemy::Enemy(GameWorld *world, TextureHolder &textures,
       GameObject(world, textures, ObjectType::Enemy, collider, player)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
-    m_size = {16,16};
+    m_size = {16, 16};
     m_collision_shape->setScale(m_size / 2.);
     m_target_pos = player->getPosition();
 }
@@ -132,7 +132,7 @@ void Enemy::draw(LayersHolder &layers)
     auto &target = layers.getCanvas("Unit");
     m_sprite.setPosition(m_pos);
     m_sprite.setRotation(glm::radians(m_angle));
-    m_sprite.setScale(m_size/2.f);
+    m_sprite.setScale(m_size / 2.f);
 
     target.drawSprite(m_sprite);
 
@@ -785,4 +785,133 @@ void Boss::draw(LayersHolder &layers)
     health_bar.setPosition(m_pos.x - health_bar_size.x / 2.f * (1. - booster_ratio), m_pos.y + 10.);
     health_bar.setScale(health_bar_size.x / 2.f * booster_ratio, health_bar_size.y / 2.f);
     target.drawSprite(health_bar, "healthBar");
+}
+
+Turret::Turret(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
+    : p_player(player), GameObject(world, textures, ObjectType::SpaceStation)
+{
+    m_collision_shape = std::make_unique<Polygon>(4);
+    m_size = {10, 10};
+    m_collision_shape->setScale(m_size.x, m_size.y);
+    m_rigid_body = std::make_unique<RigidBody>();
+    m_rigid_body->mass = 5000000.f;
+    m_rigid_body->inertia = 50000000.f;
+    m_rigid_body->angle_vel = 0;
+}
+
+Turret::~Turret() {}
+
+void Turret::update(float dt)
+{
+    m_time += dt;
+
+    auto dr_to_player = p_player->getPosition() - m_pos;
+    float dist_to_player = utils::norm(dr_to_player);
+    if (dist_to_player < m_shooting_range)
+    {
+        if (m_time > m_spawn_timer)
+        {
+            m_time = 0.f;
+            auto &bullet = m_world->addObject2<Bullet>();
+            bullet.setBulletType(BulletType::Fire);
+            bullet.m_vel = dr_to_player;
+            bullet.setSize({2, 2});
+            bullet.setPosition(m_pos + dr_to_player / dist_to_player * m_size.x);
+        }
+
+        auto my_dir = utils::angle2dir(m_angle);
+        auto cos_angle_diff = utils::dot(dr_to_player / dist_to_player, my_dir);
+        //! if the angle difference is large enough turn by speed, otherwise set angle to player
+        if (cos_angle_diff < 0.999)
+        {
+            bool clockwise = utils::cross(my_dir, dr_to_player) > 0;
+            if(clockwise)
+            {
+                m_angle += m_turn_speed * dt;
+            }else{
+                m_angle -= m_turn_speed * dt;
+            }
+        }
+        else
+        {
+            m_angle = utils::dir2angle(dr_to_player);
+        }
+    }
+
+    if (m_health < 0.f)
+    {
+        kill();
+    }
+}
+
+void Turret::onCollisionWith(GameObject &obj, CollisionData &c_data)
+{
+    switch (obj.getType())
+    {
+    case ObjectType::Bullet:
+    {
+        obj.kill();
+        m_health--;
+        break;
+    }
+    case ObjectType::Meteor:
+    {
+
+        break;
+    }
+    case ObjectType::Player:
+    {
+
+        break;
+    }
+    case ObjectType::Explosion:
+    {
+        auto dr_to_center = m_pos - obj.getPosition();
+        auto dist_to_center = norm(dr_to_center);
+        auto impulse_dir = dr_to_center / dist_to_center;
+
+        auto alpha = 1 - dist_to_center / obj.getCollisionShape().getScale().x;
+        m_health -= 0.1f * alpha;
+        break;
+    }
+    case ObjectType::Laser:
+        m_health -= 0.5f;
+        break;
+    }
+}
+
+void Turret::onCreation()
+{
+}
+
+void Turret::onDestruction()
+{
+}
+
+void Turret::draw(LayersHolder &layers)
+{
+
+    auto &target = layers.getCanvas("Unit");
+
+    Sprite base;
+    base.setPosition(m_pos);
+    base.setTexture(*m_textures->get("Turrets"));
+    base.m_tex_rect = {175, 40, 80, 80};
+    base.setScale(m_size.x, m_size.y);
+    target.drawSprite(base);
+
+    base.setRotation(utils::to_radains * (m_angle - 90));
+    base.m_tex_rect = {285, 197 - 94 - 71, 74, 94};
+    target.drawSprite(base);
+
+    // sf::RectangleShape health_rect;
+
+    // float alpha_health = m_health / m_max_health;
+    // float h_rect_size = m_size.x * alpha_health;
+
+    // health_rect.setPosition(m_pos + utils::Vector2f(-m_size.x / 2.f, -m_size.y / 2.f * 3.f));
+    // health_rect.setFillColor(sf::Color::Red);
+
+    // health_rect.setSize({h_rect_size, 1.f});
+    // target.draw(health_rect);
 }
