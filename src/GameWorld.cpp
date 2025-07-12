@@ -153,4 +153,5 @@ void GameWorld::loadTextures()
     m_textures.add("Star", "../Resources/Textures/star.png");
     m_textures.add("Fuel", "../Resources/Textures/fuel.png");
     m_textures.add("FireNoise", "../Resources/Textures/fireNoise.png");
+    m_textures.add("Turrets", "../Resources/Textures/Turrets.png");
 }

@@ -56,7 +56,8 @@ using rebind = typename rebind_<A, B, Outer>::type;
 #include <typeinfo>
 #include "Utils/Colony.h"
 
-using EntityTypes = TypeList<Enemy, Meteor, SpaceStation, Boss, Bullet, Laser, Bomb, Explosion, PlayerEntity, Heart, EMP>;
+using EntityTypes = TypeList<Enemy, Turret, Meteor, SpaceStation, Boss, Bullet,
+                             Laser, Bomb, Explosion, PlayerEntity, Heart, EMP>;
 // using EntityTypes = TypeList<Enemy>;
 
 using EntityTuple = rebind<EntityTypes, std::tuple, ComponentBlock>;
@@ -105,6 +106,7 @@ public:
         {
             m_collision_system.insertObject(new_entity);
         }
+        new_entity.onCreation();
         return new_entity;
     }
 
