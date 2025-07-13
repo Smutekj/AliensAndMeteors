@@ -18,6 +18,7 @@ namespace States
 		Pause,
 		Score,
 		Player_Died,
+		Shop,
 		Settings,
 		KeyBindings,
 		Graphics,

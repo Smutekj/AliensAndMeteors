@@ -99,7 +99,7 @@ Application::Application(int width, int height)
     : m_window(width, height), m_window_canvas(m_window)
 {
     m_dt = 0.0166667f;
-    std::filesystem::path font_path = {"../Resources/Fonts/arial.ttf"};
+    std::filesystem::path font_path = {"../Resources/Fonts/DigiGraphics.ttf"};
     std::cout << std::filesystem::current_path() << "\n";
     // std::filesystem::path font_path = {__FILE__};
     // font_path.remove_filename().append("../Resources/Fonts/arial.ttf");
@@ -122,6 +122,13 @@ Application::Application(int width, int height)
     m_window_canvas.addShader("LastPass", "basicinstanced.vert", "lastPass.frag");
     m_window_canvas.addShader("VertexArrayDefault", "basictex.vert", "fullpass.frag");
     m_window_canvas.addShader("Text", "basicinstanced.vert", "textBorder.frag");
+
+    m_textures.setBaseDirectory("../Resources/Textures/");
+    m_textures.add("Fuel", "fuel.png");
+    m_textures.add("Heart", "Heart.png");
+    m_textures.add("ShopItemFrame", "ShopItemFrame.png");
+    m_textures.add("Arrow", "arrow.png");
+    m_textures.add("Coin", "coin.png");
     //     m_ui = std::make_unique<UI>(m_window, m_textures, m_layers, m_window_renderer);
 }
 
@@ -136,4 +143,5 @@ void Application::registerStates()
     m_state_stack->registerState<SettingsState>(States::Settings);
     m_state_stack->registerState<KeyBindingState>(States::KeyBindings);
     m_state_stack->registerState<GraphicsState>(States::Graphics);
+    m_state_stack->registerState<ShopState>(States::Shop);
 }
