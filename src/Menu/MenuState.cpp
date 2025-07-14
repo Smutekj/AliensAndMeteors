@@ -10,7 +10,7 @@
 MenuState::MenuState(StateStack &stack, Context &context)
     : State(stack, context), m_menu(context.font)
 {
-  m_background_texture.loadFromFile("../Resources/Textures/background.png");
+  m_background_texture.loadFromFile(std::string(RESOURCES_DIR) + "/Textures/background.png");
   // m_background_texture.setRepeated(true);
   // m_background_texture.setSmooth(true);
 

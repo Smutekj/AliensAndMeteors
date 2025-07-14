@@ -22,7 +22,8 @@ void Game::initializeLayers()
     text_options.internal_format = TextureFormat::RGBA;
 
     // std::filesystem::path shaders_directory = {__FILE__};
-    std::filesystem::path shaders_directory = {"../Resources/Shaders/"};
+    std::filesystem::path shaders_directory = {RESOURCES_DIR};
+    shaders_directory.append("Shaders/");
     // shaders_directory.remove_filename().append();
 
     auto &unit_layer = m_layers.addLayer("Unit", 3, options, width, height);
@@ -60,7 +61,7 @@ Game::Game(Renderer &window, KeyBindings &bindings)
       m_scene_pixels(window.getTargetSize().x, window.getTargetSize().y),
       m_scene_canvas(m_scene_pixels)
 {
-    m_background.loadFromFile("../Resources/Textures/background.png");
+    m_background.loadFromFile(std::string(RESOURCES_DIR) + "/Textures/background.png");
 
     initializeLayers();
 
@@ -77,16 +78,12 @@ Game::Game(Renderer &window, KeyBindings &bindings)
         meteor.setPosition(spawn_pos);
     }
 
-    // std::filesystem::path texture_directory = {__FILE__};
-    std::filesystem::path texture_directory = {};
-    texture_directory.remove_filename().append("../Resources/Textures/");
-    m_textures.setBaseDirectory(std::filesystem::path{"../Resources/Textures/"});
+    m_textures.setBaseDirectory(std::string(RESOURCES_DIR) + "/Textures/");
     m_textures.add("Arrow", "arrow.png");
     m_textures.add("FireNoise", "fireNoise.png");
 
     // std::filesystem::path font_path = {__FILE__};
-    std::filesystem::path font_path = {};
-    font_path.remove_filename().append("../Resources/Fonts/arial.ttf");
+    std::filesystem::path font_path =std::string(RESOURCES_DIR) + "/Fonts/arial.ttf";
     m_font = std::make_unique<Font>(font_path);
 
     spawnNextObjective();

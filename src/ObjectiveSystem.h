@@ -11,6 +11,8 @@
 #include "Utils/ObjectPool.h"
 
 
+
+
 class Objective
 {
 
@@ -30,7 +32,6 @@ public:
 protected:
     Font *m_font = nullptr;
     bool m_is_finished = false;
-    TextureHolder m_textures;
 };
 
 class ReachSpotObjective : public Objective, public Observer<Trigger>
@@ -100,6 +101,7 @@ class ObjectiveSystem
 {
 
 public:
+    ObjectiveSystem();
     void add(std::shared_ptr<Objective> obj);
     void remove(int id);
     void draw(Renderer &window);

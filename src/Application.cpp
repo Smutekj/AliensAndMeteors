@@ -95,11 +95,18 @@ void inline gameLoop(void *mainLoopArg)
     }
 }
 
+#define TO_STRING(x) #x
+
+#ifndef RESOURCES_DIR
+static_assert(false)
+#endif
+
 Application::Application(int width, int height)
     : m_window(width, height), m_window_canvas(m_window)
 {
     m_dt = 0.0166667f;
-    std::filesystem::path font_path = {"../Resources/Fonts/DigiGraphics.ttf"};
+    std::filesystem::path font_path = {RESOURCES_DIR};
+    font_path.append("Fonts/DigiGraphics.ttf") ;
     std::cout << std::filesystem::current_path() << "\n";
     // std::filesystem::path font_path = {__FILE__};
     // font_path.remove_filename().append("../Resources/Fonts/arial.ttf");
@@ -116,14 +123,14 @@ Application::Application(int width, int height)
     m_window_canvas.m_view.setCenter(m_window_canvas.getTargetSize() / 2);
 
     // m_window_canvas.addShader("circle", "basicinstanced.vert", "circle.frag");
-    m_window_canvas.setShadersPath("../Resources/Shaders/");
+    m_window_canvas.setShadersPath(std::string(RESOURCES_DIR) +  "/Shaders/");
     m_window_canvas.addShader("Shiny", "basicinstanced.vert", "shiny.frag");
     m_window_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
     m_window_canvas.addShader("LastPass", "basicinstanced.vert", "lastPass.frag");
     m_window_canvas.addShader("VertexArrayDefault", "basictex.vert", "fullpass.frag");
     m_window_canvas.addShader("Text", "basicinstanced.vert", "textBorder.frag");
 
-    m_textures.setBaseDirectory("../Resources/Textures/");
+    m_textures.setBaseDirectory(std::string(RESOURCES_DIR) +  "/Textures/");
     m_textures.add("Fuel", "fuel.png");
     m_textures.add("Heart", "Heart.png");
     m_textures.add("ShopItemFrame", "ShopItemFrame.png");

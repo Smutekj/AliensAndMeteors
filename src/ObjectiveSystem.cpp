@@ -8,6 +8,8 @@
 #define M_PIf 3.14159265358979323846f
 #endif
 
+static TextureHolder m_textures;
+
 bool Objective::isFinished() const
 {
     return m_is_finished;
@@ -57,7 +59,6 @@ ReachSpotObjective::ReachSpotObjective(GameObject &spot, Font &font)
     : m_location(spot.getPosition())
 {
     m_font = &font;
-    m_textures.add("Arrow", "../Resources/Textures/arrow.png");
 }
 
 void ReachSpotObjective::update(Trigger *trig)
@@ -90,7 +91,6 @@ SurveySpot::SurveySpot(GameObject &spot, Font &font)
     : m_surveyed(spot)
 {
     m_font = &font;
-    m_textures.add("Arrow", "../Resources/Textures/arrow.png");
 }
 
 void SurveySpot::update(Trigger *trig)
@@ -104,7 +104,6 @@ DestroyEntity::DestroyEntity(GameObject &target, Font &font)
     : m_target(target)
 {
     m_font = &font;
-    m_textures.add("Arrow", "../Resources/Textures/arrow.png");
 }
 
 void DestroyEntity::update(Trigger *trig)
@@ -218,4 +217,10 @@ void DestroyNOfType::entityDestroyed(ObjectType type, int id)
             m_on_completion_callback();
         }
     }
+}
+
+ObjectiveSystem::ObjectiveSystem()
+{
+    m_textures.setBaseDirectory(std::string(RESOURCES_DIR) + "/Textures/");
+    m_textures.add("Arrow", "arrow.png");
 }

@@ -135,23 +135,25 @@ void GameWorld::removeEntityDestroyedCallback(int callback_id)
 
 void GameWorld::loadTextures()
 {
-    m_textures.add("Bomb", "../Resources/Textures/bomb.png");
-    m_textures.add("EnemyShip", "../Resources/Textures/EnemyShip.png");
-    m_textures.add("EnemyLaser", "../Resources/Textures/EnemyLaser.png");
-    m_textures.add("EnemyBomber", "../Resources/Textures/EnemyBomber.png");
-    m_textures.add("Meteor", "../Resources/Textures/Meteor.png");
-    m_textures.add("BossShip", "../Resources/Textures/BossShip.png");
-    m_textures.add("Explosion2", "../Resources/Textures/explosion2.png");
-    m_textures.add("Explosion", "../Resources/Textures/explosion.png");
-    m_textures.add("PlayerShip", "../Resources/Textures/playerShip.png");
-    m_textures.add("Heart", "../Resources/Textures/Heart.png");
-    m_textures.add("Station", "../Resources/Textures/Station.png");
-    m_textures.add("BoosterYellow", "../Resources/Textures/effectYellow.png");
-    m_textures.add("BoosterPurple", "../Resources/Textures/effectPurple.png");
-    m_textures.add("Arrow", "../Resources/Textures/arrow.png");
-    m_textures.add("Emp", "../Resources/Textures/emp.png");
-    m_textures.add("Star", "../Resources/Textures/star.png");
-    m_textures.add("Fuel", "../Resources/Textures/fuel.png");
-    m_textures.add("FireNoise", "../Resources/Textures/fireNoise.png");
-    m_textures.add("Turrets", "../Resources/Textures/Turrets.png");
+    m_textures.setBaseDirectory(std::string(RESOURCES_DIR) + "/Textures/");
+    m_textures.add("Bomb", "bomb.png");
+    m_textures.add("EnemyShip", "EnemyShip.png");
+    m_textures.add("EnemyLaser", "EnemyLaser.png");
+    m_textures.add("EnemyBomber", "EnemyBomber.png");
+    m_textures.add("Meteor", "Meteor.png");
+    m_textures.add("BossShip", "BossShip.png");
+    m_textures.add("Explosion2", "explosion2.png");
+    m_textures.add("Explosion", "explosion.png");
+    m_textures.add("PlayerShip", "playerShip.png");
+    m_textures.add("Heart", "Heart.png");
+    m_textures.add("Station", "Station.png");
+    m_textures.add("BoosterYellow", "effectYellow.png");
+    m_textures.add("BoosterPurple", "effectPurple.png");
+    m_textures.add("Arrow", "arrow.png");
+    m_textures.add("Emp", "emp.png");
+    m_textures.add("Star", "star.png");
+    m_textures.add("Fuel", "fuel.png");
+    m_textures.add("FireNoise", "fireNoise.png");
+    m_textures.add("Turrets", "Turrets.png");
+    m_textures.add("Arrow", "arrow.png");
 }
