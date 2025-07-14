@@ -75,12 +75,12 @@ ShopState::ShopState(StateStack &stack, State::Context context)
     
     auto button_holder = std::make_shared<SpriteUIELement>();
     button_holder->setTexture(*m_context.textures->get("ShopItemFrame"));
-    button_holder->bounding_box = {0,0, 130, 200};
-    button_holder->padding = {30, 30};
+    button_holder->bounding_box = {0,0, 140, 200};
+    button_holder->padding = {30, 10};
     button_holder->layout = Layout::Y;
     auto fuel_text = std::make_shared<TextUIELement>(*m_context.font, "Fuel");
     fuel_text->bounding_box = {0,0,80, 40};
-    fuel_text->margin = {10, 20};
+    fuel_text->margin = {0, 0};
     
     
     auto heart_text = std::make_shared<TextUIELement>(*m_context.font, "Health");
@@ -101,7 +101,19 @@ ShopState::ShopState(StateStack &stack, State::Context context)
     // speed_button->bounding_box = {0,0, 80, 80};
     // money_button->setTexture(*m_context.textures->get("Coin"));
     // money_button->bounding_box = {0,0, 80, 80};
-    button_holder->addChildren(fuel_button, fuel_text);
+    auto control_bar = std::make_shared<UIElement>();
+    control_bar->bounding_box = {0,0,80, 40};
+    auto buy_button = std::make_shared<SpriteUIELement>();
+    buy_button->setTexture(*m_context.textures->get("Coin"));
+    buy_button->bounding_box = {0,0, 20, 20};
+    auto sell_button = std::make_shared<SpriteUIELement>();
+    sell_button->setTexture(*m_context.textures->get("Coin"));
+    sell_button->bounding_box = {0,0, 20, 20};
+    fuel_text->bounding_box = {0,0, 40, 20};
+    control_bar->margin.y = 30;
+    control_bar->addChildren(buy_button, fuel_text, sell_button);
+
+    button_holder->addChildren(fuel_button, control_bar);
     // speed_button->margin = {10, 0};
     button_holder->margin.x = 10;
     document.root->layout = Layout::Grid;
@@ -189,24 +201,29 @@ void ShopState::draw()
     // window.m_view.m_view_matrix[1][1]
     window.clear({0, 0, 0, 0});
     document.drawUI();
+    Text pica("Penis");
+    pica.setFont(m_context.font);
+    pica.setScale(1,-1);
+    pica.centerAround(window.getMouseInScreen());
+    window.drawText(pica);
 
-    window.drawCricleBatched(window.getMouseInScreen(), 20, {1,0,0,1});
+    // window.drawCricleBatched(window.getMouseInScreen(), 20, {1,0,0,1});
 
-    Sprite frame(*m_context.textures->get("ShopItemFrame"));
-    Text frame_text;
-    frame_text.setFont(m_context.font);
-    for(auto& [box, text, sprite_name] : m_ui_elements) 
-    {
-        utils::Vector2f el_center = {box.pos_x + box.width/2., box.pos_y + box.height/2.};
-        frame.setPosition(el_center);
-        frame.setTexture(*m_context.textures->get(sprite_name));
-        frame.setScale(box.width/2, -box.height/2);
-        window.drawSprite(frame);
+    // Sprite frame(*m_context.textures->get("ShopItemFrame"));
+    // Text frame_text;
+    // frame_text.setFont(m_context.font);
+    // for(auto& [box, text, sprite_name] : m_ui_elements) 
+    // {
+    //     utils::Vector2f el_center = {box.pos_x + box.width/2., box.pos_y + box.height/2.};
+    //     frame.setPosition(el_center);
+    //     frame.setTexture(*m_context.textures->get(sprite_name));
+    //     frame.setScale(box.width/2, -box.height/2);
+    //     window.drawSprite(frame);
         
-        frame_text.setText(text);
-        frame_text.centerAround({el_center.x, el_center.y - 20});
-        window.drawText(frame_text);
-    }
+    //     frame_text.setText(text);
+    //     frame_text.centerAround({el_center.x, el_center.y - 20});
+    //     window.drawText(frame_text);
+    // }
     
     
     window.drawAll();
