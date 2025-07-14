@@ -16,7 +16,8 @@ public:
   {
     RUNNING,
     WON,
-    PLAYER_DIED
+    PLAYER_DIED,
+    SHOPPING
   };
 
   Game(Renderer &window, KeyBindings &bindings);
@@ -74,5 +75,7 @@ private:
   // friend UI;
   // UI m_ui;
 };
+
+
 
 #endif // BOIDS_GAME_H

@@ -367,6 +367,10 @@ void Game::update(const float dt, Renderer &window)
     {
         m_state = GameState::PLAYER_DIED;
     }
+    if(m_player->health <= 100)
+    {
+        m_state = GameState::SHOPPING;
+    }
 
     m_world->update2(dt);
     m_world->update(dt);

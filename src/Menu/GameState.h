@@ -107,7 +107,18 @@ struct UIElement
 
 public:
     virtual void update() {};
-    virtual void draw(Renderer &canvas) {};
+    virtual void draw(Renderer &canvas) 
+    {
+        utils::Vector2f ul = {bounding_box.pos_x, bounding_box.pos_y};
+        utils::Vector2f ur = {bounding_box.pos_x + bounding_box.width, bounding_box.pos_y};
+        utils::Vector2f ll = {bounding_box.pos_x, bounding_box.pos_y + bounding_box.height};
+        utils::Vector2f lr = {bounding_box.pos_x + bounding_box.width, bounding_box.pos_y  + bounding_box.height};
+
+        canvas.drawLineBatched(ul, ur, 1, {0,1,0,1});
+        canvas.drawLineBatched(ul, ll, 1, {0,1,0,1});
+        canvas.drawLineBatched(ur, lr, 1, {0,1,0,1});
+        canvas.drawLineBatched(ll, lr, 1, {0,1,0,1});
+    };
 
     template <class... Args>
     void addChildren(Args... child_el)
@@ -246,18 +257,28 @@ struct TextUIELement : UIElement
 
     virtual void draw(Renderer &canvas) override
     {
+        UIElement::draw(canvas);
+        
         utils::Vector2f center_pos = {bounding_box.pos_x + width() / 2.,
                                       bounding_box.pos_y + height() / 2.};
 
         utils::Vector2f size = {width(), height()};
         auto text_bounder = m_text.getBoundingBox();
+        utils::Vector2f scale = {width(), height()};
 
-        m_text.setScale(utils::Vector2f{size.x / text_bounder.width, -size.y / std::abs(text_bounder.height)});
-        m_text.setPosition(center_pos);
-        m_text.centerAround(center_pos);
+        if(std::abs(text_bounder.width - size.x) > 0.01)
+        {
+            scale.x = size.x / text_bounder.width;
+            scale.y = -size.y / text_bounder.height;
+            m_text.setScale(scale);
+        }
+
+        m_text.setPosition(center_pos.x, center_pos.y - text_bounder.height/2);
+        m_text.centerAround({center_pos.x, center_pos.y });
         canvas.drawText(m_text);
-
     }
+
+
 
     void setFont(Font &font)
     {
@@ -271,6 +292,8 @@ struct SpriteUIELement : UIElement
 {
     virtual void draw(Renderer &canvas) override
     {
+        UIElement::draw(canvas);
+
         utils::Vector2f center_pos = {bounding_box.pos_x + width() / 2.,
                                       bounding_box.pos_y + height() / 2.};
 
