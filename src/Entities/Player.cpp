@@ -7,7 +7,7 @@
 #include "Attacks.h"
 
 PlayerEntity::PlayerEntity(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
-    : GameObject(world, textures, ObjectType::Player)
+    : GameObject(world, textures, ObjectType::Player, collider, player)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
     m_collision_shape->setScale(2 * m_radius, 2 * m_radius);

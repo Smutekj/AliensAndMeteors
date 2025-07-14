@@ -21,7 +21,7 @@
 #include "Entities/VisualEffects.h"
 #include "Entities/Triggers.h"
 
-class PlayerEntity;
+struct PlayerEntity;
 
 // Poor man's MPL vector.
 template <class... Ts>

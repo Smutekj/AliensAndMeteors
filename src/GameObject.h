@@ -66,7 +66,7 @@ struct RigidBody
     float angle_vel;
 };
 
-class PlayerEntity;
+struct PlayerEntity;
 namespace Collisions
 {
     class CollisionSystem;

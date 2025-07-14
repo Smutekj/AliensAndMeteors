@@ -27,7 +27,7 @@ include_directories(SYSTEM external)
 include_directories("${PROJECT_BINARY_DIR}" ${IMGUI_DIR} ${IMGUI_DIR}/backends )
 add_executable(${CMAKE_PROJECT_NAME} ${SRC} )
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE 
-                                             SDL2::SDL2main
+                                             SDL2::SDL2main SDL2::SDL2
                                             renderer )
                                              
 set_target_compiler_flags(${CMAKE_PROJECT_NAME})

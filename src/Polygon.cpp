@@ -1,4 +1,9 @@
 #include "Polygon.h"
+#include <numbers>
+
+#ifndef M_PI
+#define M_PI std::numbers::pi_v<float>
+#endif
 
 Polygon::Polygon(int n_points, utils::Vector2f at) : points(n_points)
 {
