@@ -33,7 +33,7 @@ void Game::initializeLayers()
     auto &shiny_layer = m_layers.addLayer("Bloom", 5, options,  width, height);
     shiny_layer.m_canvas.setShadersPath(shaders_directory);
     shiny_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
-    shiny_layer.addEffect(std::make_unique<Bloom3>(width, height));
+    // shiny_layer.addEffect(std::make_unique<Bloom3>(width, height));
 
     auto &base_layer = m_ui_layers.addLayer("Base", 0, options,  width, height);
     base_layer.m_canvas.setShadersPath(shaders_directory);
@@ -41,7 +41,7 @@ void Game::initializeLayers()
     bloom_layer.m_canvas.setShadersPath(shaders_directory);
     bloom_layer.m_canvas.addShader("boostBar2", "basicinstanced.vert", "boostBar2.frag");
     bloom_layer.m_canvas.addShader("fuelBar", "basicinstanced.vert", "fuelBar.frag");
-    bloom_layer.addEffect(std::make_unique<Bloom>(width, height));
+    // bloom_layer.addEffect(std::make_unique<Bloom>(width, height));
 
     // //
     m_window.setShadersPath(shaders_directory);
@@ -82,7 +82,6 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     m_textures.add("Arrow", "arrow.png");
     m_textures.add("FireNoise", "fireNoise.png");
 
-    // std::filesystem::path font_path = {__FILE__};
     std::filesystem::path font_path =std::string(RESOURCES_DIR) + "/Fonts/arial.ttf";
     m_font = std::make_unique<Font>(font_path);
 
@@ -366,7 +365,7 @@ void Game::update(const float dt, Renderer &window)
     }
     if(m_player->health <= 100)
     {
-        m_state = GameState::SHOPPING;
+        // m_state = GameState::SHOPPING;
     }
 
     m_world->update2(dt);
