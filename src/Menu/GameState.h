@@ -74,6 +74,13 @@ struct Style
     Layout display;
 };
 
+enum class SizeStyle
+{
+    FIXED,
+    AUTO,
+    FIT_CHIDLREN,
+};
+
 struct UIElement
 {
     using UIElementP = std::shared_ptr<UIElement>;
@@ -83,6 +90,7 @@ struct UIElement
     std::string id;
 
     int max_width;
+    float m_scale = 1.;
 
     enum class DimensionType
     {
@@ -93,31 +101,32 @@ struct UIElement
     DimensionType width_style = DimensionType::Absolute;
     DimensionType height_style = DimensionType::Absolute;
 
+    SizeStyle size_style = SizeStyle::FIXED;
+
     utils::Vector2i margin;
     utils::Vector2i padding;
     int column_count = 3;
 
     Layout layout = Layout::X;
     Alignement align = Alignement::Center;
-    
-    std::vector<UIElementP> children;
 
+    std::vector<UIElementP> children;
 
     std::unordered_map<UIEvent, std::function<void(UIElementP)>> event_callbacks;
 
 public:
     virtual void update() {};
-    virtual void draw(Renderer &canvas) 
+    virtual void draw(Renderer &canvas)
     {
         utils::Vector2f ul = {bounding_box.pos_x, bounding_box.pos_y};
         utils::Vector2f ur = {bounding_box.pos_x + bounding_box.width, bounding_box.pos_y};
         utils::Vector2f ll = {bounding_box.pos_x, bounding_box.pos_y + bounding_box.height};
-        utils::Vector2f lr = {bounding_box.pos_x + bounding_box.width, bounding_box.pos_y  + bounding_box.height};
+        utils::Vector2f lr = {bounding_box.pos_x + bounding_box.width, bounding_box.pos_y + bounding_box.height};
 
-        canvas.drawLineBatched(ul, ur, 1, {0,1,0,1});
-        canvas.drawLineBatched(ul, ll, 1, {0,1,0,1});
-        canvas.drawLineBatched(ur, lr, 1, {0,1,0,1});
-        canvas.drawLineBatched(ll, lr, 1, {0,1,0,1});
+        canvas.drawLineBatched(ul, ur, 1, {0, 1, 0, 1});
+        canvas.drawLineBatched(ul, ll, 1, {0, 1, 0, 1});
+        canvas.drawLineBatched(ur, lr, 1, {0, 1, 0, 1});
+        canvas.drawLineBatched(ll, lr, 1, {0, 1, 0, 1});
     };
 
     template <class... Args>
@@ -136,6 +145,17 @@ public:
     //     // }
     // }
 
+    double totalChildrenWidth()
+    {
+        return std::accumulate(children.begin(), children.end(), 0, [](double val, auto &c_p)
+                               { return val + c_p->bounding_box.width; });
+    }
+    double totalChildrenMargin()
+    {
+        return std::accumulate(children.begin(), children.end(), 0, [](double val, auto &c_p)
+                               { return val + c_p->margin.x * 2.; });
+    }
+
     void drawX(Renderer &canvas)
     {
         int max_x = 0;
@@ -148,12 +168,25 @@ public:
         {
             max_width = canvas.getTargetSize().x;
         }
-        else if(!parent)
+        else if (!parent)
         {
             max_width = bounding_box.width;
         }
         max_x = max_width + bounding_box.pos_x + padding.x;
 
+        //! determine size of children then scale them so that they fit
+        if (layout == Layout::X && size_style == SizeStyle::FIT_CHIDLREN)
+        {
+            double total_width = totalChildrenWidth();
+            double total_margin = totalChildrenMargin();
+
+            for(auto& child : children)
+            {
+                double scale = (bounding_box.width - total_margin) / total_width ;
+                child->bounding_box.width *= scale;
+                child->bounding_box.height *= scale;
+            }
+        }
 
         int x = bounding_box.pos_x + padding.x;
         int y = bounding_box.pos_y + padding.y;
@@ -173,34 +206,43 @@ public:
                 children_height += prev_height;
             }
 
+            if (layout == Layout::X && align == Alignement::Center)
+            {
+                y = bounding_box.pos_y + bounding_box.height / 2 - child_box.height / 2;
+            }
+            if (layout == Layout::Y && align == Alignement::Center)
+            {
+                x = bounding_box.pos_x + bounding_box.width / 2 - child_box.width / 2;
+            }
             child_box.pos_x = x + children.at(i)->margin.x;
             child_box.pos_y = y + children.at(i)->margin.y;
 
             prev_height = std::max(prev_height, children.at(i)->margin.y + child_box.height);
 
-            if(layout == Layout::X || layout == Layout::Grid)
+            if (layout == Layout::X || layout == Layout::Grid)
             {
-                x += (children.at(i)->margin.x + child_box.width);
-            }else if(layout == Layout::Y)
+                x += (2.*children.at(i)->margin.x + child_box.width);
+            }
+            else if (layout == Layout::Y)
             {
-                y += (children.at(i)->margin.y + child_box.height);
+                y += (2.*children.at(i)->margin.y + child_box.height);
             }
 
-            children_width += (2*children.at(i)->margin.x + child_box.width);
+            children_width += (2 * children.at(i)->margin.x + child_box.width);
         }
-        if(bounding_box.width == 0)
+        if (bounding_box.width == 0)
         {
             bounding_box.width = std::min(max_width, children_width);
         }
-        if(bounding_box.height == 0)
+        if (bounding_box.height == 0)
         {
             children_height += prev_height;
             bounding_box.height = children_height + padding.y * 2;
         }
-        
+
         draw(canvas);
         canvas.drawAll();
-        
+
         for (auto &child : children)
         {
             child->drawX(canvas);
@@ -258,7 +300,7 @@ struct TextUIELement : UIElement
     virtual void draw(Renderer &canvas) override
     {
         UIElement::draw(canvas);
-        
+
         utils::Vector2f center_pos = {bounding_box.pos_x + width() / 2.,
                                       bounding_box.pos_y + height() / 2.};
 
@@ -266,19 +308,17 @@ struct TextUIELement : UIElement
         auto text_bounder = m_text.getBoundingBox();
         utils::Vector2f scale = {width(), height()};
 
-        if(std::abs(text_bounder.width - size.x) > 0.01)
+        if (std::abs(text_bounder.width - size.x) > 0.01)
         {
             scale.x = size.x / text_bounder.width;
             scale.y = -size.y / text_bounder.height;
-            m_text.setScale(scale);
+            m_text.setScale(m_scale*scale);
         }
 
-        m_text.setPosition(center_pos.x, center_pos.y - text_bounder.height/2);
-        m_text.centerAround({center_pos.x, center_pos.y });
+        m_text.setPosition(center_pos.x, center_pos.y - text_bounder.height / 2);
+        m_text.centerAround({center_pos.x, center_pos.y});
         canvas.drawText(m_text);
     }
-
-
 
     void setFont(Font &font)
     {
@@ -298,7 +338,7 @@ struct SpriteUIELement : UIElement
                                       bounding_box.pos_y + height() / 2.};
 
         utils::Vector2f size = {width(), -height()};
-        image.setScale(size / 2.f);
+        image.setScale(m_scale * size / 2.f);
         image.setPosition(center_pos);
         canvas.drawSprite(image);
     }
