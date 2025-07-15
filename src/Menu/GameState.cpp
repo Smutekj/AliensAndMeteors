@@ -86,7 +86,7 @@ ShopState::ShopState(StateStack &stack, State::Context context)
     };
 
     button_holder->setTexture(*m_context.textures->get("ShopItemFrame"));
-    button_holder->bounding_box = {0, 0, 300, 300};
+    button_holder->bounding_box = {0, 0, 150, 200};
     button_holder->padding = {30, 10};
     button_holder->margin.x = 10;
     button_holder->layout = Layout::Y;
@@ -146,11 +146,16 @@ ShopState::ShopState(StateStack &stack, State::Context context)
     button_holder3->addChildren(speed_button, control_bar3);
     button_holder4->addChildren(money_button, control_bar4);
 
-    // speed_button->margin = {10, 0};
-    document.root->layout = Layout::Grid;
-    document.root->bounding_box.width = 800;
-    document.root->max_width = 800;
-    document.root->addChildren(button_holder, button_holder2, button_holder3, button_holder4);
+    auto grid_holder = std::make_shared<UIElement>();
+    grid_holder->layout = Layout::Grid;
+    grid_holder->bounding_box.width = 600;
+    grid_holder->bounding_box.height = 600;
+    grid_holder->max_width = 800;
+    grid_holder->addChildren(button_holder, button_holder2, button_holder3, button_holder4);
+
+    document.root->layout = Layout::Y;
+    document.root->sizing = Sizing::SCALE_TO_FIT;
+    document.root->addChildren(grid_holder);
     // for(int i = 0; i < 10; ++i)
     // {
     //     auto button_holder2 = std::make_shared<SpriteUIELement>(*button_holder);

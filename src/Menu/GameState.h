@@ -2,6 +2,7 @@
 
 #include "State.h"
 #include <memory>
+#include <deque>
 #include <unordered_map>
 
 #include "SettingsState.h"
@@ -230,6 +231,11 @@ public:
                 bounding_box.width = maxChildrenWidth() + 2 * padding.x;
                 bounding_box.height = total_content_height + total_margin.y + 2 * padding.y;
             }
+        }
+        if(!parent && align == Alignement::Center)
+        {
+            padding.x = (canvas.getTargetSize().x - bounding_box.width)/2.; 
+            padding.y = (canvas.getTargetSize().y - bounding_box.height)/2.; 
         }
 
         int x = bounding_box.pos_x + padding.x;
