@@ -51,6 +51,7 @@ struct ItemUIElement
 enum class UIEvent
 {
     MOUSE_ENETERED,
+    MOUSE_LEFT,
     CLICK
 };
 
@@ -74,6 +75,13 @@ struct Style
     Layout display;
 };
 
+enum class Sizing
+{
+    FIXED,
+    SCALE_TO_FIT,
+    RESCALE_CHILDREN,
+};
+
 struct UIElement
 {
     using UIElementP = std::shared_ptr<UIElement>;
@@ -93,31 +101,44 @@ struct UIElement
     DimensionType width_style = DimensionType::Absolute;
     DimensionType height_style = DimensionType::Absolute;
 
-    utils::Vector2i margin;
-    utils::Vector2i padding;
+    bool mouse_hovering = false;
+
+    Sizing sizing = Sizing::FIXED;
+
+    utils::Vector2i margin = {0, 0};
+    utils::Vector2i padding = {0, 0};
     int column_count = 3;
 
     Layout layout = Layout::X;
     Alignement align = Alignement::Center;
-    
-    std::vector<UIElementP> children;
 
+    std::vector<UIElementP> children;
 
     std::unordered_map<UIEvent, std::function<void(UIElementP)>> event_callbacks;
 
 public:
     virtual void update() {};
-    virtual void draw(Renderer &canvas) 
+    virtual void draw(Renderer &canvas)
     {
         utils::Vector2f ul = {bounding_box.pos_x, bounding_box.pos_y};
         utils::Vector2f ur = {bounding_box.pos_x + bounding_box.width, bounding_box.pos_y};
         utils::Vector2f ll = {bounding_box.pos_x, bounding_box.pos_y + bounding_box.height};
-        utils::Vector2f lr = {bounding_box.pos_x + bounding_box.width, bounding_box.pos_y  + bounding_box.height};
+        utils::Vector2f lr = {bounding_box.pos_x + bounding_box.width, bounding_box.pos_y + bounding_box.height};
 
-        canvas.drawLineBatched(ul, ur, 1, {0,1,0,1});
-        canvas.drawLineBatched(ul, ll, 1, {0,1,0,1});
-        canvas.drawLineBatched(ur, lr, 1, {0,1,0,1});
-        canvas.drawLineBatched(ll, lr, 1, {0,1,0,1});
+        canvas.drawLineBatched(ul, ur, 1, {0, 1, 0, 1});
+        canvas.drawLineBatched(ul, ll, 1, {0, 1, 0, 1});
+        canvas.drawLineBatched(ur, lr, 1, {0, 1, 0, 1});
+        canvas.drawLineBatched(ll, lr, 1, {0, 1, 0, 1});
+
+        //! padding box
+        ul = {bounding_box.pos_x + padding.x, bounding_box.pos_y + padding.y};
+        ur = {bounding_box.pos_x + bounding_box.width - padding.x, bounding_box.pos_y + padding.y};
+        ll = {bounding_box.pos_x + padding.x, bounding_box.pos_y + bounding_box.height - padding.y};
+        lr = {bounding_box.pos_x + bounding_box.width - padding.x, bounding_box.pos_y + bounding_box.height - padding.y};
+        canvas.drawLineBatched(ul, ur, 0.5, {0, 1, 1, 1});
+        canvas.drawLineBatched(ul, ll, 0.5, {0, 1, 1, 1});
+        canvas.drawLineBatched(ur, lr, 0.5, {0, 1, 1, 1});
+        canvas.drawLineBatched(ll, lr, 0.5, {0, 1, 1, 1});
     };
 
     template <class... Args>
@@ -127,14 +148,36 @@ public:
         ((children.push_back(child_el)), ...);
     }
 
-    // std::pair<int, int> childrenInLine(int first_child_id)const
-    // {
-    //     // if(bounding_box.width == 0)//! we calculate the width and so we can fit all children on one line
-    //     // {
+    double maxChildrenHeight() const
+    {
+        auto largest_child_p = *std::max_element(children.begin(), children.end(), [](auto &c1, auto &c2)
+                                                 { return c1->bounding_box.height + 2 * c1->margin.y < c2->bounding_box.height + 2 * c2->margin.y; });
+        return largest_child_p->bounding_box.height + 2 * largest_child_p->margin.y;
+    }
+    double maxChildrenWidth() const
+    {
+        auto largest_child_p = *std::max_element(children.begin(), children.end(), [](auto &c1, auto &c2)
+                                                 { return c1->bounding_box.width + 2 * c1->margin.x < c2->bounding_box.width + 2 * c2->margin.x; });
+        return largest_child_p->bounding_box.width + 2 * largest_child_p->margin.x;
+    }
+    double totalChildrenWidth() const
+    {
+        return std::accumulate(children.begin(), children.end(), 0., [](double val, auto &c_p)
+                               { return val + c_p->bounding_box.width; });
+    }
+    double totalChildrenHeight() const
+    {
+        return std::accumulate(children.begin(), children.end(), 0., [](double val, auto &c_p)
+                               { return val + c_p->bounding_box.height; });
+    }
 
-    //     //     return {children.size()-1, ;
-    //     // }
-    // }
+    utils::Vector2i totalChildrenMargin() const
+    {
+        return std::accumulate(children.begin(), children.end(), utils::Vector2i{0, 0}, [](auto val, auto &c_p)
+                               {
+                                   return val + 2 * c_p->margin; //! margin is on both sides so x2
+                               });
+    }
 
     void drawX(Renderer &canvas)
     {
@@ -148,12 +191,46 @@ public:
         {
             max_width = canvas.getTargetSize().x;
         }
-        else if(!parent)
+        else if (!parent)
         {
             max_width = bounding_box.width;
         }
-        max_x = max_width + bounding_box.pos_x + padding.x;
+        max_x = max_width + bounding_box.pos_x - padding.x;
 
+        //! resize ourselves or children depending on sizing mode
+        double total_content_width = totalChildrenWidth();
+        double total_content_height = totalChildrenHeight();
+        auto total_margin = totalChildrenMargin();
+        if (sizing == Sizing::RESCALE_CHILDREN)
+        {
+            double scale = 1;
+            for (auto &child : children)
+            {
+                if (layout == Layout::X)
+                {
+                    scale = (bounding_box.width - 2 * padding.x - total_margin.x) / (total_content_width);
+                }
+                else if (layout == Layout::Y)
+                {
+                    scale = (bounding_box.height - 2 * padding.y - total_margin.y) / (total_content_height);
+                }
+                child->bounding_box.width *= scale;
+                child->bounding_box.height *= scale;
+            }
+        }
+        if (sizing == Sizing::SCALE_TO_FIT)
+        {
+            if (layout == Layout::X)
+            {
+                bounding_box.width = total_content_width + total_margin.x + 2 * padding.x;
+                bounding_box.height = maxChildrenHeight() + 2 * padding.y;
+            }
+            else if (layout == Layout::Y)
+            {
+                bounding_box.width = maxChildrenWidth() + 2 * padding.x;
+                bounding_box.height = total_content_height + total_margin.y + 2 * padding.y;
+            }
+        }
 
         int x = bounding_box.pos_x + padding.x;
         int y = bounding_box.pos_y + padding.y;
@@ -178,29 +255,30 @@ public:
 
             prev_height = std::max(prev_height, children.at(i)->margin.y + child_box.height);
 
-            if(layout == Layout::X || layout == Layout::Grid)
+            if (layout == Layout::X || layout == Layout::Grid)
             {
-                x += (children.at(i)->margin.x + child_box.width);
-            }else if(layout == Layout::Y)
+                x += (2 * children.at(i)->margin.x + child_box.width);
+            }
+            else if (layout == Layout::Y)
             {
-                y += (children.at(i)->margin.y + child_box.height);
+                y += (2 * children.at(i)->margin.y + child_box.height);
             }
 
-            children_width += (2*children.at(i)->margin.x + child_box.width);
+            children_width += (2 * children.at(i)->margin.x + child_box.width);
         }
-        if(bounding_box.width == 0)
+        if (bounding_box.width == 0)
         {
             bounding_box.width = std::min(max_width, children_width);
         }
-        if(bounding_box.height == 0)
+        if (bounding_box.height == 0)
         {
             children_height += prev_height;
             bounding_box.height = children_height + padding.y * 2;
         }
-        
+
         draw(canvas);
         canvas.drawAll();
-        
+
         for (auto &child : children)
         {
             child->drawX(canvas);
@@ -238,6 +316,83 @@ public:
                               window_canvas.getTargetSize().y};
     }
 
+    void onEvent(UIEvent event, UIElement::UIElementP node_p)
+    {
+        if (node_p->event_callbacks.count(event) != 0)
+        {
+            node_p->event_callbacks.at(event)(node_p);
+        }
+    }
+
+    void handleEvent(UIEvent event)
+    {
+        if (event == UIEvent::MOUSE_ENETERED)
+        {
+            forEach([event, this](auto node_p)
+                    {
+                bool mouse_is_inside = node_p->bounding_box.contains(document.getMouseInScreen());
+                if (!node_p->mouse_hovering && mouse_is_inside)
+                {
+                    node_p->mouse_hovering = true;
+                    onEvent(UIEvent::MOUSE_ENETERED, node_p);
+                }
+                if (node_p->mouse_hovering && !mouse_is_inside)
+                {
+                    node_p->mouse_hovering = false;
+                    onEvent(UIEvent::MOUSE_LEFT, node_p);
+                
+                } });
+            return;
+        }
+
+        forEach([event](auto node_p)
+                {
+            if(node_p->event_callbacks.count(event))
+            {
+                node_p->event_callbacks.at(event)(node_p);
+            } });
+    }
+
+    UIElement *
+    getElementById(const std::string &id) const
+    {
+        std::deque<UIElement::UIElementP> to_visit;
+        to_visit.push_back(root);
+
+        while (!to_visit.empty())
+        {
+            auto curr = to_visit.front();
+            to_visit.pop_front();
+            if (curr->id == id)
+            {
+                return curr.get();
+            }
+            for (auto &child : curr->children)
+            {
+                to_visit.push_back(child);
+            }
+        }
+        return nullptr;
+    }
+
+    void forEach(std::function<void(UIElement::UIElementP)> callback)
+    {
+        std::deque<UIElement::UIElementP> to_visit;
+        to_visit.push_back(root);
+        while (!to_visit.empty())
+        {
+            auto curr = to_visit.front();
+            to_visit.pop_front();
+
+            callback(curr);
+
+            for (auto &child : curr->children)
+            {
+                to_visit.push_back(child);
+            }
+        }
+    }
+
     void drawUI()
     {
         root->drawX(document);
@@ -258,7 +413,7 @@ struct TextUIELement : UIElement
     virtual void draw(Renderer &canvas) override
     {
         UIElement::draw(canvas);
-        
+
         utils::Vector2f center_pos = {bounding_box.pos_x + width() / 2.,
                                       bounding_box.pos_y + height() / 2.};
 
@@ -266,19 +421,17 @@ struct TextUIELement : UIElement
         auto text_bounder = m_text.getBoundingBox();
         utils::Vector2f scale = {width(), height()};
 
-        if(std::abs(text_bounder.width - size.x) > 0.01)
+        if (std::abs(text_bounder.width - size.x) > 0.01)
         {
             scale.x = size.x / text_bounder.width;
             scale.y = -size.y / text_bounder.height;
             m_text.setScale(scale);
         }
 
-        m_text.setPosition(center_pos.x, center_pos.y - text_bounder.height/2);
-        m_text.centerAround({center_pos.x, center_pos.y });
+        m_text.setPosition(center_pos.x, center_pos.y - text_bounder.height / 2);
+        m_text.centerAround({center_pos.x, center_pos.y});
         canvas.drawText(m_text);
     }
-
-
 
     void setFont(Font &font)
     {
