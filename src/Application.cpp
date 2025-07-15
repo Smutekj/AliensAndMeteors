@@ -136,6 +136,10 @@ Application::Application(int width, int height)
     m_textures.add("ShopItemFrame", "ShopItemFrame.png");
     m_textures.add("Arrow", "arrow.png");
     m_textures.add("Coin", "coin.png");
+    m_textures.add("Back", "UIBack.png");
+    m_textures.add("Forward", "UIForward.png");
+    m_textures.add("Ok", "UIOk.png");
+    m_textures.add("Dot", "UIDot.png");
     //     m_ui = std::make_unique<UI>(m_window, m_textures, m_layers, m_window_renderer);
 }
 
