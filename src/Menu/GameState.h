@@ -250,8 +250,21 @@ public:
                 children_height += prev_height;
             }
 
-            child_box.pos_x = x + children.at(i)->margin.x;
-            child_box.pos_y = y + children.at(i)->margin.y;
+            if (layout == Layout::X && align == Alignement::Center)
+            {
+                child_box.pos_x = x + children.at(i)->margin.x;
+                child_box.pos_y = y + (bounding_box.height - 2 * padding.y - children.at(i)->bounding_box.height) / 2.;
+            }
+            else if (layout == Layout::Y && align == Alignement::Center)
+            {
+                child_box.pos_x = x + (bounding_box.width - 2 * padding.x - children.at(i)->bounding_box.width) / 2.;
+                child_box.pos_y = y + children.at(i)->margin.y;
+            }
+            else
+            {
+                child_box.pos_x = x + children.at(i)->margin.x;
+                child_box.pos_y = y + children.at(i)->margin.y;
+            }
 
             prev_height = std::max(prev_height, children.at(i)->margin.y + child_box.height);
 
@@ -353,8 +366,7 @@ public:
             } });
     }
 
-    UIElement *
-    getElementById(const std::string &id) const
+    UIElement *getElementById(const std::string &id) const
     {
         std::deque<UIElement::UIElementP> to_visit;
         to_visit.push_back(root);
@@ -421,10 +433,10 @@ struct TextUIELement : UIElement
         auto text_bounder = m_text.getBoundingBox();
         utils::Vector2f scale = {width(), height()};
 
-        if (std::abs(text_bounder.width - size.x) > 0.01)
+        if (std::abs(text_bounder.width - (size.x - 2 * padding.x)) > 0.01)
         {
-            scale.x = size.x / text_bounder.width;
-            scale.y = -size.y / text_bounder.height;
+            scale.x = (size.x - 2 * padding.x) / (text_bounder.width);
+            scale.y = -(size.y - 2 * padding.y) / (text_bounder.height);
             m_text.setScale(scale);
         }
 

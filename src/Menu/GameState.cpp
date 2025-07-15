@@ -93,9 +93,8 @@ ShopState::ShopState(StateStack &stack, State::Context context)
     button_holder->sizing = Sizing::SCALE_TO_FIT;
 
     auto fuel_text = std::make_shared<TextUIELement>(*m_context.font, "Fuel");
-    fuel_text->bounding_box = {0, 0, 80, 40};
+    fuel_text->bounding_box = {0, 0, 100, 40};
     fuel_text->margin = {0, 0};
-    fuel_text->bounding_box = {0, 0, 60, 40};
     fuel_text->padding = {5, 5};
     fuel_text->margin = {10, 0};
     auto heart_text = std::make_shared<TextUIELement>(*fuel_text);
@@ -136,7 +135,7 @@ ShopState::ShopState(StateStack &stack, State::Context context)
     auto control_bar2 = std::make_shared<UIElement>(*control_bar);
     auto control_bar3 = std::make_shared<UIElement>(*control_bar);
     auto control_bar4 = std::make_shared<UIElement>(*control_bar);
-    
+
     control_bar->addChildren(sell_button, fuel_text, buy_button);
     control_bar2->addChildren(sell_button, heart_text, buy_button);
     control_bar3->addChildren(sell_button, speed_text, buy_button);
