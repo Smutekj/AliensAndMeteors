@@ -154,7 +154,7 @@ ShopState::ShopState(StateStack &stack, State::Context context)
     grid_holder->addChildren(button_holder, button_holder2, button_holder3, button_holder4);
 
     document.root->layout = Layout::Y;
-    document.root->sizing = Sizing::SCALE_TO_FIT;
+    // document.root->sizing = Sizing::SCALE_TO_FIT;
     document.root->addChildren(grid_holder);
     // for(int i = 0; i < 10; ++i)
     // {
@@ -209,10 +209,12 @@ void ShopState::draw()
     window.clear({0, 0, 0, 0});
     // document.getElementById("buttonHolder")->bounding_box.width = window.getMouseInScreen().x - document.getElementById("buttonHolder")->bounding_box.pos_x;
     document.drawUI();
-    Text pica("Penis");
+
+    auto mouse_pos = window.getMouseInScreen();
+    Text pica(std::to_string(mouse_pos.x) + "   " + std::to_string(mouse_pos.y));
     pica.setFont(m_context.font);
-    pica.setScale(1, -1);
-    pica.centerAround(window.getMouseInScreen());
+    pica.setScale(0.5, -0.5);
+    pica.centerAround(mouse_pos);
     window.drawText(pica);
 
     // window.drawCricleBatched(window.getMouseInScreen(), 20, {1,0,0,1});

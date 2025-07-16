@@ -137,10 +137,12 @@ public:
         ur = {bounding_box.pos_x + bounding_box.width - padding.x, bounding_box.pos_y + padding.y};
         ll = {bounding_box.pos_x + padding.x, bounding_box.pos_y + bounding_box.height - padding.y};
         lr = {bounding_box.pos_x + bounding_box.width - padding.x, bounding_box.pos_y + bounding_box.height - padding.y};
-        canvas.drawLineBatched(ul, ur, 0.5, {0, 1, 1, 1});
-        canvas.drawLineBatched(ul, ll, 0.5, {0, 1, 1, 1});
-        canvas.drawLineBatched(ur, lr, 0.5, {0, 1, 1, 1});
-        canvas.drawLineBatched(ll, lr, 0.5, {0, 1, 1, 1});
+        canvas.drawLineBatched(ul, ur, 1, {0, 1, 1, 1});
+        canvas.drawLineBatched(ul, ll, 1, {0, 1, 1, 1});
+        canvas.drawLineBatched(ur, lr, 1, {0, 1, 1, 1});
+        canvas.drawLineBatched(ll, lr, 1, {0, 1, 1, 1});
+
+        canvas.drawAll();
     };
 
     template <class... Args>
@@ -232,11 +234,6 @@ public:
                 bounding_box.width = maxChildrenWidth() + 2 * padding.x;
                 bounding_box.height = total_content_height + total_margin.y + 2 * padding.y;
             }
-        }
-        if(!parent && align == Alignement::Center)
-        {
-            padding.x = (canvas.getTargetSize().x - bounding_box.width)/2.; 
-            padding.y = (canvas.getTargetSize().y - bounding_box.height)/2.; 
         }
 
         int x = bounding_box.pos_x + padding.x;
