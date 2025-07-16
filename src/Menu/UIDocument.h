@@ -141,8 +141,6 @@ struct SpriteUIELement : UIElement
     Sprite image;
 };
 
-
-
 template <class... Args>
 void UIElement::addChildren(Args... child_el)
 {

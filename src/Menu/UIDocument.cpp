@@ -1,5 +1,7 @@
 #include "UIDocument.h"
 
+#include <deque>
+
 #include <Renderer.h>
 #include <Font.h>
 
