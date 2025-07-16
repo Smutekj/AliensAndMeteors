@@ -365,7 +365,7 @@ void Game::update(const float dt, Renderer &window)
     }
     if(m_player->health <= 100)
     {
-        // m_state = GameState::SHOPPING;
+        m_state = GameState::SHOPPING;
     }
 
     m_world->update2(dt);

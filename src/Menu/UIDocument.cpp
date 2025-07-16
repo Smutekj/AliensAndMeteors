@@ -1,6 +1,7 @@
 #include "UIDocument.h"
 
 #include <Renderer.h>
+#include <Font.h>
 
 void UIElement::update() {}
 
@@ -27,12 +28,7 @@ void UIElement::draw(Renderer &canvas)
     canvas.drawLineBatched(ll, lr, 0.5, {0, 1, 1, 1});
 };
 
-template <class... Args>
-void UIElement::addChildren(Args... child_el)
-{
-    ((child_el->parent = this), ...);
-    ((children.push_back(child_el)), ...);
-}
+
 
 double UIElement::maxChildrenHeight() const
 {
@@ -292,13 +288,11 @@ void UIDocument::forEach(std::function<void(UIElement::UIElementP)> callback)
     }
 }
 
-void drawUI()
+void UIDocument::drawUI()
 {
     root->drawX(document);
 }
 
-UIElement::UIElementP root = nullptr;
-Renderer & document;
 
 TextUIELement::TextUIELement(Font &font, std::string text)
     : m_text(text)

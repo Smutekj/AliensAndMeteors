@@ -1,6 +1,12 @@
 #pragma once 
 
+#include <string>
+#include <vector>
+#include <memory>
 
+#include <Rect.h>
+#include <Text.h>
+#include <Sprite.h>
 
 enum class UIEvent
 {
@@ -37,6 +43,7 @@ enum class Sizing
 };
 
 class Renderer;
+class Font;
 
 struct UIElement
 {
@@ -134,3 +141,11 @@ struct SpriteUIELement : UIElement
     Sprite image;
 };
 
+
+
+template <class... Args>
+void UIElement::addChildren(Args... child_el)
+{
+    ((child_el->parent = this), ...);
+    ((children.push_back(child_el)), ...);
+}
