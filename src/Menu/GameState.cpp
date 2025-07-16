@@ -215,23 +215,6 @@ void ShopState::draw()
     pica.centerAround(window.getMouseInScreen());
     window.drawText(pica);
 
-    // window.drawCricleBatched(window.getMouseInScreen(), 20, {1,0,0,1});
-
-    // Sprite frame(*m_context.textures->get("ShopItemFrame"));
-    // Text frame_text;
-    // frame_text.setFont(m_context.font);
-    // for(auto& [box, text, sprite_name] : m_ui_elements)
-    // {
-    //     utils::Vector2f el_center = {box.pos_x + box.width/2., box.pos_y + box.height/2.};
-    //     frame.setPosition(el_center);
-    //     frame.setTexture(*m_context.textures->get(sprite_name));
-    //     frame.setScale(box.width/2, -box.height/2);
-    //     window.drawSprite(frame);
-
-    //     frame_text.setText(text);
-    //     frame_text.centerAround({el_center.x, el_center.y - 20});
-    //     window.drawText(frame_text);
-    // }
 
     window.drawAll();
     window.m_view = old_view;
