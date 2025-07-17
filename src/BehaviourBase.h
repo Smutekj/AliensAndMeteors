@@ -3,7 +3,7 @@
 
 class Enemy;
 class GameWorld;
-class PlayerEntity;
+struct PlayerEntity;
 
 class BoidAI2
 {

@@ -27,6 +27,8 @@ public:
   void parseInput(Renderer &window, float dt);
   void draw(Renderer &window);
 
+  PlayerEntity* getPlayer();
+
   static bool isKeyPressed(SDL_Keycode key)
   {
     auto *keystate = SDL_GetKeyboardState(NULL);
