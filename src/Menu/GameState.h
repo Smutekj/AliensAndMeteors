@@ -50,6 +50,8 @@ struct ItemUIElement
     std::string sprite_name = "Fuel";
 };
 
+struct PlayerEntity;
+
 class ShopState : public State
 {
 
@@ -66,6 +68,7 @@ private:
 
     std::vector<ItemUIElement> m_ui_elements;
     int n_elements_per_row = 3;
+
 
     std::shared_ptr<Game> mp_game;
 

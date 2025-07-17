@@ -3,8 +3,12 @@
 #include "StateStack.h"
 #include "ScoreBoard.h"
 
+#include "../Entities/Player.h"
+
 #include "../Game.h"
 #include <Texture.h>
+
+PlayerEntity* p_player = nullptr;
 
 GameState::GameState(StateStack &stack, State::Context context)
     : State(stack, context)
@@ -12,6 +16,7 @@ GameState::GameState(StateStack &stack, State::Context context)
     try
     {
         mp_game = std::make_shared<Game>(*context.window, *context.bindings);
+        p_player = mp_game->getPlayer();
     }
     catch (std::exception &e)
     {
@@ -97,6 +102,7 @@ ShopState::ShopState(StateStack &stack, State::Context context)
     fuel_text->margin = {0, 0};
     fuel_text->padding = {5, 5};
     fuel_text->margin = {10, 0};
+    fuel_text->id = "text";
     auto heart_text = std::make_shared<TextUIELement>(*fuel_text);
     auto speed_text = std::make_shared<TextUIELement>(*fuel_text);
     auto money_text = std::make_shared<TextUIELement>(*fuel_text);
@@ -118,15 +124,22 @@ ShopState::ShopState(StateStack &stack, State::Context context)
     money_button->bounding_box = {0, 0, 80, 80};
 
     auto control_bar = std::make_shared<UIElement>();
+    control_bar->id = "control";
     control_bar->bounding_box = {0, 0, 80, 60};
     control_bar->sizing = Sizing::SCALE_TO_FIT;
+    control_bar->margin.y = 30;
     auto buy_button = std::make_shared<SpriteUIELement>();
     buy_button->setTexture(*m_context.textures->get("Forward"));
     buy_button->bounding_box = {0, 0, 40, 40};
+    buy_button->id = "buyButton";
+    buy_button->event_callbacks[UIEvent::CLICK] = [](auto node){
+        p_player->max_health += 1;
+    };
+
     auto sell_button = std::make_shared<SpriteUIELement>();
     sell_button->setTexture(*m_context.textures->get("Back"));
     sell_button->bounding_box = {0, 0, 40, 40};
-    control_bar->margin.y = 30;
+    sell_button->id = "sellButton";
 
     auto button_holder2 = std::make_shared<SpriteUIELement>(*button_holder);
     auto button_holder3 = std::make_shared<SpriteUIELement>(*button_holder);
@@ -148,13 +161,13 @@ ShopState::ShopState(StateStack &stack, State::Context context)
 
     auto grid_holder = std::make_shared<UIElement>();
     grid_holder->layout = Layout::Grid;
+    // document.root->sizing = Sizing::SCALE_TO_FIT;
     grid_holder->bounding_box.width = 600;
     grid_holder->bounding_box.height = 600;
     grid_holder->max_width = 800;
-    grid_holder->addChildren(button_holder, button_holder2, button_holder3, button_holder4);
+    grid_holder->addChildren(button_holder);//, button_holder2, button_holder3, button_holder4);
 
     document.root->layout = Layout::Y;
-    document.root->sizing = Sizing::SCALE_TO_FIT;
     document.root->addChildren(grid_holder);
     // for(int i = 0; i < 10; ++i)
     // {

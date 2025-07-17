@@ -34,7 +34,7 @@ class KeyBindings;
 class ScoreBoard;
 class TextureHolder;
 class Font;
-
+struct PlayerEntity;
 
 class State
 {
@@ -50,6 +50,7 @@ public:
 		KeyBindings* bindings;
 		Font* font;
 		ScoreBoard* score;
+		PlayerEntity* p_player = nullptr;
 	};
 
 public:

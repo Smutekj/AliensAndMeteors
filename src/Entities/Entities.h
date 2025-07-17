@@ -9,7 +9,7 @@
 #include "../GameObject.h"
 
 class BoidAI2;
-class PlayerEntity;
+struct PlayerEntity;
 class GameWorld;
 class Animation;
 

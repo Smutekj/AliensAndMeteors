@@ -518,3 +518,8 @@ int Game::getScore() const
 {
     return m_score;
 }
+
+PlayerEntity* Game::getPlayer()
+{
+    return m_player;
+}

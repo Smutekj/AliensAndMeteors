@@ -243,18 +243,20 @@ void UIDocument::handleEvent(UIEvent event)
         return;
     }
 
-    forEach([event](auto node_p)
+    forEach([event, this](auto node_p)
             {
-            if(node_p->event_callbacks.count(event))
-            {
-                node_p->event_callbacks.at(event)(node_p);
-            } });
+                bool mouse_is_inside = node_p->bounding_box.contains(document.getMouseInScreen());
+                if(mouse_is_inside)
+                {
+                    onEvent(UIEvent::CLICK, node_p);
+                }
+            });
 }
 
-UIElement *UIDocument::getElementById(const std::string &id) const
+UIElement *UIElement::getElementById(const std::string &id) 
 {
     std::deque<UIElement::UIElementP> to_visit;
-    to_visit.push_back(root);
+    to_visit.push_back(UIElement::UIElementP{this});
 
     while (!to_visit.empty())
     {
@@ -270,6 +272,10 @@ UIElement *UIDocument::getElementById(const std::string &id) const
         }
     }
     return nullptr;
+}
+UIElement *UIDocument::getElementById(const std::string &id) const
+{
+    return root->getElementById(id);
 }
 
 void UIDocument::forEach(std::function<void(UIElement::UIElementP)> callback)
@@ -315,9 +321,14 @@ void TextUIELement::draw(Renderer &canvas)
 
     if (std::abs(text_bounder.width - (size.x - 2 * padding.x)) > 0.01)
     {
-        scale.x = (size.x - 2 * padding.x) / (text_bounder.width);
-        scale.y = -(size.y - 2 * padding.y) / (text_bounder.height);
-        m_text.setScale(scale);
+        float sx = std::abs((size.x - 2 * padding.x) / (text_bounder.width));
+        float sy = std::abs((size.y - 2 * padding.y) / (text_bounder.height));
+        if(sx >= 1.)
+        {
+            m_text.setScale(utils::Vector2f{std::min(sx, sy), -std::min(sx, sy)});
+        }else{
+            m_text.setScale(utils::Vector2f{std::max(sx, sy),  -std::max(sx, sy)});
+        }
     }
 
     m_text.setPosition(center_pos.x, center_pos.y - text_bounder.height / 2);

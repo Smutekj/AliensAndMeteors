@@ -6,7 +6,7 @@
 
 #include "../GameObject.h"
 
-class PlayerEntity;
+struct PlayerEntity;
 class GameWorld;
 class Trigger;
 

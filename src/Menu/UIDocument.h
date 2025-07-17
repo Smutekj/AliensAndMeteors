@@ -86,6 +86,7 @@ public:
     template <class... Args>
     void addChildren(Args... child_el);
 
+    UIElement* getElementById(const std::string &id) ;
     
     void drawX(Renderer &canvas);
     
@@ -141,9 +142,33 @@ struct SpriteUIELement : UIElement
     Sprite image;
 };
 
+struct SliderUIELement : UIElement
+{
+
+    SliderUIELement()
+    {
+
+    }
+    // virtual void draw(Renderer &canvas) override;
+    void setTexture(Texture &tex);
+    
+    double value = 0.;
+    double min_value = 0.;
+    double max_value = 1.;
+    
+    Sprite image;
+};
+
+struct TextInputElement : UIElement
+{
+    
+    // virtual void draw(Renderer &canvas) override;
+};
+
 template <class... Args>
 void UIElement::addChildren(Args... child_el)
 {
     ((child_el->parent = this), ...);
     ((children.push_back(child_el)), ...);
 }
+
