@@ -5,6 +5,8 @@
 #include <Renderer.h>
 #include <Font.h>
 
+#include "tinyxml2.h"
+
 void UIElement::update() {}
 
 void UIElement::draw(Renderer &canvas)
@@ -24,10 +26,10 @@ void UIElement::draw(Renderer &canvas)
     ur = {bounding_box.pos_x + bounding_box.width - padding.x, bounding_box.pos_y + padding.y};
     ll = {bounding_box.pos_x + padding.x, bounding_box.pos_y + bounding_box.height - padding.y};
     lr = {bounding_box.pos_x + bounding_box.width - padding.x, bounding_box.pos_y + bounding_box.height - padding.y};
-    canvas.drawLineBatched(ul, ur, 0.5, {0, 1, 1, 1});
-    canvas.drawLineBatched(ul, ll, 0.5, {0, 1, 1, 1});
-    canvas.drawLineBatched(ur, lr, 0.5, {0, 1, 1, 1});
-    canvas.drawLineBatched(ll, lr, 0.5, {0, 1, 1, 1});
+    canvas.drawLineBatched(ul, ur, 1., {0, 1, 1, 1});
+    canvas.drawLineBatched(ul, ll, 1., {0, 1, 1, 1});
+    canvas.drawLineBatched(ur, lr, 1., {0, 1, 1, 1});
+    canvas.drawLineBatched(ll, lr, 1., {0, 1, 1, 1});
 };
 
 
@@ -75,7 +77,7 @@ void UIElement::drawX(Renderer &canvas)
     {
         max_width = canvas.getTargetSize().x;
     }
-    else if (!parent)
+    else
     {
         max_width = bounding_box.width;
     }
@@ -207,6 +209,45 @@ int UIElement::y() const
 UIDocument::UIDocument(Renderer &window_canvas)
     : document(window_canvas)
 {
+    using namespace tinyxml2;
+    
+    XMLDocument doc;
+	doc.LoadFile( "../../ui.xml" );
+
+    XMLElement* xml_elem = doc.RootElement();
+    std::vector<XMLElement*> to_visit;
+    to_visit.push_back(xml_elem);
+    std::vector<XMLElement*> to_backtrack;
+    while(!to_visit.empty())
+    {
+        xml_elem = to_visit.back();
+        to_visit.pop_back();
+        
+        to_backtrack.push_back(xml_elem);
+        for (XMLElement* child = xml_elem->FirstChildElement(); child; child = child->NextSiblingElement())
+        {
+            to_visit.push_back(child);
+        }
+    }
+
+    for(int i = to_backtrack.size() - 1; i >= 0; i--)
+    {
+        if(to_backtrack.at(i)->Name() == "SpriteUIElement")
+        {
+
+        }else if (to_backtrack.at(i)->Name() == "TextUIElement")
+        {
+
+        }else if (to_backtrack.at(i)->Name() == "UIElement")
+        {
+            
+        }else if (to_backtrack.at(i)->Name() == "SpriteUIElement")
+        {
+            
+        }
+    }
+
+
     root = std::make_shared<UIElement>();
     root->parent = nullptr;
     root->bounding_box = {0, 0,
@@ -255,8 +296,8 @@ void UIDocument::handleEvent(UIEvent event)
 
 UIElement *UIElement::getElementById(const std::string &id) 
 {
-    std::deque<UIElement::UIElementP> to_visit;
-    to_visit.push_back(UIElement::UIElementP{this});
+    std::deque<UIElement*> to_visit;
+    to_visit.push_back(this);
 
     while (!to_visit.empty())
     {
@@ -264,11 +305,11 @@ UIElement *UIElement::getElementById(const std::string &id)
         to_visit.pop_front();
         if (curr->id == id)
         {
-            return curr.get();
+            return curr;
         }
         for (auto &child : curr->children)
         {
-            to_visit.push_back(child);
+            to_visit.push_back(child.get());
         }
     }
     return nullptr;
@@ -319,17 +360,21 @@ void TextUIELement::draw(Renderer &canvas)
     auto text_bounder = m_text.getBoundingBox();
     utils::Vector2f scale = {width(), height()};
 
-    if (std::abs(text_bounder.width - (size.x - 2 * padding.x)) > 0.01)
+    float error_x = text_bounder.width - (size.x - 2 * padding.x);
+    float error_y = text_bounder.height - (size.y - 2 * padding.y);
+    
+    float sx = std::abs((size.x - 2 * padding.x) / (text_bounder.width));
+    float sy = std::abs((size.y - 2 * padding.y) / (text_bounder.height));
+
+    if(error_x > 0)
     {
-        float sx = std::abs((size.x - 2 * padding.x) / (text_bounder.width));
-        float sy = std::abs((size.y - 2 * padding.y) / (text_bounder.height));
-        if(sx >= 1.)
-        {
-            m_text.setScale(utils::Vector2f{std::min(sx, sy), -std::min(sx, sy)});
-        }else{
-            m_text.setScale(utils::Vector2f{std::max(sx, sy),  -std::max(sx, sy)});
-        }
+        m_text.setScale(sx, -sx);
+    }else if(error_y > 0){
+        m_text.setScale(sy, -sy);
+    }else{
+        // m_text.setScale(m_text.getScale().x,-1);
     }
+
 
     m_text.setPosition(center_pos.x, center_pos.y - text_bounder.height / 2);
     m_text.centerAround({center_pos.x, center_pos.y});

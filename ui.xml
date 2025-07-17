@@ -1,0 +1,62 @@
+<UIDocument layout="Y">
+    <UIElement id="gridHolder" layout="Grid" width="600" height="600" max_width="800">
+        <SpriteUIElement id="buttonHolder" texture="ShopItemFrame" width="150" height="200" layout="Y" sizing="SCALE_TO_FIT" padding="30,10" margin="10,0">
+            <Events>
+                <OnEvent type="MOUSE_ENTERED" property="padding.x" value="39" />
+                <OnEvent type="MOUSE_LEFT" property="padding.x" value="30" />
+            </Events>
+            <SpriteUIElement texture="Fuel" width="80" height="80" />
+            <UIElement id="control" width="80" height="60" sizing="SCALE_TO_FIT" margin="0,30">
+                <SpriteUIElement id="sellButton" texture="Back" width="40" height="40" />
+                <TextUIElement id="text" text="Fuel" width="100" height="40" padding="5,5" margin="10,0" />
+                <SpriteUIElement id="buyButton" texture="Forward" width="40" height="40">
+                    <Events>
+                        <OnEvent type="CLICK" action="increasePlayerHealth" />
+                    </Events>
+                </SpriteUIElement>
+            </UIElement>
+        </SpriteUIElement>
+        
+        <!-- buttonHolder2 -->
+        <SpriteUIElement texture="ShopItemFrame" width="150" height="200" layout="Y" sizing="SCALE_TO_FIT" padding="30,10" margin="10,0">
+            <SpriteUIElement texture="Heart" width="80" height="80" />
+            <UIElement width="80" height="60" sizing="SCALE_TO_FIT" margin="0,30">
+                <SpriteUIElement texture="Back" width="40" height="40" />
+                <TextUIElement text="Health" width="100" height="40" padding="5,5" margin="10,0" />
+                <SpriteUIElement texture="Forward" width="40" height="40">
+                    <Events>
+                        <OnEvent type="CLICK" action="increasePlayerHealth" />
+                    </Events>
+                </SpriteUIElement>
+            </UIElement>
+        </SpriteUIElement>
+
+        <!-- buttonHolder3 -->
+        <SpriteUIElement texture="ShopItemFrame" width="150" height="200" layout="Y" sizing="SCALE_TO_FIT" padding="30,10" margin="10,0">
+            <SpriteUIElement texture="Arrow" width="80" height="80" />
+            <UIElement width="80" height="60" sizing="SCALE_TO_FIT" margin="0,30">
+                <SpriteUIElement texture="Back" width="40" height="40" />
+                <TextUIElement text="Speed" width="100" height="40" padding="5,5" margin="10,0" />
+                <SpriteUIElement texture="Forward" width="40" height="40">
+                    <Events>
+                        <OnEvent type="CLICK" action="increasePlayerHealth" />
+                    </Events>
+                </SpriteUIElement>
+            </UIElement>
+        </SpriteUIElement>
+
+        <!-- buttonHolder4 -->
+        <SpriteUIElement texture="ShopItemFrame" width="150" height="200" layout="Y" sizing="SCALE_TO_FIT" padding="30,10" margin="10,0">
+            <SpriteUIElement texture="Coin" width="80" height="80" />
+            <UIElement width="80" height="60" sizing="SCALE_TO_FIT" margin="0,30">
+                <SpriteUIElement texture="Back" width="40" height="40" />
+                <TextUIElement text="Money" width="100" height="40" padding="5,5" margin="10,0" />
+                <SpriteUIElement texture="Forward" width="40" height="40">
+                    <Events>
+                        <OnEvent type="CLICK" action="increasePlayerHealth" />
+                    </Events>
+                </SpriteUIElement>
+            </UIElement>
+        </SpriteUIElement>
+    </UIElement>
+</UIDocument>

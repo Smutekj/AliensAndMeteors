@@ -63,6 +63,8 @@ public:
     virtual void draw() override;
     virtual void handleEvent(const SDL_Event &event) override;
 
+    void initButtons();
+
 private:
     std::unordered_map<std::string, ShopItem> m_items;
 

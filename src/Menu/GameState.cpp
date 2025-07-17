@@ -8,7 +8,7 @@
 #include "../Game.h"
 #include <Texture.h>
 
-PlayerEntity* p_player = nullptr;
+PlayerEntity *p_player = nullptr;
 
 GameState::GameState(StateStack &stack, State::Context context)
     : State(stack, context)
@@ -72,109 +72,116 @@ ShopState::ShopState(StateStack &stack, State::Context context)
     : State(stack, context), document(*context.window)
 {
 
-    Rect<int> frame_box = {0, 0, 150, 180};
-
-    m_ui_elements.push_back({frame_box, "Fuel", "Fuel"});
-    m_ui_elements.push_back({frame_box, "Health", "Heart"});
-    m_ui_elements.push_back({frame_box, "Speed", "Arrow"});
-    m_ui_elements.push_back({frame_box, "Money", "Coin"});
-
-    auto button_holder = std::make_shared<SpriteUIELement>();
-    button_holder->id = "buttonHolder";
-    button_holder->event_callbacks[UIEvent::MOUSE_ENETERED] = [](UIElement::UIElementP node)
-    {
-        node->padding.x = 39;
-    };
-    button_holder->event_callbacks[UIEvent::MOUSE_LEFT] = [](UIElement::UIElementP node)
-    {
-        node->padding.x = 30;
-    };
-
-    button_holder->setTexture(*m_context.textures->get("ShopItemFrame"));
-    button_holder->bounding_box = {0, 0, 150, 200};
-    button_holder->padding = {30, 10};
-    button_holder->margin.x = 10;
-    button_holder->layout = Layout::Y;
-    button_holder->sizing = Sizing::SCALE_TO_FIT;
-
-    auto fuel_text = std::make_shared<TextUIELement>(*m_context.font, "Fuel");
-    fuel_text->bounding_box = {0, 0, 100, 40};
-    fuel_text->margin = {0, 0};
-    fuel_text->padding = {5, 5};
-    fuel_text->margin = {10, 0};
-    fuel_text->id = "text";
-    auto heart_text = std::make_shared<TextUIELement>(*fuel_text);
-    auto speed_text = std::make_shared<TextUIELement>(*fuel_text);
-    auto money_text = std::make_shared<TextUIELement>(*fuel_text);
-    heart_text->m_text.setText("Health");
-    speed_text->m_text.setText("Speed");
-    money_text->m_text.setText("Money");
-
-    auto fuel_button = std::make_shared<SpriteUIELement>();
-    auto heart_button = std::make_shared<SpriteUIELement>();
-    auto speed_button = std::make_shared<SpriteUIELement>();
-    auto money_button = std::make_shared<SpriteUIELement>();
-    fuel_button->setTexture(*m_context.textures->get("Fuel"));
-    fuel_button->bounding_box = {0, 0, 80, 80};
-    heart_button->setTexture(*m_context.textures->get("Heart"));
-    heart_button->bounding_box = {0, 0, 80, 80};
-    speed_button->setTexture(*m_context.textures->get("Arrow"));
-    speed_button->bounding_box = {0, 0, 80, 80};
-    money_button->setTexture(*m_context.textures->get("Coin"));
-    money_button->bounding_box = {0, 0, 80, 80};
-
-    auto control_bar = std::make_shared<UIElement>();
-    control_bar->id = "control";
-    control_bar->bounding_box = {0, 0, 80, 60};
-    control_bar->sizing = Sizing::SCALE_TO_FIT;
-    control_bar->margin.y = 30;
-    auto buy_button = std::make_shared<SpriteUIELement>();
-    buy_button->setTexture(*m_context.textures->get("Forward"));
-    buy_button->bounding_box = {0, 0, 40, 40};
-    buy_button->id = "buyButton";
-    buy_button->event_callbacks[UIEvent::CLICK] = [](auto node){
-        p_player->max_health += 1;
-    };
-
-    auto sell_button = std::make_shared<SpriteUIELement>();
-    sell_button->setTexture(*m_context.textures->get("Back"));
-    sell_button->bounding_box = {0, 0, 40, 40};
-    sell_button->id = "sellButton";
-
-    auto button_holder2 = std::make_shared<SpriteUIELement>(*button_holder);
-    auto button_holder3 = std::make_shared<SpriteUIELement>(*button_holder);
-    auto button_holder4 = std::make_shared<SpriteUIELement>(*button_holder);
-
-    auto control_bar2 = std::make_shared<UIElement>(*control_bar);
-    auto control_bar3 = std::make_shared<UIElement>(*control_bar);
-    auto control_bar4 = std::make_shared<UIElement>(*control_bar);
-
-    control_bar->addChildren(sell_button, fuel_text, buy_button);
-    control_bar2->addChildren(sell_button, heart_text, buy_button);
-    control_bar3->addChildren(sell_button, speed_text, buy_button);
-    control_bar4->addChildren(sell_button, money_text, buy_button);
-
-    button_holder->addChildren(fuel_button, control_bar);
-    button_holder2->addChildren(heart_button, control_bar2);
-    button_holder3->addChildren(speed_button, control_bar3);
-    button_holder4->addChildren(money_button, control_bar4);
-
     auto grid_holder = std::make_shared<UIElement>();
     grid_holder->layout = Layout::Grid;
-    // document.root->sizing = Sizing::SCALE_TO_FIT;
     grid_holder->bounding_box.width = 600;
     grid_holder->bounding_box.height = 600;
-    grid_holder->max_width = 800;
-    grid_holder->addChildren(button_holder);//, button_holder2, button_holder3, button_holder4);
+
+    std::vector<std::string> icon_textures = {"Fuel", "Heart", "Arrow", "Coin"};
+    for (int i = 0; i < 4; ++i)
+    {
+        auto button_holder = std::make_shared<SpriteUIELement>();
+        button_holder->id = "buttonHolder";
+        button_holder->event_callbacks[UIEvent::MOUSE_ENETERED] = [](UIElement::UIElementP node)
+        {
+            node->padding.x = 32;
+            node->padding.y = 32;
+        };
+        button_holder->event_callbacks[UIEvent::MOUSE_LEFT] = [](UIElement::UIElementP node)
+        {
+            node->padding.x = 30;
+            node->padding.y = 30;
+        };
+
+        button_holder->setTexture(*m_context.textures->get("ShopItemFrame"));
+        button_holder->bounding_box = {0, 0, 150, 200};
+        button_holder->padding = {30, 10};
+        button_holder->margin.x = 10;
+        button_holder->id = icon_textures.at(i);
+        button_holder->layout = Layout::Y;
+        button_holder->sizing = Sizing::SCALE_TO_FIT;
+
+        auto icon = std::make_shared<SpriteUIELement>();
+        icon->setTexture(*m_context.textures->get(icon_textures.at(i)));
+        icon->bounding_box = {0, 0, 80, 80};
+
+        auto text = std::make_shared<TextUIELement>(*m_context.font, "100");
+        text->bounding_box = {0, 0, 60, 40};
+        text->id = "amountText";
+
+        auto control_bar = std::make_shared<UIElement>();
+        control_bar->id = "control";
+        control_bar->bounding_box = {0, 0, 80, 60};
+        control_bar->sizing = Sizing::SCALE_TO_FIT;
+        control_bar->margin.y = 30;
+
+        auto buy_button = std::make_shared<SpriteUIELement>();
+        buy_button->setTexture(*m_context.textures->get("Forward"));
+        buy_button->bounding_box = {0, 0, 40, 40};
+        buy_button->id = "buyButton";
+
+        auto sell_button = std::make_shared<SpriteUIELement>(*buy_button);
+        sell_button->setTexture(*m_context.textures->get("Back"));
+        sell_button->id = "sellButton";
+
+        control_bar->addChildren(sell_button, buy_button);
+        button_holder->addChildren(icon, text, control_bar);
+        grid_holder->addChildren(button_holder);
+    }
 
     document.root->layout = Layout::Y;
     document.root->addChildren(grid_holder);
-    // for(int i = 0; i < 10; ++i)
-    // {
-    //     auto button_holder2 = std::make_shared<SpriteUIELement>(*button_holder);
-    //     document.root->addChildren(button_holder2);//, heart_button, speed_button, money_button);
-    // }
     document.root->padding = {50, 50};
+
+    initButtons();
+}
+
+void ShopState::initButtons()
+{
+
+    auto fuel_holder = document.root->getElementById("Fuel");
+    fuel_holder->getElementById("buyButton")->event_callbacks[UIEvent::CLICK] = [this, fuel_holder](UIElement::UIElementP node_p)
+    {
+        TextUIELement *text_el = dynamic_cast<TextUIELement *>(fuel_holder->getElementById("amountText"));
+        if (text_el)
+        {
+            p_player->m_max_fuel++;
+            text_el->m_text.setText(std::to_string((int)p_player->m_max_fuel));
+        }
+    };
+    fuel_holder->getElementById("sellButton")->event_callbacks[UIEvent::CLICK] = [this, fuel_holder](UIElement::UIElementP node_p)
+    {
+        TextUIELement *text_el = dynamic_cast<TextUIELement *>(fuel_holder->getElementById("amountText"));
+        if (text_el)
+        {
+            p_player->m_max_fuel--;
+            text_el->m_text.setText(std::to_string((int)p_player->m_max_fuel));
+        }
+    };
+
+    auto holder = document.root->getElementById("Arrow");
+    holder->getElementById("buyButton")->event_callbacks[UIEvent::CLICK] = [this, holder](UIElement::UIElementP node_p)
+    {
+        TextUIELement *text_el = dynamic_cast<TextUIELement *>(holder->getElementById("amountText"));
+        if (text_el)
+        {
+            p_player->acceleration += 0.1f;
+            std::ostringstream oss;
+            oss << std::setprecision(2) << p_player->acceleration;
+            text_el->m_text.setText(oss.str());
+        }
+    };
+    holder->getElementById("sellButton")->event_callbacks[UIEvent::CLICK] = [this, holder](UIElement::UIElementP node_p)
+    {
+        TextUIELement *text_el = dynamic_cast<TextUIELement *>(holder->getElementById("amountText"));
+        if (text_el)
+        {
+            p_player->acceleration -= 0.1f;
+            std::ostringstream oss;
+            oss << std::setprecision(2) << p_player->acceleration;
+            text_el->m_text.setText(oss.str());
+        }
+    };
 }
 
 ShopState::~ShopState() {}
@@ -226,10 +233,9 @@ void ShopState::draw()
     auto mouse_pos = window.getMouseInScreen();
     Text pica(std::to_string(mouse_pos.x) + "   " + std::to_string(mouse_pos.y));
     pica.setFont(m_context.font);
-    pica.setScale(0.5, -0.5);
+    pica.setScale(0.4, -0.4);
     pica.centerAround(mouse_pos);
     window.drawText(pica);
-
 
     window.drawAll();
     window.m_view = old_view;

@@ -8,8 +8,11 @@ PauseState::PauseState(StateStack &stack, Context &context) : State(stack, conte
     auto settings = std::make_unique<ChangeStateItem>(context, &stack, States::ID::Settings, States::ID::Pause);
     auto back_to_menu = std::make_unique<ChangeStateItem>(context, &stack,
                                                           States::ID::Player_Died, States::ID::None, "Quit Game");
+    auto shop = std::make_unique<ChangeStateItem>(context, &stack,
+                                                          States::ID::Shop, States::ID::None, "Shop");
 
     m_menu.addItem(std::move(resume));
+    m_menu.addItem(std::move(shop));
     m_menu.addItem(std::move(settings));
     m_menu.addItem(std::move(back_to_menu));
 }

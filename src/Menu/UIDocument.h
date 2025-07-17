@@ -20,6 +20,7 @@ enum class Layout
     X,
     Y,
     Grid,
+    Hidden,
 };
 
 enum class Alignement
@@ -40,6 +41,12 @@ enum class Sizing
     FIXED,
     SCALE_TO_FIT,
     RESCALE_CHILDREN,
+};
+
+enum class Position
+{
+    ABSOLUTE,
+    RELATIVE,
 };
 
 class Renderer;
@@ -142,28 +149,28 @@ struct SpriteUIELement : UIElement
     Sprite image;
 };
 
-struct SliderUIELement : UIElement
-{
+// struct SliderUIELement : UIElement
+// {
 
-    SliderUIELement()
-    {
+//     SliderUIELement()
+//     {
 
-    }
-    // virtual void draw(Renderer &canvas) override;
-    void setTexture(Texture &tex);
+//     }
+//     // virtual void draw(Renderer &canvas) override;
+//     void setTexture(Texture &tex);
     
-    double value = 0.;
-    double min_value = 0.;
-    double max_value = 1.;
+//     double value = 0.;
+//     double min_value = 0.;
+//     double max_value = 1.;
     
-    Sprite image;
-};
+//     Sprite image;
+// };
 
-struct TextInputElement : UIElement
-{
+// struct TextInputElement : UIElement
+// {
     
-    // virtual void draw(Renderer &canvas) override;
-};
+//     // virtual void draw(Renderer &canvas) override;
+// };
 
 template <class... Args>
 void UIElement::addChildren(Args... child_el)
