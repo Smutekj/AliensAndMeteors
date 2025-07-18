@@ -167,8 +167,6 @@ void ChangeKeyItem::handleEvent(SDL_Event event)
 void ChangeKeyItem::draw(Renderer &window)
 {
 
-
-    
     Text left_text;
     left_text.setFont(p_font);
     utils::Vector2f left_text_pos = {
@@ -235,25 +233,31 @@ void EnterTextItem::draw(Renderer &window)
 {
     auto window_size = window.getTargetSize();
 
-    Text left_text;
-    left_text.setFont(p_font);
-    utils::Vector2f left_text_pos = {
-        getPosition().x - window_size.x / 4.f,
-        getPosition().y};
-    left_text.setText(m_left_text);
-    left_text.centerAround(left_text_pos);
-    left_text.setColor(m_text_color);
+    if (!m_left_text.empty())
+    {
+        Text left_text;
+        left_text.setFont(p_font);
+        utils::Vector2f left_text_pos = {
+            getPosition().x - window_size.x / 4.f,
+            getPosition().y};
+        left_text.setText(m_left_text);
+        left_text.centerAround(left_text_pos);
+        left_text.setColor(m_text_color);
+        window.drawText(left_text);
+    }
+    
+    if (!m_entered_text.empty())
+    {
+        Text right_text;
+        right_text.setFont(p_font);
+        utils::Vector2f right_text_pos = {
+            getPosition().x + window_size.x / 4.f,
+            getPosition().y};
+        right_text.setText(m_entered_text);
+        right_text.centerAround(right_text_pos);
 
-    Text right_text;
-    right_text.setFont(p_font);
-    utils::Vector2f right_text_pos = {
-        getPosition().x + window_size.x / 4.f,
-        getPosition().y};
-    right_text.setText(m_entered_text);
-    right_text.centerAround(right_text_pos);
-
-    window.drawText(left_text);
-    window.drawText(right_text);
+        window.drawText(right_text);
+    }
 }
 
 bool EnterTextItem::isLetter(uint32_t code)
