@@ -136,51 +136,52 @@ ShopState::ShopState(StateStack &stack, State::Context context)
     initButtons();
 }
 
+template <class PropertyType>
+void changePlayerProperty(PropertyType &property, PropertyType delta, UIElement::UIElementP ui_holder)
+{
+    TextUIELement *text_el = dynamic_cast<TextUIELement *>(ui_holder->getElementById("amountText"));
+    if (text_el)
+    {
+        property += delta;
+        std::stringstream ss;
+        ss << std::setprecision(2) << property;
+        text_el->m_text.setText(ss.str());
+    }
+}
+
 void ShopState::initButtons()
 {
 
-    auto fuel_holder = document.root->getElementById("Fuel");
-    fuel_holder->getElementById("buyButton")->event_callbacks[UIEvent::CLICK] = [this, fuel_holder](UIElement::UIElementP node_p)
+    
+    auto change_player_property = [this](UIElement *holder, auto &property, auto delta)
     {
-        TextUIELement *text_el = dynamic_cast<TextUIELement *>(fuel_holder->getElementById("amountText"));
+        TextUIELement *text_el = dynamic_cast<TextUIELement *>(holder->getElementById("amountText"));
         if (text_el)
         {
-            p_player->m_max_fuel++;
-            text_el->m_text.setText(std::to_string((int)p_player->m_max_fuel));
+            property += delta;
+            text_el->m_text.setText(std::to_string((int)property));
         }
     };
-    fuel_holder->getElementById("sellButton")->event_callbacks[UIEvent::CLICK] = [this, fuel_holder](UIElement::UIElementP node_p)
+    
+    auto fuel_holder = document.root->getElementById("Fuel");
+    fuel_holder->getElementById("buyButton")->event_callbacks[UIEvent::CLICK] = [fuel_holder, change_player_property](UIElement::UIElementP node_p)
     {
-        TextUIELement *text_el = dynamic_cast<TextUIELement *>(fuel_holder->getElementById("amountText"));
-        if (text_el)
-        {
-            p_player->m_max_fuel--;
-            text_el->m_text.setText(std::to_string((int)p_player->m_max_fuel));
-        }
+        change_player_property(fuel_holder, p_player->m_max_fuel, 1);
     };
 
-    auto holder = document.root->getElementById("Arrow");
-    holder->getElementById("buyButton")->event_callbacks[UIEvent::CLICK] = [this, holder](UIElement::UIElementP node_p)
+    fuel_holder->getElementById("sellButton")->event_callbacks[UIEvent::CLICK] = [fuel_holder, change_player_property](UIElement::UIElementP node_p)
     {
-        TextUIELement *text_el = dynamic_cast<TextUIELement *>(holder->getElementById("amountText"));
-        if (text_el)
-        {
-            p_player->acceleration += 0.1f;
-            std::ostringstream oss;
-            oss << std::setprecision(2) << p_player->acceleration;
-            text_el->m_text.setText(oss.str());
-        }
+        change_player_property(fuel_holder, p_player->m_max_fuel, -1);
     };
-    holder->getElementById("sellButton")->event_callbacks[UIEvent::CLICK] = [this, holder](UIElement::UIElementP node_p)
+
+    auto speed_holder = document.root->getElementById("Arrow");
+    speed_holder->getElementById("buyButton")->event_callbacks[UIEvent::CLICK] = [speed_holder, change_player_property](UIElement::UIElementP node_p)
     {
-        TextUIELement *text_el = dynamic_cast<TextUIELement *>(holder->getElementById("amountText"));
-        if (text_el)
-        {
-            p_player->acceleration -= 0.1f;
-            std::ostringstream oss;
-            oss << std::setprecision(2) << p_player->acceleration;
-            text_el->m_text.setText(oss.str());
-        }
+        change_player_property(speed_holder, p_player->acceleration, +0.1);
+    };
+    speed_holder->getElementById("buyButton")->event_callbacks[UIEvent::CLICK] = [speed_holder, change_player_property](UIElement::UIElementP node_p)
+    {
+        change_player_property(speed_holder, p_player->acceleration, -0.1);
     };
 }
 
