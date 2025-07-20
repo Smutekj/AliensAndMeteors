@@ -17,17 +17,19 @@ bool Objective::isFinished() const
 
 void Objective::drawArrowTo(utils::Vector2f location, Renderer &window, Color color = {1, 1, 0, 1})
 {
+    auto ui_view = window.getDefaultView();
+
     auto center = window.m_view.getCenter();
 
     auto angle = utils::dir2angle(location - center);
 
-    auto view_size = window.m_view.getSize() * 0.95f;
+    auto view_size = ui_view.getSize() * 0.95f;
     auto angle_threshold = utils::dir2angle(view_size);
 
     float distance_on_view;
     if (angle >= -angle_threshold && angle < angle_threshold)
     {
-        distance_on_view = view_size.x / 2.1 / std::cos(angle * M_PIf / 180.f);
+        distance_on_view = view_size.x / 2.1f / std::cos(angle * M_PIf / 180.f);
     }
     else if (angle >= angle_threshold && angle < 180 - angle_threshold)
     {
@@ -35,21 +37,21 @@ void Objective::drawArrowTo(utils::Vector2f location, Renderer &window, Color co
     }
     else if ((angle >= 180 - angle_threshold || angle < -180 + angle_threshold))
     {
-        distance_on_view = -view_size.x / 2.1 / std::cos(angle * M_PIf / 180.f);
+        distance_on_view = -view_size.x / 2.1f / std::cos(angle * M_PIf / 180.f);
     }
     else
     {
-        distance_on_view = -view_size.y / 2.05 / std::sin(angle * M_PIf / 180.f);
+        distance_on_view = -view_size.y / 2.05f / std::sin(angle * M_PIf / 180.f);
     }
 
     float actual_dist = utils::dist(location, center);
-    if (actual_dist > distance_on_view)
+    if (!window.m_view.contains(location))
     { //! draw only when not on screen
         Sprite arrow_rect(*m_textures.get("Arrow"));
-        arrow_rect.setScale(6, 6);
+        arrow_rect.setScale(15, 15);
         arrow_rect.m_color = color;
         arrow_rect.setRotation(glm::radians(angle));
-        arrow_rect.setPosition(center + distance_on_view * utils::angle2dir(angle));
+        arrow_rect.setPosition(ui_view.getCenter() + distance_on_view * utils::angle2dir(angle));
         window.m_blend_factors.src_factor = BlendFactor::SrcAlpha;
         window.drawSprite(arrow_rect, "Arrow");
     }
@@ -61,11 +63,16 @@ ReachSpotObjective::ReachSpotObjective(GameObject &spot, Font &font)
     m_font = &font;
 }
 
-void ReachSpotObjective::update(Trigger *trig)
+void ReachSpotObjective::onObservation(Trigger *trig)
 {
     m_is_finished = true;
     trig->kill();
     m_on_completion_callback();
+}
+void ReachSpotObjective::fail(Trigger* trig)
+{
+    m_is_finished = true;
+    m_on_failure_callback();
 }
 
 void ReachSpotObjective::draw(Renderer &window)
@@ -75,6 +82,7 @@ void ReachSpotObjective::draw(Renderer &window)
     drawArrowTo(m_location, window);
 
     window.m_view = window.getDefaultView();
+
     Text text;
     text.setFont(m_font);
     text.setText("Survey Area");
@@ -84,6 +92,7 @@ void ReachSpotObjective::draw(Renderer &window)
         static_cast<float>(window.getTargetSize().y)};
     text.setPosition(window_size.x / 20.f, m_text_y_pos);
     window.drawText(text);
+    
     window.m_view = old_view;
 }
 
@@ -93,7 +102,7 @@ SurveySpot::SurveySpot(GameObject &spot, Font &font)
     m_font = &font;
 }
 
-void SurveySpot::update(Trigger *trig)
+void SurveySpot::onObservation(Trigger *trig)
 {
     m_is_finished = true;
     trig->kill();
@@ -106,7 +115,7 @@ DestroyEntity::DestroyEntity(GameObject &target, Font &font)
     m_font = &font;
 }
 
-void DestroyEntity::update(Trigger *trig)
+void DestroyEntity::onObservation(Trigger *trig)
 {
     m_is_finished = true;
     trig->kill();
@@ -152,6 +161,7 @@ void ObjectiveSystem::remove(int id)
 
 void ObjectiveSystem::draw(Renderer &window)
 {
+    
     float y_pos = window.getTargetSize().y / 20.f;
     for (auto id : m_objectives.active_inds)
     {
@@ -159,6 +169,11 @@ void ObjectiveSystem::draw(Renderer &window)
         m_objectives.at(id)->draw(window);
         y_pos += 50.f;
     }
+    
+    auto old_view = window.m_view;
+    window.m_view = window.getDefaultView();
+    window.drawAll();
+    window.m_view = old_view;
 }
 
 void ObjectiveSystem::update()

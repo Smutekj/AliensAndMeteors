@@ -17,7 +17,9 @@ class Objective
 {
 
 public:
+    virtual void update(float dt){};
     virtual void draw(Renderer &window) = 0;
+    virtual void fail(Trigger* trig) {};
     virtual ~Objective() = default;
     bool isFinished() const;
 
@@ -28,11 +30,13 @@ public:
     int m_id;
     float m_text_y_pos;
     std::function<void()> m_on_completion_callback = []() {};
+    std::function<void()> m_on_failure_callback = []() {};
 
 protected:
     Font *m_font = nullptr;
     bool m_is_finished = false;
 };
+
 
 class ReachSpotObjective : public Objective, public Observer<Trigger>
 {
@@ -41,7 +45,8 @@ public:
     ReachSpotObjective(GameObject &spot, Font &font);
     virtual ~ReachSpotObjective() = default;
     
-    virtual void update(Trigger *trig) override;
+    virtual void onObservation(Trigger *trig) override;
+    virtual void fail(Trigger* trig) override;
     virtual void draw(Renderer &window) override;
 
 private:
@@ -55,7 +60,7 @@ public:
     SurveySpot(GameObject &spot, Font &font);
     virtual ~SurveySpot() = default;
 
-    virtual void update(Trigger *trig) override;
+    virtual void onObservation(Trigger *trig) override;
     virtual void draw(Renderer &window) override{}
 
 private:
@@ -70,7 +75,7 @@ public:
     DestroyEntity(GameObject& target, Font &font);
     virtual ~DestroyEntity() = default;
 
-    virtual void update(Trigger *trig) override;
+    virtual void onObservation(Trigger *trig) override;
 
     virtual void draw(Renderer &window) override;
 
