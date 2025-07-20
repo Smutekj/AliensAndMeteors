@@ -61,6 +61,8 @@ public:
     float max_speed = 50.f;
     BoosterState booster = BoosterState::Ready;
 
+    int m_money = 100;
+
     float m_laser_timer = 0.f;
 
     bool m_is_shooting_laser = false;
