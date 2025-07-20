@@ -8,6 +8,13 @@
 
 class GameWorld;
 
+class BossFight : public GameObject
+{
+
+public:
+  int phase_id = 0;
+};
+
 class Game
 {
 
@@ -20,6 +27,18 @@ public:
     SHOPPING
   };
 
+  enum class GameStage
+  {
+    FREE,
+    TIME_RACE,
+    DODGE,
+    ARENA,
+  };
+
+  GameStage stage = GameStage::FREE;
+
+  void changeStage(GameStage to);
+
   Game(Renderer &window, KeyBindings &bindings);
 
   void update(const float dt, Renderer &win);
@@ -27,7 +46,7 @@ public:
   void parseInput(Renderer &window, float dt);
   void draw(Renderer &window);
 
-  PlayerEntity* getPlayer();
+  PlayerEntity *getPlayer();
 
   static bool isKeyPressed(SDL_Keycode key)
   {
@@ -39,8 +58,25 @@ public:
   GameState getState() const;
 
 private:
+  
+  enum class ViewMoveState
+  {
+    FOLLOWING_PLAYER,
+    FIXED,
+    MOVING_TO_POSITION,
+  };
+
+  float m_move_view_time = 0.;
+  float m_move_view_duration = 5.; 
+  float m_max_view_speed = 50.; 
+  utils::Vector2f m_view_target;
+  utils::Vector2f m_view_velocity;
+  ViewMoveState m_view_state = ViewMoveState::FOLLOWING_PLAYER;
+  void moveViewToTarget(Renderer &window, float dt);
+  void moveViewToPlayer(Renderer &window, float dt);
+  void startMovingViewTo(utils::Vector2f target, float duration);
+
   void drawUI(Renderer &window);
-  void moveView(Renderer &window);
   void initializeLayers();
 
   void spawnNextObjective();
@@ -77,7 +113,5 @@ private:
   // friend UI;
   // UI m_ui;
 };
-
-
 
 #endif // BOIDS_GAME_H

@@ -30,12 +30,12 @@ void Game::initializeLayers()
     unit_layer.m_canvas.setShadersPath(shaders_directory);
     unit_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
 
-    auto &shiny_layer = m_layers.addLayer("Bloom", 5, options,  width, height);
+    auto &shiny_layer = m_layers.addLayer("Bloom", 5, options, width, height);
     shiny_layer.m_canvas.setShadersPath(shaders_directory);
     shiny_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
     // shiny_layer.addEffect(std::make_unique<Bloom3>(width, height));
 
-    auto &base_layer = m_ui_layers.addLayer("Base", 0, options,  width, height);
+    auto &base_layer = m_ui_layers.addLayer("Base", 0, options, width, height);
     base_layer.m_canvas.setShadersPath(shaders_directory);
     auto &bloom_layer = m_ui_layers.addLayer("Bloom", 1, options, width, height);
     bloom_layer.m_canvas.setShadersPath(shaders_directory);
@@ -82,7 +82,7 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     m_textures.add("Arrow", "arrow.png");
     m_textures.add("FireNoise", "fireNoise.png");
 
-    std::filesystem::path font_path =std::string(RESOURCES_DIR) + "/Fonts/arial.ttf";
+    std::filesystem::path font_path = std::string(RESOURCES_DIR) + "/Fonts/arial.ttf";
     m_font = std::make_unique<Font>(font_path);
 
     spawnNextObjective();
@@ -172,6 +172,43 @@ void Game::spawnBossObjective()
     m_objective_system.add(destroy_enemy_obj);
 }
 
+void Game::changeStage(GameStage target_stage)
+{
+
+    if (target_stage == GameStage::TIME_RACE)
+    {
+        auto &new_trigger = m_world->addTrigger<ReachPlace>();
+        auto new_pos = m_player->getPosition() + 400.f * utils::angle2dir(randf(0, 150));
+        new_trigger.setPosition(new_pos);
+
+        auto objective = std::make_shared<ReachSpotObjective>(new_trigger, *m_font);
+        m_objective_system.add(objective);
+        new_trigger.setCallback([this, new_pos, id = objective->m_id]()
+                                {
+            m_objective_system.remove(id);
+            m_score += 3;
+            spawnNextObjective(); });
+
+        objective->m_on_completion_callback = [this, new_pos]()
+        {
+            auto &star_effect = m_world->addVisualEffect(EffectType::ParticleEmiter);
+            star_effect.setPosition(new_pos);
+            star_effect.setLifeTime(2.f);
+        };
+        new_trigger.attach(objective);
+
+        auto &time_ran_out = m_world->addTrigger<Timer>();
+        time_ran_out.m_cooldown = 60.f;
+        time_ran_out.setCallback([this, objective_id = objective->m_id]()
+                                 {
+                                    
+                m_objective_system.remove(objective_id);
+                changeStage(GameStage::FREE); });
+    }
+
+    stage = target_stage;
+}
+
 void Game::spawnNextObjective()
 {
     auto &new_trigger = m_world->addTrigger<ReachPlace>();
@@ -209,11 +246,52 @@ void Game::spawnNextObjective()
     new_trigger.attach(objective);
 }
 
-void Game::moveView(Renderer &window)
+void Game::startMovingViewTo(utils::Vector2f target, float duration)
+{
+    m_view_state = ViewMoveState::MOVING_TO_POSITION;
+    m_move_view_duration = duration;
+    m_move_view_time = 0.f;
+    m_view_target = target;
+}
+void Game::moveViewToTarget(Renderer &window, float dt)
 {
     auto view = window.m_view;
 
-    const utils::Vector2f view_size = view.getSize(); // * (view.getViewport().width);
+    m_move_view_time += dt;
+
+    float view_speed = utils::norm(m_view_velocity);
+    float view_acceleration = 50.;
+
+    utils::Vector2f dr_to_target = m_view_target - view.getCenter();
+    float dist_to_target = utils::norm(dr_to_target);
+
+    if (dist_to_target > 20)
+    {
+        view_speed = 100.f;
+    }
+    else if (dist_to_target > 2)
+    {
+        view_speed -= view_speed * dt;
+    }
+    else
+    {
+        view_speed = 0.;
+        m_view_velocity = {0};
+        m_view_state = ViewMoveState::FOLLOWING_PLAYER;
+    }
+
+    m_view_velocity += dr_to_target / dist_to_target * view_speed * dt;
+    utils::truncate(m_view_velocity, m_max_view_speed);
+
+    view.setCenter(view.getCenter() + m_view_velocity * dt);
+    window.m_view = view;
+}
+
+void Game::moveViewToPlayer(Renderer &window, float dt)
+{
+    auto view = window.m_view;
+
+    const utils::Vector2f view_size = view.getSize();
 
     //! look from higher distance when boosting
     float booster_ratio = m_player->speed / m_player->max_speed;
@@ -222,27 +300,32 @@ void Game::moveView(Renderer &window)
     auto threshold = view.getSize() / 2.f - view.getSize() / 3.f;
     auto dx = m_player->getPosition().x - view.getCenter().x;
     auto dy = m_player->getPosition().y - view.getCenter().y;
-    auto view_max = view.getCenter() + view.getSize() / 2.f;
-    auto view_min = view.getCenter() - view.getSize() / 2.f;
+
+    m_view_velocity = {0};
+    utils::Vector2f m_view_acc = {0};
 
     //! move view when approaching sides
     if (dx > threshold.x)
     {
-        view.setCenter(view.getCenter() + utils::Vector2f{dx - threshold.x, 0});
+        m_view_acc.x = dx - threshold.x;
     }
     else if (dx < -threshold.x)
     {
-        view.setCenter(view.getCenter() + utils::Vector2f{dx + threshold.x, 0});
+        m_view_acc.x = dx + threshold.x;
     }
     if (dy > threshold.y)
     {
-        view.setCenter(view.getCenter() + utils::Vector2f{0, dy - threshold.y});
+        m_view_acc.y = dy - threshold.y;
     }
     else if (dy < -threshold.y)
     {
-        view.setCenter(view.getCenter() + utils::Vector2f{0, dy + threshold.y});
+        m_view_acc.y = dy + threshold.y;
     }
-
+    
+    m_view_acc *= 100.;
+    m_view_velocity += m_view_acc * dt;
+    utils::truncate(m_view_velocity, m_max_view_speed);
+    view.setCenter(view.getCenter() + m_view_velocity * dt);
     window.m_view = view;
 }
 
@@ -306,21 +389,19 @@ void Game::handleEvent(const SDL_Event &event)
             m_player->m_is_turning_right = false;
         }
     }
-    if (event.type == SDL_MOUSEBUTTONUP && isKeyPressed(SDL_SCANCODE_LCTRL))
+    if (event.type == SDL_MOUSEBUTTONUP)
     {
 
-        if (event.button.button == SDL_BUTTON_RIGHT)
+        if (isKeyPressed(SDL_SCANCODE_LCTRL) && event.button.button == SDL_BUTTON_RIGHT)
         {
             auto &new_enemy = m_world->addObject2<Boss>();
             new_enemy.setPosition(mouse_position);
         }
-    }
-    else if (event.type == SDL_MOUSEBUTTONUP)
-    {
         if (event.button.button == SDL_BUTTON_RIGHT)
         {
-            auto &station = m_world->addObject2<Turret>();
-            station.setPosition(mouse_position);
+            startMovingViewTo(m_window.getMouseInWorld(), 1.);
+            // auto &station = m_world->addObject2<Turret>();
+            // station.setPosition(mouse_position);
         }
     }
 
@@ -356,7 +437,14 @@ void Game::parseInput(Renderer &window, float dt)
 
 void Game::update(const float dt, Renderer &window)
 {
-    moveView(window);
+    if (m_view_state == ViewMoveState::FOLLOWING_PLAYER)
+    {
+        moveViewToPlayer(window, dt);
+    }
+    else if (m_view_state == ViewMoveState::MOVING_TO_POSITION)
+    {
+        moveViewToTarget(window, dt);
+    }
     parseInput(window, dt);
 
     if (m_player->health < 0)
@@ -399,7 +487,7 @@ void Game::draw(Renderer &window)
     auto &test_canvas = m_layers.getCanvas("Bloom");
     Sprite fire_sprite(*m_textures.get("FireNoise"));
     fire_sprite.setPosition(m_player->getPosition());
-    fire_sprite.setScale(utils::Vector2f{m_player->m_radius*5.});
+    fire_sprite.setScale(utils::Vector2f{m_player->m_radius * 5.});
     test_canvas.drawSprite(fire_sprite, "fireEffect");
 
     //! clear and draw into scene
@@ -475,22 +563,21 @@ void Game::drawUI(Renderer &window)
     window.getShader("boostBar").setUniform2("u_booster_disabled", (int)(m_player->booster == BoosterState::Disabled));
     window.getShader("boostBar").setUniform2("u_booster_ratio", booster_ratio);
     window.drawSprite(booster_rect, "boostBar");
-    
-    auto& ui_canvas = m_ui_layers.getCanvas("Bloom");
+
+    auto &ui_canvas = m_ui_layers.getCanvas("Bloom");
     ui_canvas.getShader("boostBar2").use();
     ui_canvas.getShader("boostBar2").setUniform2("u_booster_disabled", m_player->booster == BoosterState::Disabled);
     ui_canvas.getShader("boostBar2").setUniform2("u_booster_ratio", booster_ratio);
     ui_canvas.drawSprite(booster_rect, "boostBar2");
-    
+
     // draw fuel bar
     booster_rect.setPosition(booster_pos.x, booster_pos.y - booster_size.y - 10.);
     float fuel_ratio = std::min({1.f, m_player->m_fuel / m_player->m_max_fuel});
     ui_canvas.getShader("fuelBar").use();
     ui_canvas.getShader("fuelBar").setUniform2("u_fuel_ratio", fuel_ratio);
     ui_canvas.drawSprite(booster_rect, "fuelBar");
-    
-    m_ui_layers.drawInto(window);
 
+    m_ui_layers.drawInto(window);
 
     utils::Vector2f score_comp_uisize = {window_size.x * 1.f / 6.f, (float)window.getTargetSize().y * 1.f / 10.f};
     utils::Vector2f score_comp_min = {window_size.x / 2.f,
@@ -500,8 +587,7 @@ void Game::drawUI(Renderer &window)
 
     window.drawText(m_health_text);
     window.drawAll();
-    
-    
+
     window.m_view = old_view;
 }
 
@@ -515,7 +601,7 @@ int Game::getScore() const
     return m_score;
 }
 
-PlayerEntity* Game::getPlayer()
+PlayerEntity *Game::getPlayer()
 {
     return m_player;
 }
