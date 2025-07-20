@@ -72,48 +72,83 @@ ShopState::ShopState(StateStack &stack, State::Context context)
     : State(stack, context), document(*context.window)
 {
 
-    auto grid_holder = std::make_shared<UIElement>();
+    auto shop_header = std::make_shared<SpriteUIELement>();
+    shop_header->layout = Layout::X;
+    shop_header->bounding_box.width = 700;
+    shop_header->bounding_box.height = 150;
+    shop_header->content_align_x = Alignement::Right;
+    shop_header->content_align_y = Alignement::Center;
+    shop_header->setTexture(*m_context.textures->get("HeaderFrame"));
+    // shop_header->sizing = Sizing::SCALE_TO_FIT;
+    shop_header->id = "header";
+    shop_header->padding = {50, 20};
+
+    auto exit_button = std::make_shared<SpriteUIELement>();
+    exit_button->setTexture(*m_context.textures->get("Close"));
+    exit_button->bounding_box = {0, 0, 60, 60};
+    // exit_button->margin = {20, 20};
+    // exit_button->align = Alignement::Center;
+    exit_button->id = "closeButton";
+
+    // auto money_text = std::make_shared<TextUIELement>(*context.font, std::to_string(p_player->m_money) + " $");
+    auto money_text = std::make_shared<TextUIELement>(*context.font, std::to_string(p_player->m_money) + " $");
+    money_text->bounding_box = {0, 0, 120, 60};
+    money_text->id = "moneyText";
+    money_text->align = Alignement::Left;
+    // money_text->margin = {20, 20};
+    shop_header->addChildren(money_text,exit_button);
+
+
+    auto grid_holder = std::make_shared<SpriteUIELement>();
+    grid_holder->setTexture(*m_context.textures->get("ShopItemFrame"));
     grid_holder->layout = Layout::Grid;
-    grid_holder->bounding_box.width = 600;
+    grid_holder->align = Alignement::CenterX;
+    grid_holder->bounding_box.width = 500;
     grid_holder->bounding_box.height = 600;
+    grid_holder->padding = {20, 50};
 
     std::vector<std::string> icon_textures = {"Fuel", "Heart", "Arrow", "Coin"};
     for (int i = 0; i < 4; ++i)
     {
         auto button_holder = std::make_shared<SpriteUIELement>();
         button_holder->id = "buttonHolder";
-        button_holder->event_callbacks[UIEvent::MOUSE_ENETERED] = [](UIElement::UIElementP node)
+        button_holder->event_callbacks[UIEvent::MOUSE_ENETERED] = [button_holder](UIElement::UIElementP node)
         {
-            node->padding.x = 32;
-            node->padding.y = 32;
+            node->padding.x = 11;
+            node->padding.y = 6;
+            button_holder->image.setColor({255,255, 255, 255});
         };
-        button_holder->event_callbacks[UIEvent::MOUSE_LEFT] = [](UIElement::UIElementP node)
+        button_holder->event_callbacks[UIEvent::MOUSE_LEFT] = [button_holder](UIElement::UIElementP node)
         {
-            node->padding.x = 30;
-            node->padding.y = 30;
+            node->padding.x = 10;
+            node->padding.y = 5;
+            button_holder->image.setColor({125,125, 125, 255});
         };
 
         button_holder->setTexture(*m_context.textures->get("ShopItemFrame"));
-        button_holder->bounding_box = {0, 0, 150, 200};
-        button_holder->padding = {30, 10};
+        button_holder->bounding_box = {0, 0, 100, 150};
+        button_holder->padding = {10, 5};
         button_holder->margin.x = 10;
         button_holder->id = icon_textures.at(i);
         button_holder->layout = Layout::Y;
+        button_holder->content_align_x = Alignement::CenterX;
         button_holder->sizing = Sizing::SCALE_TO_FIT;
 
         auto icon = std::make_shared<SpriteUIELement>();
         icon->setTexture(*m_context.textures->get(icon_textures.at(i)));
         icon->bounding_box = {0, 0, 80, 80};
+        icon->align = Alignement::CenterX;
 
         auto text = std::make_shared<TextUIELement>(*m_context.font, "100");
-        text->bounding_box = {0, 0, 60, 40};
+        text->bounding_box = {0, 0, 40, 40};
+        text->margin.x = 5;
         text->id = "amountText";
 
         auto control_bar = std::make_shared<UIElement>();
         control_bar->id = "control";
-        control_bar->bounding_box = {0, 0, 80, 60};
+        control_bar->bounding_box = {0, 0, 120, 60};
         control_bar->sizing = Sizing::SCALE_TO_FIT;
-        control_bar->margin.y = 30;
+        control_bar->margin.y = 20;
 
         auto buy_button = std::make_shared<SpriteUIELement>();
         buy_button->setTexture(*m_context.textures->get("Forward"));
@@ -124,13 +159,24 @@ ShopState::ShopState(StateStack &stack, State::Context context)
         sell_button->setTexture(*m_context.textures->get("Back"));
         sell_button->id = "sellButton";
 
-        control_bar->addChildren(sell_button, buy_button);
-        button_holder->addChildren(icon, text, control_bar);
+        control_bar->addChildren(sell_button,text, buy_button);
+        button_holder->addChildren(icon, control_bar);
         grid_holder->addChildren(button_holder);
+
+        //! create a corresponding shop item
+        m_items[icon_textures.at(i)].ui_node = button_holder.get();
     }
 
+    auto shop_background = std::make_shared<UIElement>();
+    shop_background->sizing = Sizing::SCALE_TO_FIT;
+    shop_background->layout = Layout::Y;
+    shop_background->content_align_x = Alignement::Center;
+    shop_background->addChildren(shop_header, grid_holder);
+
     document.root->layout = Layout::Y;
-    document.root->addChildren(grid_holder);
+    document.root->content_align_x = Alignement::CenterX;
+    document.root->addChildren(shop_background);
+    // document.root->bounding_box = {0, 0, 1000, 1000};
     document.root->padding = {50, 50};
 
     initButtons();
@@ -152,7 +198,11 @@ void changePlayerProperty(PropertyType &property, PropertyType delta, UIElement:
 void ShopState::initButtons()
 {
 
-    
+    auto exit = document.root->getElementById("closeButton");
+    exit->event_callbacks[UIEvent::CLICK] = [this, exit](auto node) {
+        this->requestStackPop();
+    };
+
     auto change_player_property = [this](UIElement *holder, auto &property, auto delta)
     {
         TextUIELement *text_el = dynamic_cast<TextUIELement *>(holder->getElementById("amountText"));
@@ -161,27 +211,45 @@ void ShopState::initButtons()
             property += delta;
             text_el->m_text.setText(std::to_string((int)property));
         }
-    };
-    
-    auto fuel_holder = document.root->getElementById("Fuel");
-    fuel_holder->getElementById("buyButton")->event_callbacks[UIEvent::CLICK] = [fuel_holder, change_player_property](UIElement::UIElementP node_p)
-    {
-        change_player_property(fuel_holder, p_player->m_max_fuel, 1);
+        TextUIELement *money_text = dynamic_cast<TextUIELement *>(document.getElementById("moneyText"));
+        if (money_text)
+        {
+            money_text->m_text.setText(std::to_string(p_player->m_money) + " $");
+        }
     };
 
-    fuel_holder->getElementById("sellButton")->event_callbacks[UIEvent::CLICK] = [fuel_holder, change_player_property](UIElement::UIElementP node_p)
+    auto fuel_holder = document.root->getElementById("Fuel");
+    fuel_holder->getElementById("buyButton")->event_callbacks[UIEvent::CLICK] =
+        [this, fuel_holder, change_player_property](UIElement::UIElementP node_p)
     {
-        change_player_property(fuel_holder, p_player->m_max_fuel, -1);
+        if (m_items.at("Fuel").buy(p_player->m_money))
+        {
+            change_player_property(fuel_holder, p_player->m_max_fuel, 1);
+        }
+    };
+
+    fuel_holder->getElementById("sellButton")->event_callbacks[UIEvent::CLICK] = [this, fuel_holder, change_player_property](UIElement::UIElementP node_p)
+    {
+        if (m_items.at("Fuel").sell(p_player->m_money))
+        {
+            change_player_property(fuel_holder, p_player->m_max_fuel, -1);
+        }
     };
 
     auto speed_holder = document.root->getElementById("Arrow");
-    speed_holder->getElementById("buyButton")->event_callbacks[UIEvent::CLICK] = [speed_holder, change_player_property](UIElement::UIElementP node_p)
+    speed_holder->getElementById("buyButton")->event_callbacks[UIEvent::CLICK] = [this, speed_holder, change_player_property](UIElement::UIElementP node_p)
     {
-        change_player_property(speed_holder, p_player->acceleration, +0.1);
+        if (m_items.at("Arrow").buy(p_player->m_money))
+        {
+            change_player_property(speed_holder, p_player->acceleration, +0.1);
+        }
     };
-    speed_holder->getElementById("buyButton")->event_callbacks[UIEvent::CLICK] = [speed_holder, change_player_property](UIElement::UIElementP node_p)
+    speed_holder->getElementById("sellButton")->event_callbacks[UIEvent::CLICK] = [this, speed_holder, change_player_property](UIElement::UIElementP node_p)
     {
-        change_player_property(speed_holder, p_player->acceleration, -0.1);
+        if (m_items.at("Arrow").sell(p_player->m_money))
+        {
+            change_player_property(speed_holder, p_player->acceleration, -0.1);
+        }
     };
 }
 

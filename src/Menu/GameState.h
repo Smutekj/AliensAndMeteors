@@ -43,11 +43,38 @@ struct ShopItem
     int price = 1;
 };
 
-struct ItemUIElement
+struct ShopEntry
 {
-    Rect<int> bounding_box = {};
-    std::string name = "Placeholder";
-    std::string sprite_name = "Fuel";
+    UIElement* ui_node = nullptr; 
+    std::string name;
+    int price = 10;
+    int level = 0;
+    int max_level = 10;
+
+    bool buy(int& player_money)
+    {
+        if(player_money < price || level == max_level)
+        {
+            return false;
+        }
+
+        player_money -= price;
+        price += 10;
+        level += 1;
+        return true;
+    }
+    bool sell(int& player_money)
+    {
+        if(level == 0)
+        {
+            return false;
+        }
+
+        player_money += price / 2;
+        price -= 10;
+        level -= 1;
+        return true;
+    }
 };
 
 struct PlayerEntity;
@@ -66,12 +93,8 @@ public:
     void initButtons();
 
 private:
-    std::unordered_map<std::string, ShopItem> m_items;
-
-    std::vector<ItemUIElement> m_ui_elements;
-    int n_elements_per_row = 3;
-
-
+    std::unordered_map<std::string, ShopEntry> m_items;
+    
     std::shared_ptr<Game> mp_game;
 
     UIDocument document;
