@@ -16,7 +16,7 @@ class Observer
 public:
     Observer() {}
     virtual ~Observer() {}
-    virtual void update(T *subject) {};
+    virtual void onObservation(T *subject) {};
 };
 
 template <class T>
@@ -34,10 +34,8 @@ public:
     {
         for (auto observer : m_observers)
         {
-
-            // auto* ob_ptr = dynamic_cast<ReachSpotObjective *>(observer);
             auto tr_ptr = dynamic_cast<T *>(this);
-            observer->update(tr_ptr);
+            observer->onObservation(tr_ptr);
         }
     }
 
