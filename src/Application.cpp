@@ -133,12 +133,15 @@ Application::Application(int width, int height)
     m_textures.setBaseDirectory(std::string(RESOURCES_DIR) +  "/Textures/");
     m_textures.add("Fuel", "fuel.png");
     m_textures.add("Heart", "Heart.png");
-    m_textures.add("ShopItemFrame", "ShopItemFrame.png");
+    m_textures.add("ShopItemFrame", "UIShopFrame.png");
+    m_textures.add("HeaderFrame", "UIHeaderFrame.png");
     m_textures.add("Arrow", "arrow.png");
     m_textures.add("Coin", "coin.png");
     m_textures.add("Back", "UIBack.png");
     m_textures.add("Forward", "UIForward.png");
     m_textures.add("Ok", "UIOk.png");
+    m_textures.add("Close", "UIClose.png");
+    m_textures.add("Menu", "UIMenu.png");
     m_textures.add("Dot", "UIDot.png");
     //     m_ui = std::make_unique<UI>(m_window, m_textures, m_layers, m_window_renderer);
 }
