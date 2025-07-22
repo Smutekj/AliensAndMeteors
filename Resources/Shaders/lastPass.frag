@@ -1,6 +1,6 @@
 #version 300 es 
 
-precision mediump float;    
+precision highp float;    
 
 uniform sampler2D u_source;
 uniform float u_exposure = 2.0;

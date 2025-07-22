@@ -1,6 +1,6 @@
 #version 300 es 
 
-precision mediump float;    
+precision highp float;    
 
 #include "../../external/lygia/sdf/rectSDF.glsl"
 #include "../../external/lygia/sdf/starSDF.glsl"

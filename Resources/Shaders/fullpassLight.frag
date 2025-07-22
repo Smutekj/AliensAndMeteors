@@ -1,6 +1,6 @@
 #version 300 es 
 
-precision mediump float;    
+precision highp float;    
 
 uniform float u_posx = 0.;
 uniform float u_posy = 0.;
