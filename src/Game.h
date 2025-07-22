@@ -66,16 +66,6 @@ private:
     MOVING_TO_POSITION,
   };
 
-  float m_move_view_time = 0.;
-  float m_move_view_duration = 5.;
-  float m_max_view_speed = 50.;
-  utils::Vector2f m_view_target;
-  utils::Vector2f m_view_velocity;
-  ViewMoveState m_view_state = ViewMoveState::FOLLOWING_PLAYER;
-  void moveViewToTarget(Renderer &window, float dt);
-  void moveViewToPlayer(Renderer &window, float dt);
-  void startMovingViewTo(utils::Vector2f target, float duration);
-
   Camera m_camera;
 
   void drawUI(Renderer &window);
