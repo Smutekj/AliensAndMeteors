@@ -33,8 +33,5 @@ void main(void)
     {
         FragColor = vec4(source_color, 1.0);
     }
-    else{
-    }
-
     FragColor = vec4(result, max(source_alpha, bloom_alpha));
 }
