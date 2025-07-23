@@ -43,7 +43,7 @@ public:
     virtual void draw() override;
 
 private:
-    float m_timer = 600; //! after this time, the app quits
+    float m_timer = 2; //! after this time, the app quits
     Text m_goodbye_text; 
 };
 
