@@ -148,14 +148,14 @@ Application::Application(int width, int height)
 
 void Application::registerStates()
 {
-    m_state_stack->registerState<EndScreenState>(States::Exit);
-    m_state_stack->registerState<MenuState>(States::Menu);
-    m_state_stack->registerState<GameState>(States::Game);
-    m_state_stack->registerState<PauseState>(States::Pause);
-    m_state_stack->registerState<ScoreBoardState>(States::Score);
-    m_state_stack->registerState<PlayerDiedState>(States::Player_Died);
-    m_state_stack->registerState<SettingsState>(States::Settings);
-    m_state_stack->registerState<KeyBindingState>(States::KeyBindings);
-    m_state_stack->registerState<GraphicsState>(States::Graphics);
-    m_state_stack->registerState<ShopState>(States::Shop);
+    m_state_stack->registerState<EndScreenState>(States::ID::Exit);
+    m_state_stack->registerState<MenuState>(States::ID::Menu);
+    m_state_stack->registerState<GameState>(States::ID::Game);
+    m_state_stack->registerState<PauseState>(States::ID::Pause);
+    m_state_stack->registerState<ScoreBoardState>(States::ID::Score);
+    m_state_stack->registerState<PlayerDiedState>(States::ID::Player_Died);
+    m_state_stack->registerState<SettingsState>(States::ID::Settings);
+    m_state_stack->registerState<KeyBindingState>(States::ID::KeyBindings);
+    m_state_stack->registerState<GraphicsState>(States::ID::Graphics);
+    m_state_stack->registerState<ShopState>(States::ID::Shop);
 }
