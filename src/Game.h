@@ -98,7 +98,7 @@ private:
   Text m_health_text;
 
   TextureHolder m_textures;
-  Texture m_background;
+  std::unique_ptr<Texture> m_background;
   LayersHolder m_layers;
   LayersHolder m_ui_layers;
 

@@ -65,7 +65,8 @@ Game::Game(Renderer &window, KeyBindings &bindings)
       m_scene_canvas(m_scene_pixels),
       m_camera(PLAYER_START_POS, {START_VIEW_SIZE, START_VIEW_SIZE * window.getTargetSize().y / window.getTargetSize().x})
 {
-    m_background.loadFromFile(std::string(RESOURCES_DIR) + "/Textures/background.png");
+
+    m_background = std::make_unique<Texture>(std::string(RESOURCES_DIR) + "/Textures/background.png");
 
     initializeLayers();
 
@@ -375,11 +376,11 @@ void Game::draw(Renderer &window)
     window.m_view = window.getDefaultView();
     background_rect.setPosition(window.getTargetSize() / 2.f);
     background_rect.setScale(window.getTargetSize() / 2.f);
-    background_rect.setTexture(m_background);
+    background_rect.setTexture(*m_background);
     //! move background with view
     utils::Vector2f view_size_rel = utils::Vector2f{0.2, 0.2} + old_view.getSize() / 1415.f;
     utils::Vector2f rel_pos = old_view.getCenter() / 1400.;
-    utils::Vector2f size = m_background.getSize();
+    utils::Vector2f size = m_background->getSize();
     background_rect.m_tex_rect = {(int)(size.x * rel_pos.x),
                                   (int)(size.y * rel_pos.y),
                                   (int)(size.x * view_size_rel.x),
