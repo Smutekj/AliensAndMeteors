@@ -33,7 +33,7 @@ void Game::initializeLayers()
     auto &shiny_layer = m_layers.addLayer("Bloom", 5, options, width, height);
     shiny_layer.m_canvas.setShadersPath(shaders_directory);
     shiny_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
-    // shiny_layer.addEffect(std::make_unique<Bloom3>(width, height));
+    shiny_layer.addEffect(std::make_unique<Bloom3>(width, height));
 
     auto &base_layer = m_ui_layers.addLayer("Base", 0, options, width, height);
     base_layer.m_canvas.setShadersPath(shaders_directory);
@@ -92,12 +92,12 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     spawnNextObjective();
     // addDestroyNObjective(ObjectType::SpaceStation, 2);
 
-    // for (int i = 0; i < 100; ++i)
-    // {
-    //     auto &enemy = m_world->addObject2<Enemy>();
-    //     auto spawn_pos = m_player->getPosition() + randf(100, 400) * angle2dir(randf(0, 360));
-    //     enemy.setPosition(spawn_pos);
-    // }
+    for (int i = 0; i < 100; ++i)
+    {
+        auto &enemy = m_world->addObject2<Enemy>();
+        auto spawn_pos = m_player->getPosition() + randf(100, 400) * angle2dir(randf(0, 360));
+        enemy.setPosition(spawn_pos);
+    }
 
     auto &heart_spawner = m_world->addTrigger<Timer>();
     heart_spawner.setCallback(
@@ -116,9 +116,9 @@ Game::Game(Renderer &window, KeyBindings &bindings)
         {
             if (m_world->getActiveCount<Enemy>() < 100) //! max 100 enemies
             {
-                // auto &enemy = m_world->addObject2<Enemy>();
-                // auto spawn_pos = m_player->getPosition() + randf(50, 200) * angle2dir(randf(0, 360));
-                // enemy.setPosition(spawn_pos);
+                auto &enemy = m_world->addObject2<Enemy>();
+                auto spawn_pos = m_player->getPosition() + randf(50, 200) * angle2dir(randf(0, 360));
+                enemy.setPosition(spawn_pos);
             }
         });
 
@@ -464,21 +464,22 @@ void Game::drawUI(Renderer &window)
     utils::Vector2f booster_pos = {window_size.x - health_rect.getPosition().x, health_rect.getPosition().y};
     Sprite booster_rect;
     booster_rect.setTexture(*m_textures.get("FireNoise"));
-    booster_rect.setPosition(booster_pos);
-    booster_rect.setScale(booster_size.x / 2.f, booster_size.y / 2.f);
+    booster_rect.setPosition(m_window.getMouseInWorld());
+    booster_rect.setScale(200, 100);
     booster_rect.m_tex_rect = {0, 0, 1, 1};
     booster_rect.m_tex_size = {1, 1};
     float booster_ratio = std::min({1.f, m_player->boost_heat / m_player->max_boost_heat});
     window.getShader("boostBar").use();
     window.getShader("boostBar").setUniform2("u_booster_disabled", (int)(m_player->booster == BoosterState::Disabled));
     window.getShader("boostBar").setUniform2("u_booster_ratio", booster_ratio);
+    window.getShader("boostBar").setUniform2("u_bar_aspect_ratio", 2.f);
     window.drawSprite(booster_rect, "boostBar");
 
     auto &ui_canvas = m_ui_layers.getCanvas("Bloom");
-    ui_canvas.getShader("boostBar2").use();
-    ui_canvas.getShader("boostBar2").setUniform2("u_booster_disabled", m_player->booster == BoosterState::Disabled);
-    ui_canvas.getShader("boostBar2").setUniform2("u_booster_ratio", booster_ratio);
-    ui_canvas.drawSprite(booster_rect, "boostBar2");
+    // ui_canvas.getShader("boostBar2").use();
+    // ui_canvas.getShader("boostBar2").setUniform2("u_booster_disabled", m_player->booster == BoosterState::Disabled);
+    // ui_canvas.getShader("boostBar2").setUniform2("u_booster_ratio", booster_ratio);
+    // ui_canvas.drawSprite(booster_rect, "boostBar2");
 
     // draw fuel bar
     booster_rect.setPosition(booster_pos.x, booster_pos.y - booster_size.y - 10.);
