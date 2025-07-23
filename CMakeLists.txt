@@ -29,13 +29,16 @@ add_executable(${CMAKE_PROJECT_NAME} ${SRC} )
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE 
                                              SDL2::SDL2main SDL2::SDL2-static
                                             renderer tinyxml2)
+
+if( ${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
+target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE RESOURCES_DIR="/Resources") ### add correct resources path here                        
+else()
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE RESOURCES_DIR="${CMAKE_SOURCE_DIR}/Resources") ### add correct resources path here                        
+endif()
 
 if( ${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
 
-
      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --profiling")
-
      #    embed resources and set target to .thml
      set(CMAKE_EXECUTABLE_SUFFIX .html)
      target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
