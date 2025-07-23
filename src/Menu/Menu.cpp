@@ -96,8 +96,8 @@ void Menu::handleEvent(SDL_Event event)
 }
 
 ChangeStateItem::ChangeStateItem(State::Context &context, StateStack *stack,
-                                 States::ID destination, States::ID source, std::string button_text)
-    : m_source(source), m_destination(destination), p_stack(stack), MenuItem(context.font)
+                                 States::ID destination, int pop_count, std::string button_text)
+    : m_pop_count(pop_count), m_destination(destination), p_stack(stack), MenuItem(context.font)
 {
 
     if (button_text.empty())
@@ -118,8 +118,9 @@ void ChangeStateItem::handleEvent(SDL_Event event)
         bool key_is_enter = event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_KP_ENTER;
         if (key_is_enter)
         {
-            if (m_source == States::ID::None) //! if there is no source we don't want to return
+            for(int i = 0 ; i < m_pop_count; ++i)
             {
+                assert(!p_stack->isEmpty());
                 p_stack->popState();
                 std::cout << "State popped!" << std::endl;
             }

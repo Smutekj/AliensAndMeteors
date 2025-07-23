@@ -19,10 +19,10 @@ MenuState::MenuState(StateStack &stack, Context &context)
   m_background_rect.setScale(window_size * 2.);
   m_background_rect.setTexture(m_background_texture);
 
-  auto new_game_button = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Game, States::ID::None, "New Game");
-  auto settings_button = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Settings, States::ID::Menu);
-  auto exit_button = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Exit);
-  auto score_button = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Score, States::ID::Menu, "High Scores");
+  auto new_game_button = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Game, 0, "New Game");
+  auto settings_button = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Settings, 1);
+  auto exit_button = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Exit, 1);
+  auto score_button = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Score, 0, "High Scores");
 
   m_menu.addItem(std::move(new_game_button));
   m_menu.addItem(std::move(settings_button));
@@ -37,12 +37,12 @@ MenuState::~MenuState() {}
 void MenuState::update(float dt)
 {
   //! animate background
-  m_background_animation_time += 1;
-  int texture_size_x = m_background_rect.m_tex_rect.width;
+  m_background_animation_time += dt;
+  float texture_size_x = m_background_rect.m_tex_rect.width;
   auto texture_rect = m_background_rect.m_tex_rect;
 
   //! make texture rect go from left to right and then back
-  texture_rect.pos_x = (-std::abs(m_background_animation_time - texture_size_x / 2) + texture_size_x / 2) % texture_size_x;
+  texture_rect.pos_x = (-std::abs(10.*m_background_animation_time - texture_size_x / 2.f) + texture_size_x / 2.f) ;
   texture_rect.pos_y = 100 * std::sin(m_background_animation_time / 200.f);
   m_background_rect.m_tex_rect = texture_rect;
 }
@@ -78,6 +78,7 @@ void EndScreenState::update(float dt)
   if (m_timer < 0)
   {
     m_context.window_handle->close();
+    m_stack->clearStates();
   }
 }
 
@@ -86,6 +87,7 @@ void EndScreenState::handleEvent(const SDL_Event &event)
   if (event.type == SDL_KEYUP)
   {
     m_context.window_handle->close();
+    m_stack->clearStates();
   }
 }
 

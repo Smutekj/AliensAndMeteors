@@ -8,15 +8,12 @@
 SettingsState::SettingsState(StateStack &stack, Context &context) : State(stack, context), m_menu(context.font)
 {
 
-    auto key_bindings = std::make_unique<ChangeStateItem>(context, m_stack,
-                                                          States::ID::KeyBindings, States::ID::None, "Key Bindings");
-    m_menu.addItem(std::move(key_bindings));
+    auto key_bindings = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::KeyBindings, 0, "Key Bindings");
+    auto graphics = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Graphics, 0, "Graphics");
+    auto back = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::None, 1, "Back");
 
-    auto graphics = std::make_unique<ChangeStateItem>(context, m_stack,
-                                                      States::ID::Graphics, States::ID::None, "Graphics");
     m_menu.addItem(std::move(graphics));
-
-    auto back = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::None, States::ID::None, "Back");
+    m_menu.addItem(std::move(key_bindings));
     m_menu.addItem(std::move(back));
 }
 
@@ -56,7 +53,7 @@ KeyBindingState::KeyBindingState(StateStack &stack, Context &context) : State(st
     // auto resize_window = std::make_unique<ResizeWindowItem>("Change Window Size", PlayerControl::SHOOT_LASER, context);
     // m_menu.addItem(std::move(resize_window));
 
-    auto back = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Settings, States::ID::None, "Back");
+    auto back = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::None, 1, "Back");
     m_menu.addItem(std::move(back));
 }
 
@@ -93,10 +90,12 @@ GraphicsState::GraphicsState(StateStack &stack, Context &context) : State(stack,
 {
     auto toggle_fs = [this, window = context.window_handle]()
     {
-        if(isWindowed(*window))
+        if (isWindowed(*window))
         {
             SDL_SetWindowFullscreen(window->getHandle(), SDL_WINDOW_FULLSCREEN_DESKTOP);
-        }else{
+        }
+        else
+        {
             SDL_SetWindowFullscreen(window->getHandle(), 0);
         }
     };
@@ -111,9 +110,9 @@ GraphicsState::GraphicsState(StateStack &stack, Context &context) : State(stack,
     m_menu.addItem(std::move(enter_width));
     auto enter_height = std::make_unique<EnterNumberItem>(context, m_screen_height_text, "Screen Height:");
     m_menu.addItem(std::move(enter_height));
-    
+
     auto toggle_screen_resize = [this, window = context.window_handle]()
-    {   
+    {
         int new_screen_width = std::stoi(m_screen_width_text);
         int new_screen_height = std::stoi(m_screen_height_text);
         window->setSize(new_screen_width, new_screen_height);
@@ -121,7 +120,7 @@ GraphicsState::GraphicsState(StateStack &stack, Context &context) : State(stack,
     auto change_screen_size = std::make_unique<CallBackItem>(context, "Change Window Size", toggle_screen_resize);
     m_menu.addItem(std::move(change_screen_size));
 
-    auto back = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::None, States::ID::None, "Back");
+    auto back = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::None, 1, "Back");
     m_menu.addItem(std::move(back));
 }
 

@@ -25,7 +25,7 @@ private:
     Texture m_background_texture;
     Sprite m_background_rect;
     utils::Vector2f m_background_center;
-    int m_background_animation_time = 0;
+    float m_background_animation_time = 0;
     Menu m_menu;
 };
 

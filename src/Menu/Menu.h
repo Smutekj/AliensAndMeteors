@@ -36,12 +36,12 @@ class ChangeStateItem : public MenuItem
 
 public:
     ChangeStateItem(State::Context &context, StateStack *stack,
-                    States::ID destination, States::ID source = States::ID::None, std::string button_text = "");
+                    States::ID destination, int pop_count = 0, std::string button_text = "");
     virtual void handleEvent(SDL_Event event) override;
     virtual void draw(Renderer &window) override;
 
 private:
-    States::ID m_source;
+    int m_pop_count;
     States::ID m_destination;
     StateStack *p_stack;
 };
