@@ -29,7 +29,7 @@ void Game::initializeLayers()
     unit_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
     unit_layer.m_canvas.addShader("Meteor", "basictex.vert", "Meteor.frag");
     unit_layer.addEffect(std::make_unique<EdgeDetect>(width, height));
-    unit_layer.addEffect(std::make_unique<BloomFinal>(width, height));
+    // unit_layer.addEffect(std::make_unique<BloomFinal>(width, height));
 
 
     auto &shiny_layer = m_layers.addLayer("Bloom", 5, options, width, height);
@@ -407,23 +407,24 @@ void Game::draw(Renderer &window)
     // test_canvas.drawSprite(fire_sprite, "fireEffect");
 
     //! clear and draw into scene
-    m_scene_canvas.clear({0, 0, 0, 0});
-    m_scene_canvas.m_view = old_view;
+    // m_scene_canvas.clear({0, 0, 0, 0});
+    // m_scene_canvas.m_view = old_view;
+    m_window.m_blend_factors = {BlendFactor::One, BlendFactor::OneMinusSrcAlpha};
     m_layers.setView(m_window.m_view);
-    m_layers.drawInto(m_scene_canvas);
+    m_layers.drawInto(m_window);
 
     // //! draw everything to a window quad
-    auto scene_size = m_scene_pixels.getSize();
-    Sprite screen_sprite(m_scene_pixels.getTexture());
-    screen_sprite.setPosition(scene_size / 2.f);
-    screen_sprite.setScale(scene_size / 2.f);
-    m_window.m_view.setCenter(screen_sprite.getPosition());
-    m_window.m_view.setSize(scene_size);
-    m_window.drawSprite(screen_sprite, "LastPass");
+    // auto scene_size = m_scene_pixels.getSize();
+    // Sprite screen_sprite(m_scene_pixels.getTexture());
+    // screen_sprite.setPosition(scene_size / 2.f);
+    // screen_sprite.setScale(scene_size / 2.f);
+    // m_window.m_view.setCenter(screen_sprite.getPosition());
+    // m_window.m_view.setSize(scene_size);
+    // m_window.drawSprite(screen_sprite, "LastPass");
     //! draw the scene into the window
     auto old_factors = m_window.m_blend_factors;
-    m_window.m_blend_factors = {BlendFactor::One, BlendFactor::OneMinusSrcAlpha};
-    m_window.drawAll();
+    // m_window.m_blend_factors = {BlendFactor::One, BlendFactor::OneMinusSrcAlpha};
+    // m_window.drawAll();
 
     //
     drawUI(window);
