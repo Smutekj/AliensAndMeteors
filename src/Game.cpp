@@ -29,6 +29,8 @@ void Game::initializeLayers()
     auto &unit_layer = m_layers.addLayer("Unit", 3, options, width, height);
     unit_layer.m_canvas.setShadersPath(shaders_directory);
     unit_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
+    unit_layer.addEffect(std::make_unique<EdgeDetect>(width, height));
+    unit_layer.addEffect(std::make_unique<BloomFinal>(width, height));
 
     auto &shiny_layer = m_layers.addLayer("Bloom", 5, options, width, height);
     shiny_layer.m_canvas.setShadersPath(shaders_directory);
