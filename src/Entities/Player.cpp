@@ -16,7 +16,7 @@ PlayerEntity::PlayerEntity(GameWorld *world, TextureHolder &textures, Collisions
 void PlayerEntity::update(float dt)
 {
     fixAngle();
-    boost();
+    boost(dt);
     if (m_is_turning_left)
     {
         //! slower turning when shooting laser
@@ -39,7 +39,7 @@ void PlayerEntity::update(float dt)
     }
 
     bool is_boosting = booster == BoosterState::Boosting;
-    auto acc = acceleration + 20 * acceleration * is_boosting;
+    auto acc = acceleration + 2 * acceleration * is_boosting;
     speed += acc * dt;
     m_vel = (speed)*utils::angle2dir(m_angle);
     // utils::truncate(m_vel, max_speed + is_boosting * max_speed);
@@ -53,11 +53,12 @@ void PlayerEntity::update(float dt)
     //! speed fallout
     if (speed > boost_max_speed)
     {
-        speed -= speed * 1.1 * slowing_factor;
+        speed -= speed * 1.1 * slowing_factor * dt;
     }
     else
     {
-        speed -= speed * slowing_factor;
+        // speed -=  10. * slowing_factor * dt;
+        // speed = std::max(0.f, speed);
     }
 
     m_particles_left->setSpawnPos(m_pos - m_radius * utils::angle2dir(m_angle + 40));
@@ -144,7 +145,7 @@ void PlayerEntity::onCreation()
     auto basic_updater = [](Particle &part, float dt)
     {
         part.pos = part.pos + part.vel * dt;
-        part.scale += utils::Vector2f{0.075, 0.075};
+        part.scale += utils::Vector2f{0.075, 0.075}*dt;
     };
 
     m_particles_left->setEmitter(basic_emitter);
@@ -169,12 +170,12 @@ void PlayerEntity::fixAngle()
     }
 }
 
-void PlayerEntity::boost()
+void PlayerEntity::boost(float dt)
 {
     if (booster == BoosterState::Boosting && m_fuel > 0)
     {
-        boost_heat += 1;
-        m_fuel -= 0.1;
+        boost_heat += 0.01 * dt;
+        m_fuel -= 0.1 * dt;
 
         if (boost_heat > max_boost_heat)
         {
@@ -183,7 +184,7 @@ void PlayerEntity::boost()
     }
     if (booster != BoosterState::Boosting)
     {
-        boost_heat -= 0.75;
+        boost_heat -= 0.075 * dt;
     }
 
     if (m_fuel < 0)
