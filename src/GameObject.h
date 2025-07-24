@@ -23,7 +23,7 @@ struct CollisionData
     utils::Vector2f separation_axis;
     float minimum_translation = -1;
     bool belongs_to_a = true;
-    utils::Vector2f contact_point;
+    utils::Vector2f contact_point = {0,0};
 };
 
 enum class ObjectType

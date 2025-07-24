@@ -21,6 +21,10 @@ class Application
 
 public:
     Application(int widht, int height);
+    ~Application(){
+        glCheckError();
+        std::cout << "hello from application desturctor" << std::endl;
+    }
     void run();
     void iterate();
 
