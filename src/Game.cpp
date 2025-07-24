@@ -428,7 +428,7 @@ void Game::draw(Renderer &window)
     m_window.m_view = old_view;
     // m_window.m_blend_factors = old_factors;
 
-    m_objective_system.draw(window);
+    m_objective_system.draw(window, m_textures);
     m_window.drawAll();
     // m_ui.draw(window);
 }
