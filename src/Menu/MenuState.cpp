@@ -19,8 +19,8 @@ MenuState::MenuState(StateStack &stack, Context &context)
   m_background_rect.setTexture(m_background_texture);
 
   auto new_game_button = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Game, 0, "New Game");
-  auto settings_button = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Settings, 1);
-  auto exit_button = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Exit, 1);
+  auto settings_button = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Settings, 0, "Settings");
+  auto exit_button = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Exit, 1, "Exit");
   auto score_button = std::make_unique<ChangeStateItem>(context, m_stack, States::ID::Score, 0, "High Scores");
 
   m_menu.addItem(std::move(new_game_button));
