@@ -8,9 +8,8 @@
 #include "StateStack.h"
 
 MenuState::MenuState(StateStack &stack, Context &context)
-    : State(stack, context), m_menu(context.font)
+    : State(stack, context), m_menu(context.font), m_background_texture(std::string(RESOURCES_DIR) + "/Textures/background.png")
 {
-  m_background_texture.loadFromFile(std::string(RESOURCES_DIR) + "/Textures/background.png");
   // m_background_texture.setRepeated(true);
   // m_background_texture.setSmooth(true);
 
@@ -74,7 +73,7 @@ EndScreenState::~EndScreenState() {}
 
 void EndScreenState::update(float dt)
 {
-  m_timer--;
+  m_timer -= dt;
   if (m_timer < 0)
   {
     m_context.window_handle->close();
@@ -93,8 +92,8 @@ void EndScreenState::handleEvent(const SDL_Event &event)
 
 void EndScreenState::draw()
 {
-
   auto &window = *m_context.window;
+  window.clear({0,0,0,0});
   window.m_view = window.getDefaultView();
 
   utils::Vector2f window_size = {static_cast<float>(window.getTargetSize().x), static_cast<float>(window.getTargetSize().y)};
@@ -104,6 +103,7 @@ void EndScreenState::draw()
   m_goodbye_text.setScale(2.f, 2.f);
   Menu::centerTextInWindow(window, m_goodbye_text, window.getTargetSize().y / 2.f);
   window.drawText(m_goodbye_text);
+  window.drawAll();
 }
 
 PlayerDiedState::PlayerDiedState(StateStack &stack, Context &context)

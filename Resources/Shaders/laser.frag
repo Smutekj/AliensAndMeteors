@@ -39,5 +39,5 @@ void main()
 
     vec3 result = mix(base_color, u_color_edge, edge_factor);
 
-    FragColor = vec4(result*shape_factor, 30.*shape_factor*edge_factor);
+    FragColor = vec4(result*shape_factor, 3.*shape_factor*edge_factor);
 }                                          

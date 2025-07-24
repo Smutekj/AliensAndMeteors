@@ -52,7 +52,7 @@ public:
 
 private:
     void fixAngle();
-    void boost();
+    void boost(float dt);
 
     
 public:
@@ -70,7 +70,7 @@ public:
     bool m_is_turning_right = false;
 
     float boost_factor = 2.6f;
-    float slowing_factor = 0.03f;
+    float slowing_factor = 0.3f;
     float acceleration = 1.5f;
     float m_angle_vel = 270.69f;
 

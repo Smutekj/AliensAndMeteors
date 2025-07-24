@@ -29,4 +29,7 @@ private:
     float max_vel = 40.f;
     float max_impulse_vel = 10.f;
     float m_angle_vel = 0.;
+
+    utils::Vector2f m_center_tex;
+    utils::Vector2f m_center_offset;
 };

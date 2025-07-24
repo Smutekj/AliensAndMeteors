@@ -21,21 +21,21 @@ void Game::initializeLayers()
     text_options.format = TextureFormat::RGBA;
     text_options.internal_format = TextureFormat::RGBA;
 
-    // std::filesystem::path shaders_directory = {__FILE__};
     std::filesystem::path shaders_directory = {RESOURCES_DIR};
     shaders_directory.append("Shaders/");
-    // shaders_directory.remove_filename().append();
 
-    auto &unit_layer = m_layers.addLayer("Unit", 3, options, width, height);
+    auto &unit_layer = m_layers.addLayer("Unit", 3, text_options, width, height);
     unit_layer.m_canvas.setShadersPath(shaders_directory);
     unit_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
+    unit_layer.m_canvas.addShader("Meteor", "basictex.vert", "Meteor.frag");
     unit_layer.addEffect(std::make_unique<EdgeDetect>(width, height));
     unit_layer.addEffect(std::make_unique<BloomFinal>(width, height));
+
 
     auto &shiny_layer = m_layers.addLayer("Bloom", 5, options, width, height);
     shiny_layer.m_canvas.setShadersPath(shaders_directory);
     shiny_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
-    shiny_layer.addEffect(std::make_unique<Bloom3>(width, height));
+    shiny_layer.addEffect(std::make_unique<BloomFinal>(width, height));
 
     auto &base_layer = m_ui_layers.addLayer("Base", 0, options, width, height);
     base_layer.m_canvas.setShadersPath(shaders_directory);
@@ -54,6 +54,8 @@ void Game::initializeLayers()
     m_window.addShader("fuelBar", "basicinstanced.vert", "fuelBar.frag");
     m_window.addShader("boostBar2", "basicinstanced.vert", "boostBar2.frag");
     m_scene_canvas.setShadersPath(shaders_directory);
+
+    glCheckErrorMsg("ERROR In initialize layers");
 }
 
 using namespace utils;
@@ -67,10 +69,10 @@ Game::Game(Renderer &window, KeyBindings &bindings)
       m_scene_canvas(m_scene_pixels),
       m_camera(PLAYER_START_POS, {START_VIEW_SIZE, START_VIEW_SIZE * window.getTargetSize().y / window.getTargetSize().x})
 {
-    m_background.loadFromFile(std::string(RESOURCES_DIR) + "/Textures/background.png");
+
+    m_background = std::make_unique<Texture>(std::string(RESOURCES_DIR) + "/Textures/background.png");
 
     initializeLayers();
-
     m_world = std::make_unique<GameWorld>();
     //! PLAYER NEEDS TO BE FIRST BECAUSE OTHER OBJECTS MIGHT REFERENCE IT!
     m_player = &m_world->addObjectForced<PlayerEntity>();
@@ -80,7 +82,7 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     for (int i = 0; i < 200; ++i)
     {
         auto &meteor = m_world->addObject2<Meteor>();
-        auto spawn_pos = m_player->getPosition() + randf(100, 1000) * angle2dir(randf(0, 360));
+        auto spawn_pos = m_player->getPosition() + randf(50, 1000) * angle2dir(randf(0, 360));
         meteor.setPosition(spawn_pos);
     }
 
@@ -344,11 +346,13 @@ void Game::parseInput(Renderer &window, float dt)
 
     if (isKeyPressed(m_key_binding[PlayerControl::MOVE_FORWARD]))
     {
-        m_player->speed += m_player->acceleration;
+        m_player->acceleration = 15.f;
     }
     else if (isKeyPressed(m_key_binding[PlayerControl::MOVE_BACK]))
     {
-        m_player->speed -= m_player->acceleration;
+        m_player->acceleration = -15.f;
+    }else{
+        m_player->acceleration = 0.;
     }
 }
 
@@ -377,11 +381,11 @@ void Game::draw(Renderer &window)
     window.m_view = window.getDefaultView();
     background_rect.setPosition(window.getTargetSize() / 2.f);
     background_rect.setScale(window.getTargetSize() / 2.f);
-    background_rect.setTexture(m_background);
+    background_rect.setTexture(*m_background);
     //! move background with view
     utils::Vector2f view_size_rel = utils::Vector2f{0.2, 0.2} + old_view.getSize() / 1415.f;
     utils::Vector2f rel_pos = old_view.getCenter() / 1400.;
-    utils::Vector2f size = m_background.getSize();
+    utils::Vector2f size = m_background->getSize();
     background_rect.m_tex_rect = {(int)(size.x * rel_pos.x),
                                   (int)(size.y * rel_pos.y),
                                   (int)(size.x * view_size_rel.x),
@@ -391,16 +395,16 @@ void Game::draw(Renderer &window)
     window.m_view = old_view;
 
     m_layers.clearAllLayers();
-    m_player->draw(m_layers);
+    // m_player->draw(m_layers);
     m_world->draw(m_layers);
     m_world->draw2(m_layers, window.m_view);
-    Enemy::m_neighbour_searcher.drawGrid(*m_layers.getLayer("Unit"));
+    // Enemy::m_neighbour_searcher.drawGrid(*m_layers.getLayer("Unit"));
 
-    auto &test_canvas = m_layers.getCanvas("Bloom");
-    Sprite fire_sprite(*m_textures.get("FireNoise"));
-    fire_sprite.setPosition(m_player->getPosition());
-    fire_sprite.setScale(utils::Vector2f{m_player->m_radius * 5.});
-    test_canvas.drawSprite(fire_sprite, "fireEffect");
+    // auto &test_canvas = m_layers.getCanvas("Bloom");
+    // Sprite fire_sprite(*m_textures.get("FireNoise"));
+    // fire_sprite.setPosition(m_player->getPosition());
+    // fire_sprite.setScale(utils::Vector2f{m_player->m_radius * 5.});
+    // test_canvas.drawSprite(fire_sprite, "fireEffect");
 
     //! clear and draw into scene
     m_scene_canvas.clear({0, 0, 0, 0});
@@ -410,21 +414,21 @@ void Game::draw(Renderer &window)
 
     // //! draw everything to a window quad
     auto scene_size = m_scene_pixels.getSize();
-
     Sprite screen_sprite(m_scene_pixels.getTexture());
     screen_sprite.setPosition(scene_size / 2.f);
     screen_sprite.setScale(scene_size / 2.f);
     m_window.m_view.setCenter(screen_sprite.getPosition());
     m_window.m_view.setSize(scene_size);
     m_window.drawSprite(screen_sprite, "LastPass");
-
     //! draw the scene into the window
     auto old_factors = m_window.m_blend_factors;
     m_window.m_blend_factors = {BlendFactor::One, BlendFactor::OneMinusSrcAlpha};
     m_window.drawAll();
+
+    //
     drawUI(window);
     m_window.m_view = old_view;
-    m_window.m_blend_factors = old_factors;
+    // m_window.m_blend_factors = old_factors;
 
     m_objective_system.draw(window);
     m_window.drawAll();

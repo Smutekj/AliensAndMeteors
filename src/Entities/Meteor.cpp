@@ -8,9 +8,9 @@
 Meteor::Meteor(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
     : p_player(player), GameObject(world, textures, ObjectType::Meteor)
 {
-    m_collision_shape = std::make_unique<Polygon>();
     m_rigid_body = std::make_unique<RigidBody>();
     initializeRandomMeteor();
+
 }
 
 void Meteor::update(float dt)
@@ -26,7 +26,7 @@ void Meteor::update(float dt)
     auto player_obj_dist = utils::dist(m_pos, player_pos);
     if (obj_moves_away && player_obj_dist > max_dist_from_player)
     {
-        auto rand_radius = randf(max_dist_from_player * 0.6, max_dist_from_player * 0.9);
+        auto rand_radius = randf(max_dist_from_player * 0.6f, max_dist_from_player * 0.9f);
         auto rand_angle = randf(0, 360);
         auto new_obj_pos = player_pos + rand_radius * utils::angle2dir(rand_angle);
         setPosition(new_obj_pos);
@@ -50,19 +50,10 @@ void Meteor::draw(LayersHolder &layers)
     //! find center of mass in the base coordinates
     auto points_orig = m_collision_shape->points;
     auto n_points = points_orig.size();
-    utils::Vector2f center_orig = std::accumulate(points_orig.begin(), points_orig.end(), utils::Vector2f{0, 0},
-                                                  [](utils::Vector2f prev_sum, const utils::Vector2f &val)
-                                                  {
-                                                      return prev_sum + val;
-                                                  });
-    center_orig /= n_points;
 
     auto points = m_collision_shape->getPointsInWorld();
     auto &target = layers.getCanvas("Unit");
-    if (!target.hasShader("Meteor"))
-    {
-        target.addShader("Meteor", "basictex.vert", "Meteor.frag");
-    }
+
     VertexArray m_verts;
     m_verts.resize(3 * points.size());
 
@@ -70,9 +61,9 @@ void Meteor::draw(LayersHolder &layers)
     auto center = m_collision_shape->getCenter();
     for (int i = 0; i < n_points; ++i)
     {
-        m_verts[3 * i + 0] = {points[i], c, points_orig[i]};
-        m_verts[3 * i + 1] = {points[(i + 1) % n_points], c, points_orig[(i + 1) % n_points]};
-        m_verts[3 * i + 2] = {center, c, center_orig};
+        m_verts[3 * i + 0] = {points[i], c, points_orig[i]*0.1 + m_center_offset};
+        m_verts[3 * i + 1] = {points[(i + 1) % n_points], c, points_orig[(i + 1) % n_points]*0.1 +m_center_offset};
+        m_verts[3 * i + 2] = {center, c, m_center_tex*0.1 + m_center_offset};
     }
 
     target.drawVertices(m_verts, "Meteor", DrawType::Dynamic, m_textures->get("Meteor"));
@@ -218,4 +209,15 @@ void Meteor::initializeRandomMeteor()
     m_rigid_body->inertia = 0.1 * radius * radius * m_rigid_body->mass;
 
     m_collision_shape = std::make_unique<Polygon>(polygon);
+
+    //! texture coordinate
+    auto& points_orig = m_collision_shape->points;
+    m_center_tex = std::accumulate(points_orig.begin(), points_orig.end(), utils::Vector2f{0, 0},
+                                                  [](utils::Vector2f prev_sum, const utils::Vector2f &val)
+                                                  {
+                                                      return prev_sum + val;
+                                                  });
+    m_center_tex /= points_orig.size();
+
+    m_center_offset = {randf(-0.85,0.85), randf(-0.85,0.85)};
 }

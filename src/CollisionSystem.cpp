@@ -133,7 +133,7 @@ namespace Collisions
         auto points_a = pa.getPointsInWorld();
         auto points_b = pb.getPointsInWorld();
         auto c_data = calcCollisionData(points_a, points_b);
-
+        
         if (c_data.minimum_translation < 0.f)
         {
             return c_data; //! there is no collision so we don't need to extract manifold
@@ -512,7 +512,7 @@ namespace Collisions
         auto n = c_data.separation_axis;
 
         //! resolve interpenetration;
-        float alpha = mass2 / (mass1 + mass2);
+        float alpha = mass2 / (mass1 + mass2)*0.5;
         obj1.move(-c_data.separation_axis * c_data.minimum_translation * alpha); //! separation axis always points from 1 to 2
         obj2.move(c_data.separation_axis * c_data.minimum_translation * (1 - alpha));
 
