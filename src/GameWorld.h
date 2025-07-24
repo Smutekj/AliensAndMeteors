@@ -86,136 +86,24 @@ public:
     GameWorld();
 
     template <class EntityType>
-    EntityType &addObject2()
-    {
-        auto &queue = std::get<std::queue<EntityType>>(m_entities_to_add);
-        EntityType new_entity = {this, m_textures, &m_collision_system, m_player};
-        queue.push(new_entity);
-        EntityType &thing = queue.back();
-        return thing;
-    }
-
+    EntityType &addObject2();
     template <class EntityType>
-    EntityType &addObjectForced()
-    {
-        auto &block = std::get<ComponentBlock<EntityType>>(m_entities2);
-        int new_id = block.insert({this, m_textures, &m_collision_system, m_player});
-        EntityType &new_entity = block.get(new_id);
-        new_entity.m_id = new_id;
-        if (new_entity.collides())
-        {
-            m_collision_system.insertObject(new_entity);
-        }
-        new_entity.onCreation();
-        return new_entity;
-    }
-
+    EntityType &addObjectForced();
     template <class EntityType>
-    void addX(std::queue<EntityType> &to_add)
-    {
-        while (!to_add.empty())
-        {
-            auto &entity_block = std::get<ComponentBlock<EntityType>>(m_entities2);
-            int new_id = entity_block.insert(to_add.front());
-
-            EntityType &new_entity = entity_block.get(new_id);
-            new_entity.m_id = new_id;
-            if (new_entity.collides())
-            {
-                m_collision_system.insertObject(new_entity);
-            }
-            new_entity.onCreation();
-            to_add.pop();
-        }
-    }
+    void addX(std::queue<EntityType> &to_add);
     template <class EntityType>
-    void removeX(std::queue<EntityType> &to_remove)
-    {
-        auto &entity_block = std::get<ComponentBlock<EntityType>>(m_entities2);
-        while (!to_remove.empty())
-        {
-            auto &entity = to_remove.front();
-            entity.onDestruction();
-
-            //! notify observers that entity got destroyed
-            for (auto callback_id : m_entitydestroyed_events.getEntityIds())
-            {
-                m_entitydestroyed_events.at(callback_id)(entity.getType(), entity.getId());
-            }
-
-            if (entity.collides())
-            {
-                m_collision_system.removeObject(entity);
-            }
-            entity_block.deactivate(entity.getId());
-            to_remove.pop();
-        }
-    }
-
-    void addQueuedEntities2()
-    {
-        std::apply([this](auto &...entity_queue)
-                   { ((addX(entity_queue)), ...); }, m_entities_to_add);
-    }
-    void removeQueuedEntities2()
-    {
-        std::apply([this](auto &...entity_queue)
-                   { ((removeX(entity_queue)), ...); }, m_entities_to_remove);
-    }
+    void updateX(ComponentBlock<EntityType> &entity_block, float dt);
     template <class EntityType>
-    void updateX(ComponentBlock<EntityType> &entity_block, float dt)
-    {
-        static_assert(std::is_base_of_v<GameObject, EntityType>);
-
-        auto &block = entity_block.getData();
-        int first_ind = block.at(0).next;
-        for (int ind = first_ind; ind <= 750; ind += block.at(ind).next) // block[ind].next)
-        {
-            auto &entity = block.at(ind).comp;
-            entity.updateAll(dt);
-            entity.update(dt);
-            if (block.at(ind).comp.isDead())
-            {
-                std::get<std::queue<EntityType>>(m_entities_to_remove).push(entity);
-            }
-        }
-    }
-    void update2(float dt)
-    {
-        m_collision_system.update();
-
-        std::apply([this, dt](auto &...entity_queue)
-                   { ((updateX(entity_queue, dt)), ...); }, m_entities2);
-
-        addQueuedEntities2();
-        removeQueuedEntities2();
-    }
+    void removeX(std::queue<EntityType> &to_remove);
     template <class EntityType>
-    void drawX(ComponentBlock<EntityType> &entity_block, LayersHolder &layers, View camera_view)
-    {
-        camera_view.setSize(camera_view.getSize() * 1.2); //! draw also a little bit beyond the camera
+    void drawX(ComponentBlock<EntityType> &entity_block, LayersHolder &layers, View camera_view);
 
-        auto &block = entity_block.getData();
-        int first_ind = block.at(0).next;
-        for (int ind = first_ind; ind <= 750; ind += block[ind].next) // block[ind].next)
-        {
-            auto &drawable = block.at(ind).comp;
+    void addQueuedEntities2();
+    void removeQueuedEntities2();
+    void update2(float dt);
+    void draw2(LayersHolder &layers, View camera_view);
 
-            Rectf bounding_rect = {drawable.getPosition().x, drawable.getPosition().y,
-                                   drawable.getSize().x, drawable.getSize().y};
-
-            if (camera_view.intersects(bounding_rect))
-            {
-                drawable.draw(layers);
-            }
-        }
-    }
-    void draw2(LayersHolder &layers, View camera_view)
-    {
-        std::apply([this, &layers, camera_view](auto &&...ents)
-                   { ((drawX(ents, layers, camera_view)), ...); }, m_entities2);
-    }
-
+    ///!!!
     void destroyObject(int entity_id);
     GameObject &addObject(ObjectType type);
     VisualEffect &addVisualEffect(EffectType type);
@@ -250,4 +138,73 @@ TriggerType &GameWorld::addTrigger(Args... args)
     auto new_trigger = std::make_shared<TriggerType>(this, m_textures, args...);
     m_to_add.push(new_trigger);
     return *new_trigger;
+}
+
+
+
+template <class EntityType>
+EntityType &GameWorld::addObject2()
+{
+    auto &queue = std::get<std::queue<EntityType>>(m_entities_to_add);
+    EntityType new_entity = {this, m_textures, &m_collision_system, m_player};
+    queue.push(new_entity);
+    EntityType &thing = queue.back();
+    return thing;
+}
+
+template <class EntityType>
+EntityType &GameWorld::addObjectForced()
+{
+    auto &block = std::get<ComponentBlock<EntityType>>(m_entities2);
+    int new_id = block.insert({this, m_textures, &m_collision_system, m_player});
+    EntityType &new_entity = block.get(new_id);
+    new_entity.m_id = new_id;
+    if (new_entity.collides())
+    {
+        m_collision_system.insertObject(new_entity);
+    }
+    new_entity.onCreation();
+    return new_entity;
+}
+
+template <class EntityType>
+void GameWorld::addX(std::queue<EntityType> &to_add)
+{
+    while (!to_add.empty())
+    {
+        auto &entity_block = std::get<ComponentBlock<EntityType>>(m_entities2);
+        int new_id = entity_block.insert(to_add.front());
+
+        EntityType &new_entity = entity_block.get(new_id);
+        new_entity.m_id = new_id;
+        if (new_entity.collides())
+        {
+            m_collision_system.insertObject(new_entity);
+        }
+        new_entity.onCreation();
+        to_add.pop();
+    }
+}
+template <class EntityType>
+void GameWorld::removeX(std::queue<EntityType> &to_remove)
+{
+    auto &entity_block = std::get<ComponentBlock<EntityType>>(m_entities2);
+    while (!to_remove.empty())
+    {
+        auto &entity = to_remove.front();
+        entity.onDestruction();
+
+        //! notify observers that entity got destroyed
+        for (auto callback_id : m_entitydestroyed_events.getEntityIds())
+        {
+            m_entitydestroyed_events.at(callback_id)(entity.getType(), entity.getId());
+        }
+
+        if (entity.collides())
+        {
+            m_collision_system.removeObject(entity);
+        }
+        entity_block.deactivate(entity.getId());
+        to_remove.pop();
+    }
 }
