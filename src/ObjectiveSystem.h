@@ -11,7 +11,7 @@
 #include "Utils/ObjectPool.h"
 
 
-
+#include "PostBox.h"
 
 class Objective
 {
@@ -99,11 +99,15 @@ private:
     std::string m_entity_name;
 };
 
+class PostOffice;
+
 class ObjectiveSystem
 {
 
 public:
     ObjectiveSystem();
+    ObjectiveSystem(PostOffice& messanger);
+
     void add(std::shared_ptr<Objective> obj);
     void remove(int id);
     void draw(Renderer &window, const TextureHolder& textures);
@@ -115,4 +119,8 @@ private:
     // std::deque<std::shared_ptr<Objective>> m_objectives;
     utils::ObjectPool<std::shared_ptr<Objective>, 10> m_objectives;
     bool m_all_quests_finished = false;
+
+    PostOffice* p_messanger;
+
+    std::unique_ptr<PostBox<EntityDiedEvent>> post_box;
 };

@@ -2,19 +2,20 @@
 
 #include <Renderer.h>
 
+#include "PostBox.h"
+
 #include <numbers>
 
 #ifndef M_PIf
 #define M_PIf 3.14159265358979323846f
 #endif
 
-
 bool Objective::isFinished() const
 {
     return m_is_finished;
 }
 
-void drawArrowTo(const Texture& arrow_texture, utils::Vector2f location, Renderer &window, Color color = {1, 1, 0, 1})
+void drawArrowTo(const Texture &arrow_texture, utils::Vector2f location, Renderer &window, Color color = {1, 1, 0, 1})
 {
     auto ui_view = window.getDefaultView();
 
@@ -68,13 +69,13 @@ void ReachSpotObjective::onObservation(Trigger *trig)
     trig->kill();
     m_on_completion_callback();
 }
-void ReachSpotObjective::fail(Trigger* trig)
+void ReachSpotObjective::fail(Trigger *trig)
 {
     m_is_finished = true;
     m_on_failure_callback();
 }
 
-void ReachSpotObjective::draw(Renderer &window, const TextureHolder& textures)
+void ReachSpotObjective::draw(Renderer &window, const TextureHolder &textures)
 {
     auto old_view = window.m_view;
 
@@ -91,7 +92,7 @@ void ReachSpotObjective::draw(Renderer &window, const TextureHolder& textures)
         static_cast<float>(window.getTargetSize().y)};
     text.setPosition(window_size.x / 20.f, m_text_y_pos);
     window.drawText(text);
-    
+
     window.m_view = old_view;
 }
 
@@ -120,7 +121,7 @@ void DestroyEntity::onObservation(Trigger *trig)
     trig->kill();
 }
 
-void DestroyEntity::draw(Renderer &window, const TextureHolder& textures)
+void DestroyEntity::draw(Renderer &window, const TextureHolder &textures)
 {
 
     auto old_view = window.m_view;
@@ -158,9 +159,9 @@ void ObjectiveSystem::remove(int id)
     m_objectives.remove(id);
 }
 
-void ObjectiveSystem::draw(Renderer &window, const TextureHolder& textures)
+void ObjectiveSystem::draw(Renderer &window, const TextureHolder &textures)
 {
-    
+
     float y_pos = window.getTargetSize().y / 20.f;
     for (auto id : m_objectives.active_inds)
     {
@@ -168,7 +169,7 @@ void ObjectiveSystem::draw(Renderer &window, const TextureHolder& textures)
         m_objectives.at(id)->draw(window, textures);
         y_pos += 50.f;
     }
-    
+
     auto old_view = window.m_view;
     window.m_view = window.getDefaultView();
     window.drawAll();
@@ -192,7 +193,7 @@ bool ObjectiveSystem::allFinished() const
     return m_all_quests_finished;
 }
 
-void DestroyNOfType::draw(Renderer &window, const TextureHolder& textures)
+void DestroyNOfType::draw(Renderer &window, const TextureHolder &textures)
 {
     auto old_view = window.m_view;
     window.m_view = window.getDefaultView();
@@ -233,6 +234,13 @@ void DestroyNOfType::entityDestroyed(ObjectType type, int id)
     }
 }
 
-ObjectiveSystem::ObjectiveSystem()
+ObjectiveSystem::ObjectiveSystem(PostOffice &messanger)
+    : p_messanger(&messanger)
 {
+    post_box = std::make_unique<PostBox<EntityDiedEvent>>(messanger, [](const auto &events) {
+        for(const EntityDiedEvent& event : events)
+        {
+            std::cout << "Entity: " << event.id << " DIED!" << std::endl; 
+        }
+    });
 }
