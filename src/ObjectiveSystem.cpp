@@ -8,14 +8,13 @@
 #define M_PIf 3.14159265358979323846f
 #endif
 
-static TextureHolder m_textures;
 
 bool Objective::isFinished() const
 {
     return m_is_finished;
 }
 
-void Objective::drawArrowTo(utils::Vector2f location, Renderer &window, Color color = {1, 1, 0, 1})
+void drawArrowTo(const Texture& arrow_texture, utils::Vector2f location, Renderer &window, Color color = {1, 1, 0, 1})
 {
     auto ui_view = window.getDefaultView();
 
@@ -47,7 +46,7 @@ void Objective::drawArrowTo(utils::Vector2f location, Renderer &window, Color co
     float actual_dist = utils::dist(location, center);
     if (!window.m_view.contains(location))
     { //! draw only when not on screen
-        Sprite arrow_rect(*m_textures.get("Arrow"));
+        Sprite arrow_rect(arrow_texture);
         arrow_rect.setScale(15, 15);
         arrow_rect.m_color = color;
         arrow_rect.setRotation(glm::radians(angle));
@@ -75,11 +74,11 @@ void ReachSpotObjective::fail(Trigger* trig)
     m_on_failure_callback();
 }
 
-void ReachSpotObjective::draw(Renderer &window)
+void ReachSpotObjective::draw(Renderer &window, const TextureHolder& textures)
 {
     auto old_view = window.m_view;
 
-    drawArrowTo(m_location, window);
+    drawArrowTo(*textures.get("Arrow"), m_location, window);
 
     window.m_view = window.getDefaultView();
 
@@ -121,13 +120,13 @@ void DestroyEntity::onObservation(Trigger *trig)
     trig->kill();
 }
 
-void DestroyEntity::draw(Renderer &window)
+void DestroyEntity::draw(Renderer &window, const TextureHolder& textures)
 {
 
     auto old_view = window.m_view;
     if (!m_is_finished)
     {
-        drawArrowTo(m_target.getPosition(), window, {1, 0, 0, 1});
+        drawArrowTo(*textures.get("Arrow"), m_target.getPosition(), window, {1, 0, 0, 1});
     }
     window.m_view = window.getDefaultView();
 
@@ -159,14 +158,14 @@ void ObjectiveSystem::remove(int id)
     m_objectives.remove(id);
 }
 
-void ObjectiveSystem::draw(Renderer &window)
+void ObjectiveSystem::draw(Renderer &window, const TextureHolder& textures)
 {
     
     float y_pos = window.getTargetSize().y / 20.f;
     for (auto id : m_objectives.active_inds)
     {
         m_objectives.at(id)->m_text_y_pos = y_pos;
-        m_objectives.at(id)->draw(window);
+        m_objectives.at(id)->draw(window, textures);
         y_pos += 50.f;
     }
     
@@ -193,7 +192,7 @@ bool ObjectiveSystem::allFinished() const
     return m_all_quests_finished;
 }
 
-void DestroyNOfType::draw(Renderer &window)
+void DestroyNOfType::draw(Renderer &window, const TextureHolder& textures)
 {
     auto old_view = window.m_view;
     window.m_view = window.getDefaultView();
@@ -236,6 +235,4 @@ void DestroyNOfType::entityDestroyed(ObjectType type, int id)
 
 ObjectiveSystem::ObjectiveSystem()
 {
-    m_textures.setBaseDirectory(std::string(RESOURCES_DIR) + "/Textures/");
-    m_textures.add("Arrow", "arrow.png");
 }

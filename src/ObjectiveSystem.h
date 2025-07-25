@@ -18,13 +18,10 @@ class Objective
 
 public:
     virtual void update(float dt){};
-    virtual void draw(Renderer &window) = 0;
+    virtual void draw(Renderer &window, const TextureHolder& textures) = 0;
     virtual void fail(Trigger* trig) {};
     virtual ~Objective() = default;
     bool isFinished() const;
-
-protected:
-    void drawArrowTo(utils::Vector2f location, Renderer &window, Color color);
 
 public:
     int m_id;
@@ -47,7 +44,7 @@ public:
     
     virtual void onObservation(Trigger *trig) override;
     virtual void fail(Trigger* trig) override;
-    virtual void draw(Renderer &window) override;
+    virtual void draw(Renderer &window, const TextureHolder& textures) override;
 
 private:
     utils::Vector2f m_location;
@@ -61,7 +58,7 @@ public:
     virtual ~SurveySpot() = default;
 
     virtual void onObservation(Trigger *trig) override;
-    virtual void draw(Renderer &window) override{}
+    virtual void draw(Renderer &window, const TextureHolder& textures) override{}
 
 private:
     float m_surveyed_timer = 0;
@@ -77,7 +74,7 @@ public:
 
     virtual void onObservation(Trigger *trig) override;
 
-    virtual void draw(Renderer &window) override;
+    virtual void draw(Renderer &window, const TextureHolder& textures) override;
 
 private:
     GameObject& m_target;
@@ -92,7 +89,7 @@ public:
 
     void entityDestroyed(ObjectType type, int id);
 
-    virtual void draw(Renderer &window) override;
+    virtual void draw(Renderer &window, const TextureHolder& textures) override;
 
 private:
     ObjectType m_type;
@@ -109,7 +106,7 @@ public:
     ObjectiveSystem();
     void add(std::shared_ptr<Objective> obj);
     void remove(int id);
-    void draw(Renderer &window);
+    void draw(Renderer &window, const TextureHolder& textures);
     void update();
     bool allFinished() const;
     void entityDestroyed(ObjectType type, int id);
