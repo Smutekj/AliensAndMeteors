@@ -31,7 +31,7 @@ void Game::initializeLayers()
     unit_layer.addEffect(std::make_unique<EdgeDetect>(width, height));
     // unit_layer.addEffect(std::make_unique<BloomFinal>(width, height));
 
-
+ 
     auto &shiny_layer = m_layers.addLayer("Bloom", 5, options, width, height);
     shiny_layer.m_canvas.setShadersPath(shaders_directory);
     shiny_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
@@ -67,13 +67,14 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     : m_window(window), m_key_binding(bindings),
       m_scene_pixels(window.getTargetSize().x, window.getTargetSize().y),
       m_scene_canvas(m_scene_pixels),
-      m_camera(PLAYER_START_POS, {START_VIEW_SIZE, START_VIEW_SIZE * window.getTargetSize().y / window.getTargetSize().x})
-{
+      m_camera(PLAYER_START_POS, {START_VIEW_SIZE, START_VIEW_SIZE * window.getTargetSize().y / window.getTargetSize().x}),
+      m_objective_system(messanger)
+      {
 
     m_background = std::make_unique<Texture>(std::string(RESOURCES_DIR) + "/Textures/background.png");
 
     initializeLayers();
-    m_world = std::make_unique<GameWorld>();
+    m_world = std::make_unique<GameWorld>(messanger);
     //! PLAYER NEEDS TO BE FIRST BECAUSE OTHER OBJECTS MIGHT REFERENCE IT!
     m_player = &m_world->addObjectForced<PlayerEntity>();
     m_player->setPosition({500, 500});
@@ -351,7 +352,9 @@ void Game::parseInput(Renderer &window, float dt)
     else if (isKeyPressed(m_key_binding[PlayerControl::MOVE_BACK]))
     {
         m_player->acceleration = -15.f;
-    }else{
+    }
+    else
+    {
         m_player->acceleration = 0.;
     }
 }
@@ -370,6 +373,9 @@ void Game::update(const float dt, Renderer &window)
 
     m_world->update2(dt);
     m_world->update(dt);
+
+    messanger.distributeMessages();
+
     m_objective_system.update();
 };
 

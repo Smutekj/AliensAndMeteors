@@ -21,6 +21,8 @@
 #include "Entities/VisualEffects.h"
 #include "Entities/Triggers.h"
 
+#include "PostOffice.h"
+
 struct PlayerEntity;
 
 // Poor man's MPL vector.
@@ -63,6 +65,7 @@ using EntityTypes = TypeList<Enemy, Turret, Meteor, SpaceStation, Boss, Bullet,
 using EntityTuple = rebind<EntityTypes, std::tuple, ComponentBlock>;
 using EntityQueue = rebind<EntityTypes, std::tuple, std::queue>;
 
+
 class GameWorld
 {
     EntityTuple m_entities2;
@@ -83,7 +86,7 @@ public:
     PlayerEntity *m_player;
     utils::DynamicObjectPool<std::function<void(ObjectType, int)>, 100> m_entitydestroyed_events;
 
-    GameWorld();
+    GameWorld(PostOffice& messenger);
 
     template <class EntityType>
     EntityType &addObject2();
@@ -130,6 +133,8 @@ private:
     void loadTextures();
 
     std::unordered_map<EffectType, std::function<std::shared_ptr<VisualEffect>()>> m_effect_factories;
+
+    PostOffice* p_messenger;
 };
 
 template <class TriggerType, class... Args>
@@ -193,6 +198,8 @@ void GameWorld::removeX(std::queue<EntityType> &to_remove)
     {
         auto &entity = to_remove.front();
         entity.onDestruction();
+        
+        p_messenger->send(EntityDiedEvent{entity.getId(), entity.getPosition()});
 
         //! notify observers that entity got destroyed
         for (auto callback_id : m_entitydestroyed_events.getEntityIds())

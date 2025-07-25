@@ -7,6 +7,9 @@
 #include "ObjectiveSystem.h"
 #include "Camera.h"
 
+#include "PostOffice.h"
+#include "PostBox.h"
+
 class GameWorld;
 
 class BossFight : public GameObject
@@ -18,6 +21,8 @@ public:
 
 class Game
 {
+
+  PostOffice messanger;
 
 public:
   enum class GameState

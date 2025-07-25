@@ -4,7 +4,8 @@
 
 #include "Utils/RandomTools.h"
 
-GameWorld::GameWorld()
+GameWorld::GameWorld(PostOffice& messenger)
+: p_messenger(&messenger)
 {
     loadTextures();
 
