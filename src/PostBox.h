@@ -24,7 +24,6 @@ public:
     virtual ~PostBox() override;
 
 private:
-    friend class PostOffice;
 
     PostOffice *p_post_office;
     std::function<void(const std::deque<MessageData> &)> on_receival;

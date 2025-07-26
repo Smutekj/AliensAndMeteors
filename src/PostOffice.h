@@ -4,6 +4,7 @@
 #include <queue>
 #include <unordered_map>
 #include <tuple>
+#include <memory>
 #include <functional>
 
 #include "GameEvents.h"
@@ -12,8 +13,11 @@ template <class T> class PostBox;
 
 class PostOffice
 {
+
+    template <class MessageT>
+    using Callback = std::function<void(const std::deque<MessageT>&)>;
     template <class T>
-    using SubscribersT = std::unordered_map<int, PostBox<T> *>;
+    using SubscribersT = std::unordered_map<int, Callback<T>>;
 
     using MessageTypes = std::tuple<std::deque<EntityDiedEvent>, std::deque<EntityCreatedEvent>, std::deque<ObjectiveFinishedEvent>>;
     using SubscriberTypes = std::tuple<SubscribersT<EntityDiedEvent>, SubscribersT<EntityCreatedEvent>, SubscribersT<ObjectiveFinishedEvent>>;
@@ -40,7 +44,7 @@ private:
     friend class PostBox;
     
     template <class MessageData>
-    int subscribeTo(PostBox<MessageData> *subscriber);
+    int subscribeTo(PostOffice::Callback<MessageData>& subscriber);
 
     template <class MessageDataT>
     void unsubscribe(int id);

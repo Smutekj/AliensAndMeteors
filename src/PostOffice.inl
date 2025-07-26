@@ -1,6 +1,5 @@
 #pragma once
 
-#include "PostBox.h"
 
 inline void PostOffice::distributeMessages()
 {
@@ -15,7 +14,12 @@ inline void PostOffice::distributeToSubscribers(std::deque<MessageType> &message
     auto &subs = std::get<SubscribersT<MessageType>>(m_subscribers);
     for (auto &[id, post_box] : subs)
     {
-        post_box->on_receival(messages);
+        // if(post_box.expired())
+        // {
+            // subs.erase(id);
+        // }else{
+            post_box(messages);
+        // }
     }
     messages.clear();
 }
@@ -29,7 +33,7 @@ inline void PostOffice::send(MessageDataT message)
 }
 
 template <class MessageData>
-inline int PostOffice::subscribeTo(PostBox<MessageData> *subscriber)
+inline int PostOffice::subscribeTo(PostOffice::Callback<MessageData>& subscriber)
 {
     int next_id = findNewFreeId<MessageData>();
     std::get<SubscribersT<MessageData>>(m_subscribers)[next_id] = subscriber;

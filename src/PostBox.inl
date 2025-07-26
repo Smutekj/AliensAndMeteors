@@ -8,7 +8,7 @@ PostBox<MessageData>::PostBox(PostOffice &post_office,
                               std::function<void(const std::deque<MessageData> &)> on_receival)
     : p_post_office(&post_office), on_receival(on_receival)
 {
-    id = p_post_office->subscribeTo<MessageData>(this);
+    id = p_post_office->subscribeTo<MessageData>(on_receival);
 }
 
 template <class MessageData>
