@@ -28,10 +28,9 @@ void Game::initializeLayers()
     unit_layer.m_canvas.setShadersPath(shaders_directory);
     unit_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
     unit_layer.m_canvas.addShader("Meteor", "basictex.vert", "Meteor.frag");
-    unit_layer.addEffect(std::make_unique<EdgeDetect>(width, height));
+    // unit_layer.addEffect(std::make_unique<EdgeDetect>(width, height));
     // unit_layer.addEffect(std::make_unique<BloomFinal>(width, height));
 
- 
     auto &shiny_layer = m_layers.addLayer("Bloom", 5, options, width, height);
     shiny_layer.m_canvas.setShadersPath(shaders_directory);
     shiny_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
@@ -67,9 +66,10 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     : m_window(window), m_key_binding(bindings),
       m_scene_pixels(window.getTargetSize().x, window.getTargetSize().y),
       m_scene_canvas(m_scene_pixels),
-      m_camera(PLAYER_START_POS, {START_VIEW_SIZE, START_VIEW_SIZE * window.getTargetSize().y / window.getTargetSize().x}),
-      m_objective_system(messanger)
-      {
+      m_camera(PLAYER_START_POS, {START_VIEW_SIZE, START_VIEW_SIZE * window.getTargetSize().y / window.getTargetSize().x})
+{
+    messanger.registerEvents<EntityDiedEvent, EntityDiedEvent, ObjectiveFinishedEvent>();
+    m_objective_system = std::make_unique<ObjectiveSystem>(messanger);
 
     m_background = std::make_unique<Texture>(std::string(RESOURCES_DIR) + "/Textures/background.png");
 
@@ -97,12 +97,12 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     spawnNextObjective();
     // addDestroyNObjective(ObjectType::SpaceStation, 2);
 
-    for (int i = 0; i < 100; ++i)
-    {
-        auto &enemy = m_world->addObject2<Enemy>();
-        auto spawn_pos = m_player->getPosition() + randf(100, 400) * angle2dir(randf(0, 360));
-        enemy.setPosition(spawn_pos);
-    }
+    // for (int i = 0; i < 100; ++i)
+    // {
+    //     auto &enemy = m_world->addObject2<Enemy>();
+    //     auto spawn_pos = m_player->getPosition() + randf(100, 400) * angle2dir(randf(0, 360));
+    //     enemy.setPosition(spawn_pos);
+    // }
 
     auto &heart_spawner = m_world->addTrigger<Timer>();
     heart_spawner.setCallback(
@@ -114,18 +114,18 @@ Game::Game(Renderer &window, KeyBindings &bindings)
             heart.setPosition(spawn_pos);
         });
 
-    auto &enemy_spawner = m_world->addTrigger<Timer>();
-    enemy_spawner.m_cooldown = 5.f;
-    enemy_spawner.setCallback(
-        [this]()
-        {
-            if (m_world->getActiveCount<Enemy>() < 100) //! max 100 enemies
-            {
-                auto &enemy = m_world->addObject2<Enemy>();
-                auto spawn_pos = m_player->getPosition() + randf(50, 200) * angle2dir(randf(0, 360));
-                enemy.setPosition(spawn_pos);
-            }
-        });
+    // auto &enemy_spawner = m_world->addTrigger<Timer>();
+    // enemy_spawner.m_cooldown = 5.f;
+    // enemy_spawner.setCallback(
+    //     [this]()
+    //     {
+    //         if (m_world->getActiveCount<Enemy>() < 100) //! max 100 enemies
+    //         {
+    //             auto &enemy = m_world->addObject2<Enemy>();
+    //             auto spawn_pos = m_player->getPosition() + randf(50, 200) * angle2dir(randf(0, 360));
+    //             enemy.setPosition(spawn_pos);
+    //         }
+    //     });
 
     m_health_text.setFont(m_font.get());
     m_health_text.setColor({255, 0, 0, 255});
@@ -139,11 +139,11 @@ void Game::addDestroyNObjective(ObjectType type, int count)
         {
             destroy_stations->entityDestroyed(type, id);
         });
-    m_objective_system.add(destroy_stations);
+    m_objective_system->add(destroy_stations);
     destroy_stations->m_on_completion_callback =
         [this, callback_id, type, count, id = destroy_stations->m_id]()
     {
-        m_objective_system.remove(id);
+        m_objective_system->remove(id);
         m_world->removeEntityDestroyedCallback(callback_id);
         addDestroyNObjective(type, count + 2);
     };
@@ -168,11 +168,11 @@ void Game::spawnBossObjective()
     destroy_enemy_obj->m_on_completion_callback =
         [this, destroy_enemy_obj]()
     {
-        m_objective_system.remove(destroy_enemy_obj->m_id);
+        m_objective_system->remove(destroy_enemy_obj->m_id);
     };
 
     t2.attach(destroy_enemy_obj);
-    m_objective_system.add(destroy_enemy_obj);
+    m_objective_system->add(destroy_enemy_obj);
 }
 
 void Game::changeStage(GameStage target_stage)
@@ -185,10 +185,10 @@ void Game::changeStage(GameStage target_stage)
         new_trigger.setPosition(new_pos);
 
         auto objective = std::make_shared<ReachSpotObjective>(new_trigger, *m_font);
-        m_objective_system.add(objective);
+        m_objective_system->add(objective);
         new_trigger.setCallback([this, new_pos, id = objective->m_id]()
                                 {
-            m_objective_system.remove(id);
+            m_objective_system->remove(id);
             m_score += 3;
             spawnNextObjective(); });
 
@@ -205,7 +205,7 @@ void Game::changeStage(GameStage target_stage)
         time_ran_out.setCallback([this, objective_id = objective->m_id]()
                                  {
                                     
-                m_objective_system.remove(objective_id);
+                m_objective_system->remove(objective_id);
                 changeStage(GameStage::FREE); });
     }
 
@@ -228,11 +228,11 @@ void Game::spawnNextObjective()
     };
 
     auto objective = std::make_shared<ReachSpotObjective>(new_trigger, *m_font);
-    m_objective_system.add(objective);
+    m_objective_system->add(objective);
     new_trigger.setCallback([this, spawn_enemies, new_pos, id = objective->m_id]()
                             {
         spawn_enemies(new_pos);
-        m_objective_system.remove(id);
+        m_objective_system->remove(id);
         m_score += 3;
         spawnNextObjective();
         if(m_score > 20 && rand()%3 == 0)
@@ -376,7 +376,7 @@ void Game::update(const float dt, Renderer &window)
 
     messanger.distributeMessages();
 
-    m_objective_system.update();
+    m_objective_system->update();
 };
 
 void Game::draw(Renderer &window)
@@ -437,7 +437,7 @@ void Game::draw(Renderer &window)
     m_window.m_view = old_view;
     // m_window.m_blend_factors = old_factors;
 
-    m_objective_system.draw(window, m_textures);
+    m_objective_system->draw(window, m_textures);
     m_window.drawAll();
     // m_ui.draw(window);
 }

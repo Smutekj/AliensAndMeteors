@@ -75,7 +75,7 @@ public:
   GameStage stage = GameStage::FREE;
   Camera m_camera;
 
-  ObjectiveSystem m_objective_system;
+  std::unique_ptr<ObjectiveSystem> m_objective_system;
   
   int m_score = 0;
   
