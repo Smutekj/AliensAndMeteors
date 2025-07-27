@@ -11,6 +11,8 @@
 #include "GameObject.h"
 #include "Polygon.h"
 
+#include "PostOffice.h"
+
 namespace Collisions
 {
 
@@ -93,7 +95,7 @@ namespace Collisions
         std::unordered_set<std::pair<int, int>, pair_hash> m_exceptions;
 
     public:
-        CollisionSystem();
+        CollisionSystem(PostOffice& messanger);
 
         void insertObject(std::shared_ptr<GameObject> &p_object);
         void insertObject(GameObject &obj);
@@ -131,6 +133,9 @@ namespace Collisions
         ObjectId getId(GameObject &object) const;
         void narrowPhase(const std::vector<std::pair<ObjectId, ObjectId>> &colliding_pairs);
         CollisionData getCollisionData(Polygon &pa, Polygon &pb) const;
+
+        PostOFfice* p_post_office;
+
     };
 
     CollisionData inline calcCollisionData(const std::vector<utils::Vector2f> &points1,
@@ -145,5 +150,8 @@ namespace Collisions
         utils::Vector2f n);
 
     void inline bounce(GameObject &obj1, GameObject &obj2, CollisionData c_data);
+
+
+    
 
 } //! namespace Collisions

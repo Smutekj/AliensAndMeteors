@@ -4,8 +4,11 @@
 namespace Collisions
 {
 
-    CollisionSystem::CollisionSystem()
+    CollisionSystem::CollisionSystem(PostOffice& messenger)
+    : p_post_office(&messenger)
     {
+        messenger.registerEvents<CollisionEventEntities, CollisionEventTypeEntity, CollisionEventTypes>();
+
         m_exceptions.insert({static_cast<int>(ObjectType::Heart), static_cast<int>(ObjectType::Heart)});
         m_exceptions.insert({static_cast<int>(ObjectType::Player), static_cast<int>(ObjectType::Player)});
         m_exceptions.insert({static_cast<int>(ObjectType::Bullet), static_cast<int>(ObjectType::Bullet)});
@@ -122,6 +125,11 @@ namespace Collisions
                 {
                     bounce(obj1, obj2, collision_data);
                 }
+                p_post_office->send(CollisionEventEntities{obj1.getId(), obj2.getId()});
+                p_post_office->send(CollisionEventTypeEntity{obj1.getId(), obj2.getType()});
+                p_post_office->send(CollisionEventTypeEntity{obj2.getId(), obj1.getType()});
+                p_post_office->send(CollisionEventTypes{obj1.getType(), obj2.getType()});
+
                 obj1.onCollisionWith(obj2, collision_data);
                 obj2.onCollisionWith(obj1, collision_data);
             }
