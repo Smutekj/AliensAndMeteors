@@ -28,7 +28,7 @@ include_directories("${PROJECT_BINARY_DIR}" ${IMGUI_DIR} ${IMGUI_DIR}/backends )
 add_executable(${CMAKE_PROJECT_NAME} ${SRC} )
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE 
                                              SDL2::SDL2main SDL2::SDL2-static
-                                            renderer tinyxml2)
+                                            renderer tinyxml2 nlohmann_json::nlohmann_json)
 
 if( ${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE RESOURCES_DIR="/Resources") ### add correct resources path here                        
