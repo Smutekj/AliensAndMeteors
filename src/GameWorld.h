@@ -152,7 +152,7 @@ TriggerType &GameWorld::addTrigger(Args... args)
 template <class EntityType>
 EntityType &GameWorld::addObject2()
 {
-    static_assert(std::is_base_of_v<GameObject, EntityType>)
+    static_assert(std::is_base_of_v<GameObject, EntityType>);
     // auto new_entity = std::make_shared<EntityType>(this, m_textures, &m_collision_system, m_player); 
     // m_to_add.push(new_entity);
     // return *new_entity;
@@ -170,7 +170,7 @@ EntityType &GameWorld::addObjectForced()
     auto &block = std::get<ComponentBlock<EntityType>>(m_entities2);
     int new_id = block.insert({this, m_textures, &m_collision_system, m_player});
     EntityType &new_entity = block.get(new_id);
-    new_entity.m_id = new_id;
+    new_entity.m_block_id = new_id;
     if (new_entity.collides())
     {
         m_collision_system.insertObject(new_entity);
@@ -186,11 +186,10 @@ void GameWorld::addX(std::queue<EntityType> &to_add)
     {
         auto &entity_block = std::get<ComponentBlock<EntityType>>(m_entities2);
         // new_id = m_entities.addObject(&new_entity);
-        auto& new_entity = to_add.front()
+        auto& new_entity = to_add.front();
         int block_id = entity_block.insert(new_entity);
 
-        EntityType &new_entity = entity_block.get(new_id);
-        new_entity.m_block_id = block_id;
+        entity_block.get(block_id).m_block_id = block_id;
         
         if (new_entity.collides())
         {

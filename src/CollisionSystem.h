@@ -134,7 +134,7 @@ namespace Collisions
         void narrowPhase(const std::vector<std::pair<ObjectId, ObjectId>> &colliding_pairs);
         CollisionData getCollisionData(Polygon &pa, Polygon &pb) const;
 
-        PostOFfice* p_post_office;
+        PostOffice* p_post_office;
 
     };
 

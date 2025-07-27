@@ -87,7 +87,7 @@ public:
 
     virtual void update(float dt) {};
     virtual void onCreation() {};
-    virtual void onDestruction() { m_on_destruction_callback(m_id, m_type); }
+    virtual void onDestruction() { m_on_destruction_callback(getId(), m_type); }
     virtual void draw(LayersHolder &target) {};
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) {};
 

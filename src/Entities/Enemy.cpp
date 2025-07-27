@@ -30,7 +30,7 @@ Enemy::~Enemy() {}
 
 void Enemy::update(float dt)
 {
-    m_neighbour_searcher.move(getPosition(), m_id);
+    m_neighbour_searcher.move(getPosition(), getId());
     m_behaviour->update(dt);
 
     boidSteering();
@@ -110,11 +110,11 @@ void Enemy::onCollisionWith(GameObject &obj, CollisionData &c_data)
 void Enemy::onCreation()
 {
     setBehaviour();
-    m_neighbour_searcher.insertAt(getPosition(), getPosition(), m_id);
+    m_neighbour_searcher.insertAt(getPosition(), getPosition(), getId());
 }
 void Enemy::onDestruction()
 {
-    m_neighbour_searcher.remove(m_id);
+    m_neighbour_searcher.remove(getId());
 
     auto &new_explosion = m_world->addObject2<Explosion>();
     new_explosion.removeCollider();
@@ -271,7 +271,7 @@ private:
 
 void Enemy::boidSteering()
 {
-    auto neighbours2 = m_neighbour_searcher.getNeighbourList(m_id, m_pos, 50.);
+    auto neighbours2 = m_neighbour_searcher.getNeighbourList(getId(), m_pos, 50.);
 
     // auto neighbours = m_collision_system->findNearestObjects(ObjectType::Enemy, m_pos, 50.);
 
@@ -298,7 +298,7 @@ void Enemy::boidSteering()
     for (auto [neighbour_pos, id] : neighbours2)
     {
         // if (p_neighbour == this)
-        if (m_id == id)
+        if (getId() == id)
         {
             continue;
         }
