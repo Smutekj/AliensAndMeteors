@@ -4,11 +4,18 @@
 
 #include "PostBox.h"
 
+#include <nlohmann/json.hpp>
+
 #include <numbers>
 
 #ifndef M_PIf
 #define M_PIf 3.14159265358979323846f
 #endif
+
+bool Task::isFinished() const
+{
+    return m_is_finished;
+}
 
 bool Objective::isFinished() const
 {
@@ -57,25 +64,25 @@ void drawArrowTo(const Texture &arrow_texture, utils::Vector2f location, Rendere
     }
 }
 
-ReachSpotObjective::ReachSpotObjective(GameObject &spot, Font &font)
-    : m_location(spot.getPosition())
+ReachSpotTask::ReachSpotTask(GameObject &spot, Font &font, PostOffice &messenger, Quest* parent)
+    : m_location(spot.getPosition()), Task(messenger, parent)
 {
     m_font = &font;
 }
 
-void ReachSpotObjective::onObservation(Trigger *trig)
+void ReachSpotTask::onObservation(Trigger *trig)
 {
     m_is_finished = true;
     trig->kill();
-    m_on_completion_callback();
+    complete();
 }
-void ReachSpotObjective::fail(Trigger *trig)
-{
-    m_is_finished = true;
-    m_on_failure_callback();
-}
+// void ReachSpotObjective::fail()
+// {
+//     m_is_finished = true;
+//     m_on_failure_callback();
+// }
 
-void ReachSpotObjective::draw(Renderer &window, const TextureHolder &textures)
+void ReachSpotTask::draw(Renderer &window, const TextureHolder &textures)
 {
     auto old_view = window.m_view;
 
@@ -96,32 +103,34 @@ void ReachSpotObjective::draw(Renderer &window, const TextureHolder &textures)
     window.m_view = old_view;
 }
 
-SurveySpot::SurveySpot(GameObject &spot, Font &font)
-    : m_surveyed(spot)
+SurveySpotTask::SurveySpotTask(GameObject &spot, Font &font, PostOffice &messenger, Quest* parent)
+    : m_surveyed(spot), Task(messenger, parent)
 {
     m_font = &font;
 }
 
-void SurveySpot::onObservation(Trigger *trig)
-{
-    m_is_finished = true;
-    trig->kill();
-    m_on_completion_callback();
-}
-
-DestroyEntity::DestroyEntity(GameObject &target, Font &font)
-    : m_target(target)
-{
-    m_font = &font;
-}
-
-void DestroyEntity::onObservation(Trigger *trig)
+void SurveySpotTask::onObservation(Trigger *trig)
 {
     m_is_finished = true;
     trig->kill();
 }
 
-void DestroyEntity::draw(Renderer &window, const TextureHolder &textures)
+DestroyEntityTask::DestroyEntityTask(GameObject &target, Font &font, PostOffice &messenger, Quest* parent)
+    : m_target(target), Task(messenger, parent)
+{
+    m_font = &font;
+
+    target.setDestructionCallback([this](int id, ObjectType type)
+                                  { m_is_finished = true; });
+}
+
+void DestroyEntityTask::onObservation(Trigger *trig)
+{
+    m_is_finished = true;
+    trig->kill();
+}
+
+void DestroyEntityTask::draw(Renderer &window, const TextureHolder &textures)
 {
 
     auto old_view = window.m_view;
@@ -147,11 +156,11 @@ void DestroyEntity::draw(Renderer &window, const TextureHolder &textures)
     window.m_view = old_view;
 }
 
-void ObjectiveSystem::add(std::shared_ptr<Objective> obj)
+void ObjectiveSystem::add(std::shared_ptr<Quest> quest)
 {
-
-    int objective_id = m_objectives.addObject(obj);
-    m_objectives.at(objective_id)->m_id = objective_id;
+    m_quests.insert(quest);
+    quest->start();
+    // m_quests.at(objective_id)->m_id = objective_id;
 }
 
 void ObjectiveSystem::remove(int id)
@@ -159,14 +168,23 @@ void ObjectiveSystem::remove(int id)
     m_objectives.remove(id);
 }
 
+
+void Quest::draw(Renderer& window, const TextureHolder& textures)
+{
+    for(auto id : active_tasks_ids)
+    {
+        sub_tasks.at(id).task->draw(window, textures);
+    }
+}
+
 void ObjectiveSystem::draw(Renderer &window, const TextureHolder &textures)
 {
 
     float y_pos = window.getTargetSize().y / 20.f;
-    for (auto id : m_objectives.active_inds)
+    for (auto& quest : m_quests)
     {
-        m_objectives.at(id)->m_text_y_pos = y_pos;
-        m_objectives.at(id)->draw(window, textures);
+        quest->m_text_y_pos = y_pos;
+        quest->draw(window, textures);
         y_pos += 50.f;
     }
 
@@ -193,7 +211,7 @@ bool ObjectiveSystem::allFinished() const
     return m_all_quests_finished;
 }
 
-void DestroyNOfType::draw(Renderer &window, const TextureHolder &textures)
+void DestroyNOfTypeTask::draw(Renderer &window, const TextureHolder &textures)
 {
     auto old_view = window.m_view;
     window.m_view = window.getDefaultView();
@@ -215,15 +233,24 @@ void DestroyNOfType::draw(Renderer &window, const TextureHolder &textures)
     window.m_view = old_view;
 }
 
-DestroyNOfType::DestroyNOfType(ObjectType type, std::string name, int destroyed_target_count, Font &font)
-    : m_type(type), m_destroyed_target(destroyed_target_count), m_entity_name(name)
+DestroyNOfTypeTask::DestroyNOfTypeTask(ObjectType type, std::string name, int destroyed_target_count,
+                                       Font &font, PostOffice &messenger, Quest* parent)
+    : m_type(type), m_destroyed_target(destroyed_target_count), m_entity_name(name), Task(messenger, parent)
 {
     m_font = &font;
+    m_on_entity_destroyed = std::make_unique<PostBox<EntityDiedEvent>>(messenger,
+                                                                       [this](const auto &event_queue)
+                                                                       {
+            for(const auto& event : event_queue)
+            {
+                entityDestroyed(event.type, event.id);
+            } });
 }
 
-void DestroyNOfType::entityDestroyed(ObjectType type, int id)
+void DestroyNOfTypeTask::entityDestroyed(ObjectType type, int id)
 {
-    if (type == m_type && !m_is_finished)
+
+    if (m_active && type == m_type && !m_is_finished)
     {
         m_destroyed_count++;
         if (m_destroyed_count >= m_destroyed_target)
@@ -234,13 +261,50 @@ void DestroyNOfType::entityDestroyed(ObjectType type, int id)
     }
 }
 
+
+
 ObjectiveSystem::ObjectiveSystem(PostOffice &messanger)
     : p_messanger(&messanger)
 {
-    post_box = std::make_unique<PostBox<EntityDiedEvent>>(messanger, [](const auto &events) {
+    post_box = std::make_unique<PostBox<EntityDiedEvent>>(messanger, [](const auto &events)
+                                                          {
         for(const EntityDiedEvent& event : events)
         {
             std::cout << "Entity: " << event.id << " DIED!" << std::endl; 
-        }
-    });
+        } });
+    m_objectives_postbox = std::make_unique<PostBox<ObjectiveFinishedEvent>>(messanger, [this](const auto &events)
+                                                                             {
+        
+        for(const ObjectiveFinishedEvent& event : events)
+        {
+            remove(event.id);
+        } });
+}
+
+void Task::activate()
+{
+    m_active = true;
+}
+void Task::complete()
+{
+    assert(m_active);
+    m_parent->onTaskCompletion(this);
+};
+void Task::fail() {
+    // m_parent->onTaskCompletion(this);
+
+};
+
+
+// for convenience
+using json = nlohmann::json;
+
+void ObjectiveSystem::registerQuest(std::filesystem::path json_path)
+{
+    std::ifstream file("../quests.json");
+    nlohmann::json quest_data = json::parse(file);
+
+    assert(quest_data.is_array());
+
+    // while()
 }

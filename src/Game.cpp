@@ -68,7 +68,7 @@ Game::Game(Renderer &window, KeyBindings &bindings)
       m_scene_canvas(m_scene_pixels),
       m_camera(PLAYER_START_POS, {START_VIEW_SIZE, START_VIEW_SIZE * window.getTargetSize().y / window.getTargetSize().x})
 {
-    messanger.registerEvents<EntityDiedEvent, EntityDiedEvent, ObjectiveFinishedEvent>();
+    messanger.registerEvents<EntityDiedEvent, EntityDiedEvent, QuestCompletedEvent>();
     m_objective_system = std::make_unique<ObjectiveSystem>(messanger);
 
     m_background = std::make_unique<Texture>(std::string(RESOURCES_DIR) + "/Textures/background.png");
@@ -133,18 +133,13 @@ Game::Game(Renderer &window, KeyBindings &bindings)
 
 void Game::addDestroyNObjective(ObjectType type, int count)
 {
-    auto destroy_stations = std::make_shared<DestroyNOfType>(type, "Space Station", count, *m_font);
-    int callback_id = m_world->addEntityDestroyedCallback(
-        [destroy_stations](ObjectType type, int id)
-        {
-            destroy_stations->entityDestroyed(type, id);
-        });
-    m_objective_system->add(destroy_stations);
+    auto quest = std::make_shared<Quest>(messanger);
+    auto destroy_stations = std::make_shared<DestroyNOfTypeTask>(type, "Space Station", count, *m_font, messanger, quest.get());
+    quest->addTask(destroy_stations);
+
     destroy_stations->m_on_completion_callback =
-        [this, callback_id, type, count, id = destroy_stations->m_id]()
+        [this, type, count, id = destroy_stations->m_id]()
     {
-        m_objective_system->remove(id);
-        m_world->removeEntityDestroyedCallback(callback_id);
         addDestroyNObjective(type, count + 2);
     };
 }
@@ -153,26 +148,20 @@ void Game::spawnBossObjective()
 {
     auto &boss = m_world->addObject2<Boss>();
     boss.setPosition(m_player->getPosition() + 50.f * angle2dir(randf(0, 150)));
-    auto &t2 = m_world->addTrigger<EntityDestroyed>(&boss);
-    t2.setCallback(
-        [this]()
-        {
-            if (m_score > 50 && rand() % 2 == 0)
-            {
-                spawnBossObjective();
-            }
-            m_score += 10;
-        });
 
-    auto destroy_enemy_obj = std::make_shared<DestroyEntity>(boss, *m_font);
-    destroy_enemy_obj->m_on_completion_callback =
-        [this, destroy_enemy_obj]()
-    {
-        m_objective_system->remove(destroy_enemy_obj->m_id);
-    };
+    // auto destroy_enemy_obj = std::make_shared<DestroyEntityTask>(boss, *m_font, messanger, quest.get());
 
-    t2.attach(destroy_enemy_obj);
-    m_objective_system->add(destroy_enemy_obj);
+    // destroy_enemy_obj->m_on_completion_callback =
+    //     [this, destroy_enemy_obj]()
+    // {
+    //     if (m_score > 50 && rand() % 2 == 0)
+    //     {
+    //         spawnBossObjective();
+    //     }
+    //     m_score += 10;
+    // };
+
+    // m_objective_system->add(destroy_enemy_obj);
 }
 
 void Game::changeStage(GameStage target_stage)
@@ -184,29 +173,28 @@ void Game::changeStage(GameStage target_stage)
         auto new_pos = m_player->getPosition() + 400.f * utils::angle2dir(randf(0, 150));
         new_trigger.setPosition(new_pos);
 
-        auto objective = std::make_shared<ReachSpotObjective>(new_trigger, *m_font);
-        m_objective_system->add(objective);
-        new_trigger.setCallback([this, new_pos, id = objective->m_id]()
-                                {
-            m_objective_system->remove(id);
-            m_score += 3;
-            spawnNextObjective(); });
+        // auto objective = std::make_shared<ReachSpotTask>(new_trigger, *m_font, messanger);
+        // // m_objective_system->add(objective);
+        // new_trigger.setCallback([this, new_pos]()
+        //                         {
+        //     m_score += 3;
+        //     spawnNextObjective(); });
 
-        objective->m_on_completion_callback = [this, new_pos]()
-        {
-            auto &star_effect = m_world->addVisualEffect(EffectType::ParticleEmiter);
-            star_effect.setPosition(new_pos);
-            star_effect.setLifeTime(2.f);
-        };
-        new_trigger.attach(objective);
+        // objective->m_on_completion_callback = [this, new_pos]()
+        // {
+        //     auto &star_effect = m_world->addVisualEffect(EffectType::ParticleEmiter);
+        //     star_effect.setPosition(new_pos);
+        //     star_effect.setLifeTime(2.f);
+        // };
+        // new_trigger.attach(objective);
 
-        auto &time_ran_out = m_world->addTrigger<Timer>();
-        time_ran_out.m_cooldown = 60.f;
-        time_ran_out.setCallback([this, objective_id = objective->m_id]()
-                                 {
+        // auto &time_ran_out = m_world->addTrigger<Timer>();
+        // time_ran_out.m_cooldown = 60.f;
+        // time_ran_out.setCallback([this, objective_id = objective->m_id]()
+        //                          {
                                     
-                m_objective_system->remove(objective_id);
-                changeStage(GameStage::FREE); });
+        //         m_objective_system->remove(objective_id);
+        //         changeStage(GameStage::FREE); });
     }
 
     stage = target_stage;
@@ -214,10 +202,11 @@ void Game::changeStage(GameStage target_stage)
 
 void Game::spawnNextObjective()
 {
-    auto &new_trigger = m_world->addTrigger<ReachPlace>();
-    auto new_pos = m_player->getPosition() + 400.f * angle2dir(randf(0, 150));
-    new_trigger.setPosition(new_pos);
-
+    auto &spot1 = m_world->addTrigger<ReachPlace>();
+    auto &spot2 = m_world->addTrigger<ReachPlace>();
+    spot1.setPosition(m_player->getPosition() + 400.f * angle2dir(randf(0, 150)));
+    spot2.setPosition(spot1.getPosition() + 500. * angle2dir(randf(0, 180.)));
+    
     auto spawn_enemies = [this](utils::Vector2f pos)
     {
         for (int i = 0; i < 10; ++i)
@@ -227,26 +216,32 @@ void Game::spawnNextObjective()
         }
     };
 
-    auto objective = std::make_shared<ReachSpotObjective>(new_trigger, *m_font);
-    m_objective_system->add(objective);
-    new_trigger.setCallback([this, spawn_enemies, new_pos, id = objective->m_id]()
-                            {
-        spawn_enemies(new_pos);
-        m_objective_system->remove(id);
-        m_score += 3;
-        spawnNextObjective();
-        if(m_score > 20 && rand()%3 == 0)
-        {
-            spawnBossObjective();
-        } });
+    spot1.setCallback([this, spawn_enemies, pos = spot1.getPosition()]()
+    {
+        spawn_enemies(pos);
+    });
+    spot2.setCallback([this, spawn_enemies, pos = spot2.getPosition()]()
+    {
+        spawn_enemies(pos);
+    });
 
-    objective->m_on_completion_callback = [this, new_pos]()
+    
+    std::shared_ptr<Quest> quest = std::make_shared<Quest>(messanger);
+    auto objective = std::make_shared<ReachSpotTask>(spot1, *m_font, messanger, quest.get());
+    auto objective2 = std::make_shared<ReachSpotTask>(spot2, *m_font, messanger, quest.get());
+
+    quest->addTask(objective);
+    quest->addTask(objective2, objective.get());
+    objective->m_on_completion_callback = [this, new_pos = spot1.getPosition()]()
     {
         auto &star_effect = m_world->addVisualEffect(EffectType::ParticleEmiter);
         star_effect.setPosition(new_pos);
         star_effect.setLifeTime(2.f);
     };
-    new_trigger.attach(objective);
+    m_objective_system->add(quest);
+    
+    spot1.attach(objective);
+    spot2.attach(objective2);
 }
 
 void Game::handleEvent(const SDL_Event &event)

@@ -1,0 +1,16 @@
+[
+    {
+        "title": "Hello mr. penis",
+        "description": "Clean your penis, otherwise it will smell bad :(",
+        "prerequisites": [],
+        "tasks": [
+            {"id": "DestroyEntity", "count": 5, "type": "Enemy"},
+            {"id": "ReachSpot", "count": [1000, 1000]}
+        ],
+        "rewards": {
+            "xp": 300,
+            "gold": 50
+        }
+    }
+
+]
