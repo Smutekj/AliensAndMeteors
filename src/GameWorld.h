@@ -65,6 +65,7 @@ using EntityTypes = TypeList<Enemy, Turret, Meteor, SpaceStation, Boss, Bullet,
 using EntityTuple = rebind<EntityTypes, std::tuple, ComponentBlock>;
 using EntityQueue = rebind<EntityTypes, std::tuple, std::queue>;
 
+constexpr int MAX_ENTITY_COUNT = 10000;
 
 class GameWorld
 {
@@ -72,7 +73,8 @@ class GameWorld
     EntityQueue m_entities_to_add;
     EntityQueue m_entities_to_remove;
 
-    utils::DynamicObjectPool<std::shared_ptr<GameObject>, 5000> m_entities;
+
+    utils::DynamicObjectPool<std::shared_ptr<GameObject>, MAX_ENTITY_COUNT> m_entities;
 
     std::unique_ptr<GridNeighbourSearcher> m_neighbour_searcher;
     Collisions::CollisionSystem m_collision_system;
@@ -150,6 +152,11 @@ TriggerType &GameWorld::addTrigger(Args... args)
 template <class EntityType>
 EntityType &GameWorld::addObject2()
 {
+    static_assert(std::is_base_of_v<GameObject, EntityType>)
+    // auto new_entity = std::make_shared<EntityType>(this, m_textures, &m_collision_system, m_player); 
+    // m_to_add.push(new_entity);
+    // return *new_entity;
+
     auto &queue = std::get<std::queue<EntityType>>(m_entities_to_add);
     EntityType new_entity = {this, m_textures, &m_collision_system, m_player};
     queue.push(new_entity);
@@ -178,10 +185,13 @@ void GameWorld::addX(std::queue<EntityType> &to_add)
     while (!to_add.empty())
     {
         auto &entity_block = std::get<ComponentBlock<EntityType>>(m_entities2);
-        int new_id = entity_block.insert(to_add.front());
+        // new_id = m_entities.addObject(&new_entity);
+        auto& new_entity = to_add.front()
+        int block_id = entity_block.insert(new_entity);
 
         EntityType &new_entity = entity_block.get(new_id);
-        new_entity.m_id = new_id;
+        new_entity.m_block_id = block_id;
+        
         if (new_entity.collides())
         {
             m_collision_system.insertObject(new_entity);
@@ -199,7 +209,7 @@ void GameWorld::removeX(std::queue<EntityType> &to_remove)
         auto &entity = to_remove.front();
         entity.onDestruction();
         
-        p_messenger->send(EntityDiedEvent{entity.getId(), entity.getPosition()});
+        p_messenger->send(EntityDiedEvent{entity.getType(), entity.getId(), entity.getPosition()});
 
         //! notify observers that entity got destroyed
         for (auto callback_id : m_entitydestroyed_events.getEntityIds())
@@ -211,7 +221,8 @@ void GameWorld::removeX(std::queue<EntityType> &to_remove)
         {
             m_collision_system.removeObject(entity);
         }
-        entity_block.deactivate(entity.getId());
+
+        entity_block.deactivate(entity.getBlockId());
         to_remove.pop();
     }
 }

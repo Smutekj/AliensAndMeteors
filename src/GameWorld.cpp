@@ -115,7 +115,7 @@ void GameWorld::addQueuedEntities()
     {
         auto new_object = m_to_add.front();
         auto new_id = m_entities.addObject(new_object);
-        m_entities.at(new_id)->m_id = new_id;
+        m_entities.at(new_id)->m_block_id = new_id;
         if (m_entities.at(new_id)->collides())
         {
             m_collision_system.insertObject(*m_entities.at(new_id));

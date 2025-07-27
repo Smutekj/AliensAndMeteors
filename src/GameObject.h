@@ -110,6 +110,7 @@ public:
     bool doesPhysics() const;
     RigidBody &getRigidBody();
 
+    int getBlockId() const;
     int getId() const;
     ObjectType getType() const;
 
@@ -123,8 +124,8 @@ public:
 
 public:
     utils::Vector2f m_vel = {0, 0};
-    int m_id;
-
+    int m_block_id;
+    
 protected:
     TextureHolder *m_textures;
 

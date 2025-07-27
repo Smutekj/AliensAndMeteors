@@ -59,9 +59,14 @@ RigidBody &GameObject::getRigidBody()
     return *m_rigid_body;
 }
 
+int GameObject::getBlockId() const
+{
+    return m_block_id;
+}
+
 int GameObject::getId() const
 {
-    return m_id;
+    return (static_cast<int>(m_type) << 24) | (m_block_id);
 }
 ObjectType GameObject::getType() const
 {
