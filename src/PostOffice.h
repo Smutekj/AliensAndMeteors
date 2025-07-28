@@ -122,6 +122,7 @@ class MessageDistributor : public MessageDistributorI
 {
 };
 
+template <>
 class MessageDistributor<CollisionEvent> : public MessageDistributorI
 {
 };
