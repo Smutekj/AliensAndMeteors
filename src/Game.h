@@ -5,6 +5,7 @@
 #include "GameWorld.h"
 #include "DrawLayer.h"
 #include "ObjectiveSystem.h"
+#include "UISystem.h"
 #include "Camera.h"
 
 #include "PostOffice.h"
@@ -101,9 +102,9 @@ public:
   std::unique_ptr<Texture> m_background;
   LayersHolder m_layers;
   LayersHolder m_ui_layers;
-
+  
+  std::unique_ptr<UISystem> m_ui_system;
   // friend UI;
-  // UI m_ui;
 };
 
 #endif // BOIDS_GAME_H

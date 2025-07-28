@@ -125,10 +125,8 @@ namespace Collisions
                 {
                     bounce(obj1, obj2, collision_data);
                 }
-                p_post_office->send(CollisionEventEntities{obj1.getId(), obj2.getId()});
-                p_post_office->send(CollisionEventTypeEntity{obj1.getId(), obj2.getType()});
-                p_post_office->send(CollisionEventTypeEntity{obj2.getId(), obj1.getType()});
-                p_post_office->send(CollisionEventTypes{obj1.getType(), obj2.getType()});
+
+                p_post_office->send(CollisionEvent{obj1.getId(), obj2.getId()});
 
                 obj1.onCollisionWith(obj2, collision_data);
                 obj2.onCollisionWith(obj1, collision_data);

@@ -68,17 +68,19 @@ Game::Game(Renderer &window, KeyBindings &bindings)
       m_scene_canvas(m_scene_pixels),
       m_camera(PLAYER_START_POS, {START_VIEW_SIZE, START_VIEW_SIZE * window.getTargetSize().y / window.getTargetSize().x})
 {
-    messanger.registerEvents<EntityDiedEvent, EntityDiedEvent, QuestCompletedEvent>();
-    m_objective_system = std::make_unique<ObjectiveSystem>(messanger);
-
-    m_background = std::make_unique<Texture>(std::string(RESOURCES_DIR) + "/Textures/background.png");
-
+    messanger.registerEvents<EntityDiedEvent, EntityDiedEvent, QuestCompletedEvent, CollisionEvent>();
+    
     initializeLayers();
     m_world = std::make_unique<GameWorld>(messanger);
     //! PLAYER NEEDS TO BE FIRST BECAUSE OTHER OBJECTS MIGHT REFERENCE IT!
     m_player = &m_world->addObjectForced<PlayerEntity>();
     m_player->setPosition({500, 500});
     m_world->m_player = m_player;
+
+    m_objective_system = std::make_unique<ObjectiveSystem>(messanger);
+    m_ui_system = std::make_unique<UISystem>(window, messanger, m_player);
+
+    m_background = std::make_unique<Texture>(std::string(RESOURCES_DIR) + "/Textures/background.png");
 
     for (int i = 0; i < 200; ++i)
     {
@@ -192,7 +194,7 @@ void Game::changeStage(GameStage target_stage)
         // time_ran_out.m_cooldown = 60.f;
         // time_ran_out.setCallback([this, objective_id = objective->m_id]()
         //                          {
-                                    
+
         //         m_objective_system->remove(objective_id);
         //         changeStage(GameStage::FREE); });
     }
@@ -206,7 +208,7 @@ void Game::spawnNextObjective()
     auto &spot2 = m_world->addTrigger<ReachPlace>();
     spot1.setPosition(m_player->getPosition() + 400.f * angle2dir(randf(0, 150)));
     spot2.setPosition(spot1.getPosition() + 500. * angle2dir(randf(0, 180.)));
-    
+
     auto spawn_enemies = [this](utils::Vector2f pos)
     {
         for (int i = 0; i < 10; ++i)
@@ -217,15 +219,10 @@ void Game::spawnNextObjective()
     };
 
     spot1.setCallback([this, spawn_enemies, pos = spot1.getPosition()]()
-    {
-        spawn_enemies(pos);
-    });
+                      { spawn_enemies(pos); });
     spot2.setCallback([this, spawn_enemies, pos = spot2.getPosition()]()
-    {
-        spawn_enemies(pos);
-    });
+                      { spawn_enemies(pos); });
 
-    
     std::shared_ptr<Quest> quest = std::make_shared<Quest>(messanger);
     auto objective = std::make_shared<ReachSpotTask>(spot1, *m_font, messanger, quest.get());
     auto objective2 = std::make_shared<ReachSpotTask>(spot2, *m_font, messanger, quest.get());
@@ -239,7 +236,7 @@ void Game::spawnNextObjective()
         star_effect.setLifeTime(2.f);
     };
     m_objective_system->add(quest);
-    
+
     spot1.attach(objective);
     spot2.attach(objective2);
 }
@@ -428,7 +425,8 @@ void Game::draw(Renderer &window)
     // m_window.drawAll();
 
     //
-    drawUI(window);
+    m_ui_system->draw(window);
+    // drawUI(window);
     m_window.m_view = old_view;
     // m_window.m_blend_factors = old_factors;
 

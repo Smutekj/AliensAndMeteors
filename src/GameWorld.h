@@ -171,6 +171,7 @@ EntityType &GameWorld::addObjectForced()
     int new_id = block.insert({this, m_textures, &m_collision_system, m_player});
     EntityType &new_entity = block.get(new_id);
     new_entity.m_block_id = new_id;
+
     if (new_entity.collides())
     {
         m_collision_system.insertObject(new_entity);
@@ -186,10 +187,9 @@ void GameWorld::addX(std::queue<EntityType> &to_add)
     {
         auto &entity_block = std::get<ComponentBlock<EntityType>>(m_entities2);
         // new_id = m_entities.addObject(&new_entity);
-        auto& new_entity = to_add.front();
-        int block_id = entity_block.insert(new_entity);
-
-        entity_block.get(block_id).m_block_id = block_id;
+        int block_id = entity_block.insert(to_add.front());
+        auto& new_entity = entity_block.get(block_id);
+        new_entity.m_block_id = block_id;
         
         if (new_entity.collides())
         {

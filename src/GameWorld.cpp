@@ -143,7 +143,7 @@ void GameWorld::removeQueuedEntities()
         {
             m_collision_system.removeObject(*object);
         }
-        m_entities.remove(object->getId());
+        m_entities.remove(object->getBlockId());
         m_to_destroy.pop();
     }
 }
@@ -164,7 +164,7 @@ void GameWorld::update(float dt)
         obj->update(dt);
         if (obj->isDead())
         {
-            destroyObject(obj->getId());
+            destroyObject(obj->getBlockId());
         }
     }
 
