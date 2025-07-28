@@ -641,7 +641,7 @@ void SpriteUIELement::draw(Renderer &canvas)
     utils::Vector2f size = {width(), -height()};
     image.setScale(size / 2.f);
     image.setPosition(center_pos);
-    canvas.drawSprite(image);
+    canvas.drawSprite(image, m_shader_id);
 }
 void SpriteUIELement::setTexture(Texture &tex)
 {

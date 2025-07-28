@@ -6,7 +6,7 @@
 class UISystem
 {
 public:
-    UISystem(Renderer &window, PostOffice &messenger, PlayerEntity *player);
+    UISystem(Renderer &window, TextureHolder& textures, PostOffice &messenger, PlayerEntity *player);
 
     void draw(Renderer &window);
 
@@ -17,4 +17,6 @@ private:
 
     PlayerEntity *p_player;
     PostOffice *p_post_office;
+
+    Renderer& window_canvas;
 };

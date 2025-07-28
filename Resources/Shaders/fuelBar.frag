@@ -10,7 +10,7 @@ in vec4 v_color;
 
 out vec4 FragColor;
 
-uniform float u_fuel_ratio = 0.;
+uniform float u_fuel_ratio = 1.;
 uniform vec3 u_color_1 = vec3(0.62, 0.325, 0.05);
 uniform vec3 u_color_edge = vec3(1.,0.,1.);
 uniform float u_time = 0.;
@@ -71,7 +71,7 @@ void main()
     float alpha = 1.-smoothstep(u_fuel_ratio, u_fuel_ratio + 0.03, v_tex_coord.x);
     float alpha_flame = 1.-smoothstep(0.1, 0.4, result_r);
 
-    vec4 res = alpha* vec4(2.*result_r * u_color_1,  1.0);
+    vec4 res = alpha * vec4(2.*result_r * u_color_1,  1.0);
 
     //! do the border
     float frame = roundedFrame(v_tex_coord, center_uv, vec2(0.5 * 3. / 4., 0.4), 0.08, 0.13);
@@ -81,8 +81,9 @@ void main()
     // Anti-aliased edge
     float alpha_frame = smoothstep(0.01, 0.0, dist);
 
-    FragColor = mix(res, vec4(0., 1000.3, 1., 50.), frame);
-    // FragColor = vec4(5.*u_color_1, frame);
+    FragColor = mix(res, vec4(0., 1., 1., 1.), frame);
+    FragColor = res;
+    
 }                                   
 
 

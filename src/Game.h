@@ -67,7 +67,7 @@ public:
   GameState getState() const;
   
   void drawUI(Renderer &window);
-  void initializeLayers();
+  void initializeLayersAndTextures();
   
   void spawnNextObjective();
   void spawnBossObjective();

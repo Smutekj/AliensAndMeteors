@@ -34,5 +34,5 @@ void main()
     float rect_shape = 1. - smoothstep(-0.05, 0.0, sdf) ;
 
     float alpha = smoothstep(u_health_ratio, u_health_ratio + 0.03, v_tex_coord.x);
-    FragColor = vec4(1.-alpha,alpha,0.,1.);
+    FragColor = vec4(1.-alpha,alpha,1.,1.);
 }                                   

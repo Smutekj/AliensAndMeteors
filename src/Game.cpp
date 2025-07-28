@@ -7,8 +7,12 @@
 
 // #include "SoundModule.h"
 
-void Game::initializeLayers()
+void Game::initializeLayersAndTextures()
 {
+    m_textures.setBaseDirectory(std::string(RESOURCES_DIR) + "/Textures/");
+    m_textures.add("Arrow", "arrow.png");
+    m_textures.add("FireNoise", "fireNoise.png");
+
     auto width = m_window.getTargetSize().x;
     auto height = m_window.getTargetSize().y;
 
@@ -49,9 +53,11 @@ void Game::initializeLayers()
     m_window.addShader("Shiny", "basicinstanced.vert", "shiny.frag");
     m_window.addShader("Arrow", "basicinstanced.vert", "texture.frag");
     m_window.addShader("LastPass", "basicinstanced.vert", "lastPass.frag");
+    m_window.addShader("healthBar", "basicinstanced.vert", "healthBar.frag");
     m_window.addShader("boostBar", "basicinstanced.vert", "boostBar.frag");
     m_window.addShader("fuelBar", "basicinstanced.vert", "fuelBar.frag");
     m_window.addShader("boostBar2", "basicinstanced.vert", "boostBar2.frag");
+
     m_scene_canvas.setShadersPath(shaders_directory);
 
     glCheckErrorMsg("ERROR In initialize layers");
@@ -69,8 +75,8 @@ Game::Game(Renderer &window, KeyBindings &bindings)
       m_camera(PLAYER_START_POS, {START_VIEW_SIZE, START_VIEW_SIZE * window.getTargetSize().y / window.getTargetSize().x})
 {
     messanger.registerEvents<EntityDiedEvent, EntityDiedEvent, QuestCompletedEvent, CollisionEvent>();
-    
-    initializeLayers();
+
+    initializeLayersAndTextures();
     m_world = std::make_unique<GameWorld>(messanger);
     //! PLAYER NEEDS TO BE FIRST BECAUSE OTHER OBJECTS MIGHT REFERENCE IT!
     m_player = &m_world->addObjectForced<PlayerEntity>();
@@ -78,7 +84,7 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     m_world->m_player = m_player;
 
     m_objective_system = std::make_unique<ObjectiveSystem>(messanger);
-    m_ui_system = std::make_unique<UISystem>(window, messanger, m_player);
+    m_ui_system = std::make_unique<UISystem>(window, m_textures, messanger, m_player);
 
     m_background = std::make_unique<Texture>(std::string(RESOURCES_DIR) + "/Textures/background.png");
 
@@ -88,10 +94,6 @@ Game::Game(Renderer &window, KeyBindings &bindings)
         auto spawn_pos = m_player->getPosition() + randf(50, 1000) * angle2dir(randf(0, 360));
         meteor.setPosition(spawn_pos);
     }
-
-    m_textures.setBaseDirectory(std::string(RESOURCES_DIR) + "/Textures/");
-    m_textures.add("Arrow", "arrow.png");
-    m_textures.add("FireNoise", "fireNoise.png");
 
     std::filesystem::path font_path = std::string(RESOURCES_DIR) + "/Fonts/arial.ttf";
     m_font = std::make_unique<Font>(font_path);
@@ -425,9 +427,10 @@ void Game::draw(Renderer &window)
     // m_window.drawAll();
 
     //
-    m_ui_system->draw(window);
     // drawUI(window);
     m_window.m_view = old_view;
+    m_ui_system->update(0.016);
+    m_ui_system->draw(window);
     // m_window.m_blend_factors = old_factors;
 
     m_objective_system->draw(window, m_textures);
@@ -458,7 +461,7 @@ void Game::drawUI(Renderer &window)
     health_rect.m_tex_size = {1, 1};
     window.drawSprite(health_rect, "healthBar");
     window.getShader("healthBar").use();
-    window.getShader("healthBar").setUniform2("u_health_percentage", health_ratio);
+    window.getShader("healthBar").setUniform2("u_health_ratio", health_ratio);
     window.drawAll();
 
     m_health_text.setText(hp_text);

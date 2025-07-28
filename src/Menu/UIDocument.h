@@ -225,9 +225,17 @@ struct TextUIELement : UIElement
 
 struct SpriteUIELement : UIElement
 {
+    SpriteUIELement(std::string shader_id = "", Texture* texture = nullptr)
+    : m_shader_id(shader_id)
+    {
+        
+        image.setTextureP(0, texture);
+    }
+
     virtual void draw(Renderer &canvas) override;
     void setTexture(Texture &tex);
 
+    std::string m_shader_id;
     Sprite image;
 };
 

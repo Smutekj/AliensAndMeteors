@@ -174,8 +174,8 @@ void PlayerEntity::boost(float dt)
 {
     if (booster == BoosterState::Boosting && m_fuel > 0)
     {
-        boost_heat += 0.01 * dt;
-        m_fuel -= 0.1 * dt;
+        boost_heat += 30. * dt;
+        m_fuel -= 5. * dt;
 
         if (boost_heat > max_boost_heat)
         {
@@ -184,7 +184,7 @@ void PlayerEntity::boost(float dt)
     }
     if (booster != BoosterState::Boosting)
     {
-        boost_heat -= 0.075 * dt;
+        boost_heat -= 10. * dt;
     }
 
     if (m_fuel < 0)
