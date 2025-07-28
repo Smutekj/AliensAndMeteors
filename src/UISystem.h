@@ -3,10 +3,12 @@
 #include "Menu/UIDocument.h"
 #include "PostOffice.h"
 
+class Font;
+
 class UISystem
 {
 public:
-    UISystem(Renderer &window, TextureHolder& textures, PostOffice &messenger, PlayerEntity *player);
+    UISystem(Renderer &window, TextureHolder& textures, PostOffice &messenger, PlayerEntity *player, Font& font);
 
     void draw(Renderer &window);
 

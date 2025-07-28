@@ -122,6 +122,11 @@ void UIElement::drawX(Renderer &canvas)
     double total_content_width = totalChildrenWidth();
     double total_content_height = totalChildrenHeight();
     auto total_margin = totalChildrenMargin();
+
+    if (sizing == Sizing::FIXED)
+    {
+        calculateBoundingBoxSize();
+    }
     if (sizing == Sizing::RESCALE_CHILDREN)
     {
         double scale = 1;
@@ -238,10 +243,16 @@ void UIElement::drawX(Renderer &canvas)
         if(align == Alignement::Right)
         {
             bounding_box.pos_x = (parent->rightContent() - width() - margin.x);
-        }else if(align == Alignement::Center || align == Alignement::CenterX)
+        }
+        if(align == Alignement::Center || align == Alignement::CenterX)
         {
             bounding_box.pos_x = (parent->centerContent().x - width()/2);
-        }else if(align == Alignement::Left)
+        }
+        if(align == Alignement::Center || align == Alignement::CenterY)
+        {
+            bounding_box.pos_y = (parent->centerContent().y - height()/2);
+        }
+        if(align == Alignement::Left)
         {
             bounding_box.pos_x = (parent->leftContent() + margin.x);
         }
@@ -641,7 +652,13 @@ void SpriteUIELement::draw(Renderer &canvas)
     utils::Vector2f size = {width(), -height()};
     image.setScale(size / 2.f);
     image.setPosition(center_pos);
-    canvas.drawSprite(image, m_shader_id);
+    if(m_shader_id.empty())
+    {
+        canvas.drawSprite(image);
+
+    }else{
+        canvas.drawSprite(image, m_shader_id);
+    }
 }
 void SpriteUIELement::setTexture(Texture &tex)
 {

@@ -2,7 +2,7 @@
 #include "Renderer.h"
 #include "Entities/Player.h"
 
-UISystem::UISystem(Renderer &window, TextureHolder& textures, PostOffice &messenger, PlayerEntity *player)
+UISystem::UISystem(Renderer &window, TextureHolder &textures, PostOffice &messenger, PlayerEntity *player, Font &font)
     : ui(window), p_post_office(&messenger), p_player(player), window_canvas(window)
 {
     auto top_bar = std::make_shared<UIElement>();
@@ -13,14 +13,23 @@ UISystem::UISystem(Renderer &window, TextureHolder& textures, PostOffice &messen
     auto shield_bar = std::make_shared<SpriteUIELement>("healthBar");
     health_bar->bounding_box = {0, 0, 200, 40};
     shield_bar->bounding_box = {0, 0, 200, 40};
+    auto money = std::make_shared<TextUIELement>(font, std::to_string(p_player->m_money) + " $");
+    money->id = "Money";
+    money->align = Alignement::Center;
+    money->dimensions = {Pixels{100}, Pixels{30}};
+    
+
     auto fuel_bar = std::make_shared<SpriteUIELement>("fuelBar", textures.get("FireNoise").get());
     auto boost_bar = std::make_shared<SpriteUIELement>("boostBar", textures.get("FireNoise").get());
-    fuel_bar->bounding_box = {0, 0, 200, 50};
-    boost_bar->bounding_box = {0, 0, 200, 40};
+    fuel_bar->dimensions = {Percentage{1.}, Percentage{0.4}};
+    boost_bar->dimensions = {Percentage{1.}, Percentage{0.4}};
 
+    fuel_bars->dimensions = {Percentage{0.2}, Percentage{1.}};
     fuel_bars->layout = Layout::Y;
     fuel_bars->align = Alignement::Left;
-    fuel_bars->sizing = Sizing::SCALE_TO_FIT;
+    fuel_bars->content_align_x = Alignement::Center;
+    fuel_bars->content_align_y = Alignement::Center;
+    // fuel_bars->sizing = Sizing::SCALE_TO_FIT;
     fuel_bars->margin.x = {50};
     fuel_bars->id = "FB";
     health_bars->layout = Layout::Y;
@@ -36,7 +45,7 @@ UISystem::UISystem(Renderer &window, TextureHolder& textures, PostOffice &messen
     top_bar->layout = Layout::X;
     top_bar->align = Alignement::CenterX;
     top_bar->content_align_y = Alignement::Center;
-    top_bar->addChildren(fuel_bars, health_bars);
+    top_bar->addChildren(fuel_bars, money, health_bars);
 
     ui.root->bounding_box = {0, 0, window.getTargetSize().x, window.getTargetSize().y};
     ui.root->addChildren(top_bar);
@@ -55,12 +64,27 @@ void UISystem::draw(Renderer &window)
 
 void UISystem::update(float dt)
 {
+
+    SizeVariant element_dimensions = Pixels{2.f};
+
+    
+    std::visit([](auto&& value) {
+        using T = std::decay_t<decltype(value)>;
+        if constexpr (std::is_same_v<T, Percentage>)
+            std::cout << "Percentage: " << value << "%\n";
+        else if constexpr (std::is_same_v<T, Pixels>)
+            std::cout << "Pixels: " << value << "px\n";
+        else if constexpr (std::is_same_v<T, Viewport>)
+            std::cout << "Viewport: " << value << "vw\n";
+    }, element_dimensions);
+
+
+
     float booster_ratio = std::min({1.f, p_player->boost_heat / p_player->max_boost_heat});
     window_canvas.getShader("boostBar").use();
     window_canvas.getShader("boostBar").setUniform2("u_booster_disabled", (int)(p_player->booster == BoosterState::Disabled));
     window_canvas.getShader("boostBar").setUniform2("u_booster_ratio", booster_ratio);
     window_canvas.getShader("boostBar").setUniform2("u_bar_aspect_ratio", 2.f);
-
 
     // draw fuel bar
     float fuel_ratio = std::min({1.f, p_player->m_fuel / p_player->m_max_fuel});

@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <variant>
 
 #include <Rect.h>
 #include <Text.h>
@@ -60,9 +61,30 @@ enum class Position
 class Renderer;
 class Font;
 
+struct Percentage
+{
+    float value;
+    operator float() const { return value; }
+};
+
+struct Pixels
+{
+    float value;
+    operator float() const { return value; }
+};
+
+struct Viewport
+{
+    float value;
+    operator float() const { return value; }
+};
+using SizeVariant = std::variant<Percentage, Pixels, Viewport>;
+
 struct UIElement
 {
     using UIElementP = std::shared_ptr<UIElement>;
+
+    utils::Vector2<SizeVariant> dimensions = {Viewport{0}, Viewport{0}};
 
     Rect<int> bounding_box;
     UIElement *parent = nullptr;
@@ -83,12 +105,11 @@ struct UIElement
 
     bool mouse_hovering = false;
 
-    Sizing sizing = Sizing::FIXED;
-
     utils::Vector2i margin = {0, 0};
     utils::Vector2i padding = {0, 0};
     int column_count = 3;
 
+    Sizing sizing = Sizing::FIXED;
     Layout layout = Layout::X;
     Alignement align = Alignement::None;
     Alignement content_align = Alignement::Left;
@@ -102,6 +123,42 @@ struct UIElement
 public:
     virtual void update();
     virtual void draw(Renderer &canvas);
+
+    void calculateBoundingBoxSize()
+    {
+
+        std::visit([this](auto &&w)
+                   {
+            using T = std::decay_t<decltype(w)>;
+            if constexpr (std::is_same_v<T, Pixels>)
+            {
+                bounding_box.width = w;
+            }
+            if constexpr (std::is_same_v<T, Percentage>)
+            {
+                bounding_box.width = (w * (float)parent->widthContent());
+            }
+            if constexpr (std::is_same_v<T, Viewport>)
+            {
+                // assert(false && "Don't do this, you were too lazy to finish it!");
+            } }, dimensions.x);
+
+        std::visit([this](auto &&h)
+                   {
+            using T = std::decay_t<decltype(h)>;
+            if constexpr (std::is_same_v<T, Pixels>)
+            {
+                bounding_box.height = h;
+            }
+            if constexpr (std::is_same_v<T, Percentage>)
+            {
+                bounding_box.height = h * (float)parent->heightContent();
+            }
+            if constexpr (std::is_same_v<T, Viewport>)
+            {
+                // assert(false && "Don't do this, you were too lazy to finish it!");
+            } }, dimensions.y);
+    }
 
     template <class... Args>
     void addChildren(Args... child_el);
@@ -171,7 +228,8 @@ struct Transition
     {
         duration_from_last_frame += dt;
         el->bounding_box = interpolate(m_frames.at(current_frame), m_frames.at(current_frame + 1),
-                                       duration_from_last_frame, m_durations.at(current_frame)).bounding_box;
+                                       duration_from_last_frame, m_durations.at(current_frame))
+                               .bounding_box;
 
         if (duration_from_last_frame >= m_durations.at(current_frame))
         {
@@ -225,10 +283,10 @@ struct TextUIELement : UIElement
 
 struct SpriteUIELement : UIElement
 {
-    SpriteUIELement(std::string shader_id = "", Texture* texture = nullptr)
-    : m_shader_id(shader_id)
+    SpriteUIELement(std::string shader_id = "", Texture *texture = nullptr)
+        : m_shader_id(shader_id)
     {
-        
+
         image.setTextureP(0, texture);
     }
 
@@ -262,13 +320,12 @@ struct TextInputElement : UIElement
     {
         m_input.setText("Placeholder");
 
-        event_callbacks[UIEvent::TEXT_INPUT] = [](auto node){
+        event_callbacks[UIEvent::TEXT_INPUT] = [](auto node) {
 
         };
     }
     virtual void draw(Renderer &canvas) override
     {
-
     }
 
     Text m_input;

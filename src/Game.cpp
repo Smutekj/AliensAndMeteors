@@ -13,6 +13,9 @@ void Game::initializeLayersAndTextures()
     m_textures.add("Arrow", "arrow.png");
     m_textures.add("FireNoise", "fireNoise.png");
 
+    std::filesystem::path font_path = std::string(RESOURCES_DIR) + "/Fonts/arial.ttf";
+    m_font = std::make_unique<Font>(font_path);
+
     auto width = m_window.getTargetSize().x;
     auto height = m_window.getTargetSize().y;
 
@@ -84,7 +87,7 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     m_world->m_player = m_player;
 
     m_objective_system = std::make_unique<ObjectiveSystem>(messanger);
-    m_ui_system = std::make_unique<UISystem>(window, m_textures, messanger, m_player);
+    m_ui_system = std::make_unique<UISystem>(window, m_textures, messanger, m_player, *m_font);
 
     m_background = std::make_unique<Texture>(std::string(RESOURCES_DIR) + "/Textures/background.png");
 
@@ -94,9 +97,6 @@ Game::Game(Renderer &window, KeyBindings &bindings)
         auto spawn_pos = m_player->getPosition() + randf(50, 1000) * angle2dir(randf(0, 360));
         meteor.setPosition(spawn_pos);
     }
-
-    std::filesystem::path font_path = std::string(RESOURCES_DIR) + "/Fonts/arial.ttf";
-    m_font = std::make_unique<Font>(font_path);
 
     spawnNextObjective();
     // addDestroyNObjective(ObjectType::SpaceStation, 2);
@@ -427,7 +427,6 @@ void Game::draw(Renderer &window)
     // m_window.drawAll();
 
     //
-    // drawUI(window);
     m_window.m_view = old_view;
     m_ui_system->update(0.016);
     m_ui_system->draw(window);
@@ -438,78 +437,6 @@ void Game::draw(Renderer &window)
     // m_ui.draw(window);
 }
 
-void Game::drawUI(Renderer &window)
-{
-    auto old_view = window.m_view;
-    window.m_view = window.getDefaultView(); //! draw directly on screen
-
-    m_ui_layers.setView(window.getDefaultView());
-    m_ui_layers.clearAllLayers();
-
-    utils::Vector2f window_size = window.getTargetSize();
-    // utils::Vector2f healt_comp_uisize = {window_size.x * 1.f / 6.f, window_size.y * 1.f / 10.f};
-    // utils::Vector2f healt_comp_min = {window_size.x * 5.f / 6.f, window_size.y * 9.f / 10.f};
-    utils::Vector2f healt_comp_uisize = {100, 60}; //{window_size.x * 1.f / 6.f, window_size.y * 1.f / 10.f};
-    utils::Vector2f healt_comp_min = {window_size.x * 5.f / 6.f, window_size.y * 9.f / 10.f};
-
-    std::string hp_text = "HP: " + std::to_string(static_cast<int>(m_player->health));
-    Sprite health_rect;
-    health_rect.setPosition(healt_comp_min.x, healt_comp_min.y);
-    float health_ratio = m_player->health / (float)m_player->max_health;
-    health_rect.setScale(healt_comp_uisize.x * 3.f / 4.f, healt_comp_uisize.y / 3.f);
-    health_rect.m_tex_rect = {0, 0, 1, 1};
-    health_rect.m_tex_size = {1, 1};
-    window.drawSprite(health_rect, "healthBar");
-    window.getShader("healthBar").use();
-    window.getShader("healthBar").setUniform2("u_health_ratio", health_ratio);
-    window.drawAll();
-
-    m_health_text.setText(hp_text);
-    m_health_text.centerAround(healt_comp_min);
-    window.drawText(m_health_text);
-
-    //! mirror w.r.t. health rect and same size
-    utils::Vector2f booster_size = health_rect.getScale() * 2.0;
-    utils::Vector2f booster_pos = {window_size.x - health_rect.getPosition().x, health_rect.getPosition().y};
-    Sprite booster_rect;
-    booster_rect.setTexture(*m_textures.get("FireNoise"));
-    booster_rect.setPosition(m_window.getMouseInWorld());
-    booster_rect.setScale(200, 100);
-    booster_rect.m_tex_rect = {0, 0, 1, 1};
-    booster_rect.m_tex_size = {1, 1};
-    float booster_ratio = std::min({1.f, m_player->boost_heat / m_player->max_boost_heat});
-    window.getShader("boostBar").use();
-    window.getShader("boostBar").setUniform2("u_booster_disabled", (int)(m_player->booster == BoosterState::Disabled));
-    window.getShader("boostBar").setUniform2("u_booster_ratio", booster_ratio);
-    window.getShader("boostBar").setUniform2("u_bar_aspect_ratio", 2.f);
-    window.drawSprite(booster_rect, "boostBar");
-
-    auto &ui_canvas = m_ui_layers.getCanvas("Bloom");
-    // ui_canvas.getShader("boostBar2").use();
-    // ui_canvas.getShader("boostBar2").setUniform2("u_booster_disabled", m_player->booster == BoosterState::Disabled);
-    // ui_canvas.getShader("boostBar2").setUniform2("u_booster_ratio", booster_ratio);
-    // ui_canvas.drawSprite(booster_rect, "boostBar2");
-
-    // draw fuel bar
-    booster_rect.setPosition(booster_pos.x, booster_pos.y - booster_size.y - 10.);
-    float fuel_ratio = std::min({1.f, m_player->m_fuel / m_player->m_max_fuel});
-    ui_canvas.getShader("fuelBar").use();
-    ui_canvas.getShader("fuelBar").setUniform2("u_fuel_ratio", fuel_ratio);
-    ui_canvas.drawSprite(booster_rect, "fuelBar");
-
-    m_ui_layers.drawInto(window);
-
-    utils::Vector2f score_comp_uisize = {window_size.x * 1.f / 6.f, (float)window.getTargetSize().y * 1.f / 10.f};
-    utils::Vector2f score_comp_min = {window_size.x / 2.f,
-                                      (float)window.getTargetSize().y * 1.f / 20.f};
-    m_health_text.setText("Score: " + std::to_string(m_score));
-    m_health_text.centerAround(score_comp_min);
-
-    window.drawText(m_health_text);
-    window.drawAll();
-
-    window.m_view = old_view;
-}
 
 Game::GameState Game::getState() const
 {
