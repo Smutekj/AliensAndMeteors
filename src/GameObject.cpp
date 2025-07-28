@@ -66,7 +66,7 @@ int GameObject::getBlockId() const
 
 int GameObject::getId() const
 {
-    return (static_cast<int>(m_type) << 24) | (m_block_id);
+    return ((static_cast<int>(m_type) << 24) | (m_block_id));
 }
 ObjectType GameObject::getType() const
 {
