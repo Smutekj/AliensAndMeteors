@@ -26,12 +26,12 @@ public:
     virtual void draw(Renderer &window, const TextureHolder &textures) = 0;
     void complete()
     {
-        m_post_office->send(ObjectiveFinishedEvent{m_id, ObjectiveEndCause::Completed});
+        // m_post_office->send(ObjectiveFinishedEvent{m_id, ObjectiveEndCause::Completed});
         m_on_completion_callback();
     };
     void fail()
     {
-        m_post_office->send(ObjectiveFinishedEvent{m_id, ObjectiveEndCause::Failed});
+        // m_post_office->send(ObjectiveFinishedEvent{m_id, ObjectiveEndCause::Failed});
         m_on_failure_callback();
     };
     virtual ~Objective() = default;
@@ -327,5 +327,5 @@ private:
     PostOffice *p_messanger;
 
     std::unique_ptr<PostBox<EntityDiedEvent>> post_box;
-    std::unique_ptr<PostBox<ObjectiveFinishedEvent>> m_objectives_postbox;
+    std::unique_ptr<PostBox<QuestCompletedEvent>> m_objectives_postbox;
 };

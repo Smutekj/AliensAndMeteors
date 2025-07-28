@@ -85,10 +85,13 @@ inline void PostOffice::send(MessageDataT message)
     getHolder<MessageDataT>().send(message);
 }
 
+#include <iostream>
+
 template <class MessageDataT>
 inline int PostOffice::subscribeTo(Callback<MessageDataT> &subscriber)
 {
-    assert(isRegistered<MessageDataT>());
+    std::cout << typeid(MessageDataT).name() << std::endl;
+    assert(isRegistered<MessageDataT>() );
     auto &holder = getHolder<MessageDataT>();
     return holder.subscribe(subscriber);
 }

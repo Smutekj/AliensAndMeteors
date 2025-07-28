@@ -272,10 +272,10 @@ ObjectiveSystem::ObjectiveSystem(PostOffice &messanger)
         {
             std::cout << "Entity: " << event.id << " DIED!" << std::endl; 
         } });
-    m_objectives_postbox = std::make_unique<PostBox<ObjectiveFinishedEvent>>(messanger, [this](const auto &events)
+    m_objectives_postbox = std::make_unique<PostBox<QuestCompletedEvent>>(messanger, [this](const auto &events)
                                                                              {
         
-        for(const ObjectiveFinishedEvent& event : events)
+        for(const QuestCompletedEvent& event : events)
         {
             remove(event.id);
         } });

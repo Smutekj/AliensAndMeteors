@@ -32,11 +32,7 @@ enum class ObjectiveEndCause
     Failed
 };
 
-struct ObjectiveFinishedEvent
-{
-    int id;
-    ObjectiveEndCause reason;
-};
+
 
 struct ObjectiveProgressedEvent
 {

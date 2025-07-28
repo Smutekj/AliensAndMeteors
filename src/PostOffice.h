@@ -83,33 +83,33 @@ struct CollisionEvent
     int id_b;
 };
 
-template <>
-class MessageHolder<CollisionEvent> : public MessageHolderI
-{
+// template <>
+// class MessageHolder<CollisionEvent> : public MessageHolderI
+// {
 
-public:
-    virtual void distribute()
-    {
-        for (auto event : messages)
-        {
+// public:
+//     virtual void distribute()
+//     {
+//         for (auto event : messages)
+//         {
             
-        }
+//         }
 
-        for (auto [id, call_back] : type_type_subscribers)
-        {
-            call_back(messages);
-        }
-        messages.clear();
-    };
+//         for (auto [id, call_back] : type_type_subscribers)
+//         {
+//             call_back(messages);
+//         }
+//         messages.clear();
+//     };
 
-private:
-    int next_id = 0;
-    SubscribersT<CollisionEvent> id_id_subscribers;
-    SubscribersT<CollisionEvent> id_type_subscribers;
-    SubscribersT<CollisionEvent> type_type_subscribers;
+// private:
+//     int next_id = 0;
+//     SubscribersT<CollisionEvent> id_id_subscribers;
+//     SubscribersT<CollisionEvent> id_type_subscribers;
+//     SubscribersT<CollisionEvent> type_type_subscribers;
 
-    std::deque<CollisionEvent> messages;
-};
+//     std::deque<CollisionEvent> messages;
+// };
 
 class MessageDistributorI
 {
