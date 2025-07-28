@@ -77,6 +77,55 @@ private:
     std::deque<MessageType> messages;
 };
 
+struct CollisionEvent
+{
+    int id_a;
+    int id_b;
+};
+
+template <>
+class MessageHolder<CollisionEvent> : public MessageHolderI
+{
+
+public:
+    virtual void distribute()
+    {
+        for (auto event : messages)
+        {
+            
+        }
+
+        for (auto [id, call_back] : type_type_subscribers)
+        {
+            call_back(messages);
+        }
+        messages.clear();
+    };
+
+private:
+    int next_id = 0;
+    SubscribersT<CollisionEvent> id_id_subscribers;
+    SubscribersT<CollisionEvent> id_type_subscribers;
+    SubscribersT<CollisionEvent> type_type_subscribers;
+
+    std::deque<CollisionEvent> messages;
+};
+
+class MessageDistributorI
+{
+public:
+    virtual void distribute();
+};
+
+template <class MessageDataT>
+class MessageDistributor : public MessageDistributorI
+{
+};
+
+class MessageDistributor<CollisionEvent> : public MessageDistributorI
+{
+};
+
 class PostOffice
 {
 
@@ -117,7 +166,6 @@ private:
 // using PostOfficeA = PostOffice<EntityDiedEvent, EntityCreatedEvent, ObjectiveFinishedEvent>;
 
 #include "PostOffice.inl"
-
 
 // struct CollisionEvent2
 // {
@@ -188,7 +236,7 @@ private:
 //         std::pair<int, int> id_pair{message.id_a, message.id_b};
 //         if (id_id2subscribers.contains(id_pair))
 //         {
-            
+
 //         }
 //         if (id_id2subscribers.contains({message.id_b, message.id_b}))
 //         {
