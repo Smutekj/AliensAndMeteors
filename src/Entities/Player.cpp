@@ -121,8 +121,8 @@ void PlayerEntity::draw(LayersHolder &layers)
     }
     else
     {
-        m_particles_left->setInitColor({1., 1., 0, 1.0});
-        m_particles_right->setInitColor({1., 1., 0, 1.0});
+        m_particles_left->setInitColor({400., 0., 0, 0.2});
+        m_particles_right->setInitColor({400., 0., 0, 0.2});
     }
 
     m_particles_left->draw(shiny_target);
@@ -137,13 +137,13 @@ void PlayerEntity::onCreation()
     {
         Particle new_part;
         new_part.pos = spawn_pos;
-        new_part.color = {1, 0, 1, 1};
         new_part.vel = 0. * m_vel - 0.8 * utils::angle2dir(m_angle - 180 + randf(-60, 60));
         return new_part;
     };
 
     auto basic_updater = [](Particle &part, float dt)
     {
+        part.vel *= 0.03*dt;
         part.pos = part.pos + part.vel * dt;
         part.scale += utils::Vector2f{0.075, 0.075}*dt;
     };
@@ -153,8 +153,10 @@ void PlayerEntity::onCreation()
     m_particles_left->setUpdater(basic_updater);
     m_particles_right->setUpdater(basic_updater);
 
-    m_particles_left->setFinalColor({1, 0, 0, 0.1});
-    m_particles_right->setFinalColor({1, 0, 0, 0.1});
+    m_particles_left->setInitColor({2.5, 1., 0, 1.0});
+    m_particles_right->setInitColor({2.5, 1., 0, 0.1});
+    m_particles_left->setFinalColor({2.5, 500.3, 0, 0.0});
+    m_particles_right->setFinalColor({2.5, 500.3, 0, 0.0});
 }
 void PlayerEntity::onDestruction() {}
 

@@ -74,8 +74,7 @@ ShopState::ShopState(StateStack &stack, State::Context context)
 
     auto shop_header = std::make_shared<SpriteUIELement>();
     shop_header->layout = Layout::X;
-    shop_header->bounding_box.width = 700;
-    shop_header->bounding_box.height = 150;
+    shop_header->dimensions = {Pixels{800}, Pixels{200}};
     shop_header->content_align_x = Alignement::Right;
     shop_header->content_align_y = Alignement::Center;
     shop_header->setTexture(*m_context.textures->get("HeaderFrame"));
@@ -85,14 +84,14 @@ ShopState::ShopState(StateStack &stack, State::Context context)
 
     auto exit_button = std::make_shared<SpriteUIELement>();
     exit_button->setTexture(*m_context.textures->get("Close"));
-    exit_button->bounding_box = {0, 0, 60, 60};
+    exit_button->dimensions = {Pixels{60}, Pixels{60}};
     // exit_button->margin = {20, 20};
     // exit_button->align = Alignement::Center;
     exit_button->id = "closeButton";
 
     // auto money_text = std::make_shared<TextUIELement>(*context.font, std::to_string(p_player->m_money) + " $");
     auto money_text = std::make_shared<TextUIELement>(*context.font, std::to_string(p_player->m_money) + " $");
-    money_text->bounding_box = {0, 0, 120, 60};
+    money_text->dimensions = {Pixels{120}, Pixels{60}};
     money_text->id = "moneyText";
     money_text->align = Alignement::Left;
     // money_text->margin = {20, 20};
@@ -103,8 +102,8 @@ ShopState::ShopState(StateStack &stack, State::Context context)
     grid_holder->setTexture(*m_context.textures->get("ShopItemFrame"));
     grid_holder->layout = Layout::Grid;
     grid_holder->align = Alignement::CenterX;
-    grid_holder->bounding_box.width = 500;
-    grid_holder->bounding_box.height = 600;
+    grid_holder->dimensions = {Percentage{0.9}, Pixels{600}};
+    // grid_holder->sizing = Sizing::SCALE_TO_FIT;
     grid_holder->padding = {20, 50};
 
     std::vector<std::string> icon_textures = {"Fuel", "Heart", "Arrow", "Coin"};
@@ -126,7 +125,6 @@ ShopState::ShopState(StateStack &stack, State::Context context)
         };
 
         button_holder->setTexture(*m_context.textures->get("ShopItemFrame"));
-        button_holder->bounding_box = {0, 0, 100, 150};
         button_holder->padding = {10, 5};
         button_holder->margin.x = 10;
         button_holder->id = icon_textures.at(i);
@@ -136,23 +134,22 @@ ShopState::ShopState(StateStack &stack, State::Context context)
 
         auto icon = std::make_shared<SpriteUIELement>();
         icon->setTexture(*m_context.textures->get(icon_textures.at(i)));
-        icon->bounding_box = {0, 0, 80, 80};
+        icon->dimensions = {Pixels{80}, Pixels{80}};
         icon->align = Alignement::CenterX;
 
         auto text = std::make_shared<TextUIELement>(*m_context.font, "100");
-        text->bounding_box = {0, 0, 40, 40};
+        text->dimensions = {Pixels{40}, Pixels{40}};
         text->margin.x = 5;
         text->id = "amountText";
 
         auto control_bar = std::make_shared<UIElement>();
         control_bar->id = "control";
-        control_bar->bounding_box = {0, 0, 120, 60};
         control_bar->sizing = Sizing::SCALE_TO_FIT;
         control_bar->margin.y = 20;
 
         auto buy_button = std::make_shared<SpriteUIELement>();
         buy_button->setTexture(*m_context.textures->get("Forward"));
-        buy_button->bounding_box = {0, 0, 40, 40};
+        buy_button->dimensions = {Pixels{40}, Pixels{40}};
         buy_button->id = "buyButton";
 
         auto sell_button = std::make_shared<SpriteUIELement>(*buy_button);
@@ -168,6 +165,7 @@ ShopState::ShopState(StateStack &stack, State::Context context)
     }
 
     auto shop_background = std::make_shared<UIElement>();
+    shop_background->bounding_box = {0,0,1000,1000};
     shop_background->sizing = Sizing::SCALE_TO_FIT;
     shop_background->layout = Layout::Y;
     shop_background->content_align_x = Alignement::Center;
@@ -176,7 +174,6 @@ ShopState::ShopState(StateStack &stack, State::Context context)
     document.root->layout = Layout::Y;
     document.root->content_align_x = Alignement::CenterX;
     document.root->addChildren(shop_background);
-    // document.root->bounding_box = {0, 0, 1000, 1000};
     document.root->padding = {50, 50};
 
     initButtons();
