@@ -237,10 +237,10 @@ void UIElement::drawX(Renderer &canvas)
     {
         if(align == Alignement::Right)
         {
-            bounding_box.pos_x = (parent->rightContent() - width());
+            bounding_box.pos_x = (parent->rightContent() - width() - margin.x);
         }else if(align == Alignement::Center || align == Alignement::CenterX)
         {
-            bounding_box.pos_x = (parent->centerContent().x - width()/2.f);
+            bounding_box.pos_x = (parent->centerContent().x - width()/2);
         }else if(align == Alignement::Left)
         {
             bounding_box.pos_x = (parent->leftContent() + margin.x);
