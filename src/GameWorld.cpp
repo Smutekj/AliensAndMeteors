@@ -133,12 +133,6 @@ void GameWorld::removeQueuedEntities()
         auto object = m_to_destroy.front();
         object->onDestruction();
 
-        //! notify observers that entity got destroyed
-        for (auto callback_id : m_entitydestroyed_events.getEntityIds())
-        {
-            m_entitydestroyed_events.at(callback_id)(object->getType(), object->getId());
-        }
-
         if (object->collides())
         {
             m_collision_system.removeObject(*object);
@@ -187,16 +181,6 @@ VisualEffect &GameWorld::addVisualEffect(EffectType type)
     auto new_effect = m_effect_factories.at(type)();
     m_to_add.push(new_effect);
     return *new_effect;
-}
-
-int GameWorld::addEntityDestroyedCallback(std::function<void(ObjectType, int)> callback)
-{
-    return m_entitydestroyed_events.addObject(callback);
-}
-
-void GameWorld::removeEntityDestroyedCallback(int callback_id)
-{
-    m_entitydestroyed_events.remove(callback_id);
 }
 
 void GameWorld::loadTextures()

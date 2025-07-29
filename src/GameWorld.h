@@ -20,6 +20,7 @@
 #include "Entities/Attacks.h"
 #include "Entities/VisualEffects.h"
 #include "Entities/Triggers.h"
+#include "ComponentSystem.h"
 
 #include "PostOffice.h"
 
@@ -85,13 +86,16 @@ class GameWorld
     TextureHolder m_textures;
 
 public:
+
+    GameSystems m_systems;
     PlayerEntity *m_player;
-    utils::DynamicObjectPool<std::function<void(ObjectType, int)>, 100> m_entitydestroyed_events;
 
     GameWorld(PostOffice& messenger);
 
     template <class EntityType>
     EntityType &addObject2();
+    template <class EntityType>
+    EntityType createEntity();
     template <class EntityType>
     EntityType &addObjectForced();
     template <class EntityType>
@@ -126,9 +130,6 @@ public:
     void update(float dt);
     void draw(LayersHolder &window);
 
-    int addEntityDestroyedCallback(std::function<void(ObjectType, int)> callback);
-    void removeEntityDestroyedCallback(int callback_id);
-
 private:
     void addQueuedEntities();
     void removeQueuedEntities();
@@ -147,28 +148,32 @@ TriggerType &GameWorld::addTrigger(Args... args)
     return *new_trigger;
 }
 
-
-
 template <class EntityType>
 EntityType &GameWorld::addObject2()
 {
     static_assert(std::is_base_of_v<GameObject, EntityType>);
-    // auto new_entity = std::make_shared<EntityType>(this, m_textures, &m_collision_system, m_player); 
-    // m_to_add.push(new_entity);
-    // return *new_entity;
-
     auto &queue = std::get<std::queue<EntityType>>(m_entities_to_add);
-    EntityType new_entity = {this, m_textures, &m_collision_system, m_player};
+    EntityType new_entity = createEntity<EntityType>();
     queue.push(new_entity);
     EntityType &thing = queue.back();
     return thing;
 }
 
 template <class EntityType>
+EntityType GameWorld::createEntity()
+{
+    if constexpr (std::is_same_v<EntityType, Enemy>)
+    {
+        return {this, m_textures, &m_collision_system, m_player, m_systems};
+    }
+    return {this, m_textures, &m_collision_system, m_player};
+}
+
+template <class EntityType>
 EntityType &GameWorld::addObjectForced()
 {
     auto &block = std::get<ComponentBlock<EntityType>>(m_entities2);
-    int new_id = block.insert({this, m_textures, &m_collision_system, m_player});
+    int new_id = block.insert(createEntity<EntityType>());
     EntityType &new_entity = block.get(new_id);
     new_entity.m_block_id = new_id;
 
@@ -209,12 +214,6 @@ void GameWorld::removeX(std::queue<EntityType> &to_remove)
         entity.onDestruction();
         
         p_messenger->send(EntityDiedEvent{entity.getType(), entity.getId(), entity.getPosition()});
-
-        //! notify observers that entity got destroyed
-        for (auto callback_id : m_entitydestroyed_events.getEntityIds())
-        {
-            m_entitydestroyed_events.at(callback_id)(entity.getType(), entity.getId());
-        }
 
         if (entity.collides())
         {
