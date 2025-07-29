@@ -6,6 +6,7 @@
 
 struct BoidComponent
 {
+    utils::Vector2f target_pos;
     utils::Vector2f pos;
     utils::Vector2f vel;
     utils::Vector2f acc; //! resulting acc;
@@ -154,10 +155,8 @@ class System<BoidComponent> : public SystemI
         {
             // if (p_neighbour == this)
             
-            // auto &neighbour_boid =*p_neighbour;
             // if(ind_j == boid_ind){continue;}
-            // const auto dr = neighbour_boid.getPosition() - m_pos;
-            const auto dr = neighbour_pos - m_pos;
+            const auto dr = neighbour_pos - comp.pos;
             const auto dist2 = utils::norm2(dr);
 
             if (dist2 < range_align)
@@ -192,7 +191,7 @@ class System<BoidComponent> : public SystemI
             // cohesion_force =   * average_neighbour_position - m_vel;
         }
 
-        auto dr_to_target = m_target_pos - m_pos;
+        auto dr_to_target = comp.target_pos - comp.pos;
         if (norm(dr_to_target) > 3.f)
         {
             seek_force = seek_multiplier * max_vel * dr_to_target / norm(dr_to_target) - m_vel;
