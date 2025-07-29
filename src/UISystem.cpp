@@ -11,20 +11,20 @@ UISystem::UISystem(Renderer &window, TextureHolder &textures, PostOffice &messen
 
     auto health_bar = std::make_shared<SpriteUIELement>("healthBar");
     auto shield_bar = std::make_shared<SpriteUIELement>("healthBar");
-    health_bar->bounding_box = {0, 0, 200, 40};
-    shield_bar->bounding_box = {0, 0, 200, 40};
+    health_bar->dimensions = {Percentage{1.f}, Percentage{0.4f}};
+    health_bar->id = "HealthBar";
+    shield_bar->dimensions = {Percentage{1.f}, Percentage{0.4f}};
     auto money = std::make_shared<TextUIELement>(font, std::to_string(p_player->m_money) + " $");
     money->id = "Money";
     money->align = Alignement::Center;
     money->dimensions = {Pixels{100}, Pixels{30}};
     
-
     auto fuel_bar = std::make_shared<SpriteUIELement>("fuelBar", textures.get("FireNoise").get());
     auto boost_bar = std::make_shared<SpriteUIELement>("boostBar", textures.get("FireNoise").get());
-    fuel_bar->dimensions = {Percentage{1.}, Percentage{0.4}};
-    boost_bar->dimensions = {Percentage{1.}, Percentage{0.4}};
+    fuel_bar->dimensions = {Percentage{1.f}, Percentage{0.4f}};
+    boost_bar->dimensions = {Percentage{1.f}, Percentage{0.4f}};
 
-    fuel_bars->dimensions = {Percentage{0.2}, Percentage{1.}};
+    fuel_bars->dimensions = {Percentage{0.2f}, Percentage{1.f}};
     fuel_bars->layout = Layout::Y;
     fuel_bars->align = Alignement::Left;
     fuel_bars->content_align_x = Alignement::Center;
@@ -34,20 +34,23 @@ UISystem::UISystem(Renderer &window, TextureHolder &textures, PostOffice &messen
     fuel_bars->id = "FB";
     health_bars->layout = Layout::Y;
     health_bars->align = Alignement::Right;
-    health_bars->sizing = Sizing::SCALE_TO_FIT;
+    health_bars->content_align_x = Alignement::Center;
+    health_bars->content_align_y = Alignement::Center;
+    health_bars->dimensions = {Percentage{0.2f}, Percentage{1.f}};
     health_bars->margin.x = {50};
     health_bars->id = "HB";
-
+    
     fuel_bars->addChildren(fuel_bar, boost_bar);
     health_bars->addChildren(health_bar, shield_bar);
-
-    top_bar->bounding_box = {0, 0, window.getTargetSize().x, 120};
+    
+    top_bar->dimensions = {Percentage{1.f}, Percentage{0.1f}};
+    top_bar->id = "TopBar";
     top_bar->layout = Layout::X;
     top_bar->align = Alignement::CenterX;
     top_bar->content_align_y = Alignement::Center;
     top_bar->addChildren(fuel_bars, money, health_bars);
 
-    ui.root->bounding_box = {0, 0, window.getTargetSize().x, window.getTargetSize().y};
+    ui.root->dimensions = {Pixels{(float)window.getTargetSize().x}, Pixels{(float)window.getTargetSize().y}};
     ui.root->addChildren(top_bar);
     ui.root->content_align_y = Alignement::Top;
 }
