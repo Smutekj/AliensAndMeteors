@@ -10,6 +10,7 @@ class BoidAI2;
 struct PlayerEntity;
 class GameWorld;
 class Animation;
+class GameSystems;
 
 namespace Collisions
 {
@@ -25,7 +26,7 @@ class Enemy : public GameObject
 public:
     Enemy() = default;
     Enemy(GameWorld *world, TextureHolder &textures,
-          Collisions::CollisionSystem *collider, PlayerEntity *player);
+          Collisions::CollisionSystem *collider, PlayerEntity *player, GameSystems& systems);
     Enemy(const Enemy &e) = default;
     Enemy &operator=(Enemy &e) = default;
     Enemy &operator=(Enemy &&e) = default;
@@ -64,6 +65,9 @@ public:
 
     static SparseGridNeighbourSearcher<utils::Vector2f> m_neighbour_searcher;
 private:
+    GameSystems* m_systems;
+    std::vector<BoidComponent*> p_boid_component;
+
     float m_boid_radius = 30.f;
     utils::Vector2f m_acc;
 

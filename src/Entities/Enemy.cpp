@@ -14,8 +14,8 @@
 #include "Player.h"
 
 Enemy::Enemy(GameWorld *world, TextureHolder &textures,
-             Collisions::CollisionSystem *collider, PlayerEntity *player)
-    : m_collision_system(collider), m_player(player),
+             Collisions::CollisionSystem *collider, PlayerEntity *player, GameSystems& systems)
+    : m_collision_system(collider), m_player(player), m_systems(&systems),
       GameObject(world, textures, ObjectType::Enemy, collider, player)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
@@ -111,10 +111,14 @@ void Enemy::onCreation()
 {
     setBehaviour();
     m_neighbour_searcher.insertAt(getPosition(), getPosition(), getId());
+
+    BoidComponent b_comp = {m_pos, m_vel, m_acc, m_boid_radius};
+    m_systems->add(b_comp, getId());
 }
 void Enemy::onDestruction()
 {
     m_neighbour_searcher.remove(getId());
+    m_systems->remove<BoidComponent>(getId());
 
     auto &new_explosion = m_world->addObject2<Explosion>();
     new_explosion.removeCollider();
