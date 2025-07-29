@@ -15,7 +15,7 @@ std::unordered_map<BulletType, std::string> Bullet::m_type2shader_id = {{BulletT
 Bullet::Bullet(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
     : GameObject(world, textures, ObjectType::Bullet)
 {
-    m_size = 2.5;
+    m_size = {2.5f};
     m_collision_shape = std::make_unique<Polygon>(4);
     m_collision_shape->setScale(m_size);
 }
