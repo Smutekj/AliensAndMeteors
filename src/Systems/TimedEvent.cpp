@@ -18,6 +18,7 @@ void TimedEvent::update(float dt)
     {
         m_callback();
         m_repeats_left--;
+        m_firing_time = m_event_delay;
     }
 }
 
