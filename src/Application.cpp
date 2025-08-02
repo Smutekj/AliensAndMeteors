@@ -105,7 +105,7 @@ void inline gameLoop(void *mainLoopArg)
                      std::chrono::high_resolution_clock::now() - tic)
                      .count() /
                      1e3;
-    p_app->m_dt = dt2 / 1000.;
+    p_app->m_dt = std::min(0.03, dt2 / 1000.); //! limit the timestep for debugging
     // std::cout << "Frame with waiting took: " << dt2 << " ms" << std::endl;
     
 }
