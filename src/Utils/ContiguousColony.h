@@ -7,6 +7,13 @@ template <class DataType, class IdType>
 struct ContiguousColony
 {
 
+    void clear()
+    {
+        data.clear();
+        data_ind2id.clear();
+        id2data_ind.clear();
+    }
+
     void reserve(std::size_t new_size)
     {
         data.reserve(new_size);
