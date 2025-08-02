@@ -71,4 +71,14 @@ struct CollisionEventTypeEntity
     ObjectType type_b;
 };
 
+struct DamageReceivedEvent
+{
+    ObjectType cause_type;
+    int cause_entity_id;
+    ObjectType receiver_type;
+    int receiver_id;
+
+    float dmg = 0.f;
+};
+
 
