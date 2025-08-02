@@ -5,20 +5,17 @@
 #include <Sprite.h>
 
 #include "../GameObject.h"
+#include "../ComponentSystem.h"
 
 class BoidAI2;
 struct PlayerEntity;
 class GameWorld;
 class Animation;
-class GameSystems;
 
 namespace Collisions
 {
     class CollisionSystem;
 }
-
-template <class T>
-class SparseGridNeighbourSearcher;
 
 class Enemy : public GameObject
 {
@@ -32,58 +29,52 @@ public:
     Enemy &operator=(Enemy &&e) = default;
 
     virtual ~Enemy() override;
-
+    
     virtual void update(float dt) override;
     virtual void onCreation() override;
     virtual void onDestruction() override;
     virtual void draw(LayersHolder &target) override;
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
-
+    
     void setBehaviour();
-
-    // static void doBoidSteering(Enemy& e1, Enemy& e2);
-
-private:
-    void avoidMeteors();
-    void boidSteering();
-
-public:
+    
+    private:
+    PlayerEntity* p_player = nullptr;
+    
+    public:
     static std::unordered_map<Multiplier, float> m_force_multipliers;
     static std::unordered_map<Multiplier, float> m_force_ranges;
-
+    
     bool m_deactivated = false;
     float m_deactivated_time = 1.f;
-
+    
     float max_vel = 30.f;
     float max_acc = 50.f;
     float max_impulse_vel = 40.f;
-
+    
     float m_health = 5;
     utils::Vector2f m_impulse = {0, 0};
     utils::Vector2f m_target_pos;
-    std::vector<utils::Vector2f> m_cm;
-
-    static SparseGridNeighbourSearcher<utils::Vector2f> m_neighbour_searcher;
-private:
+    
+    private:
     GameSystems* m_systems;
-    std::vector<BoidComponent*> p_boid_component;
-
+    
     float m_boid_radius = 30.f;
-    utils::Vector2f m_acc;
-
+    utils::Vector2f m_acc = {0,0};
+    
     std::shared_ptr<BoidAI2> m_behaviour;
+    
     PlayerEntity *m_player = nullptr;
-    Collisions::CollisionSystem *m_collision_system;
-
+    
     bool m_is_avoiding = false;
-
+    
     Sprite m_sprite;
 };
 
 class SpaceStation : public GameObject
 {
-
-public:
+    
+    public:
     SpaceStation() = default;
     SpaceStation(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
     SpaceStation(const SpaceStation &e) = default;

@@ -12,29 +12,25 @@
 #include "Entities.h"
 #include "Attacks.h"
 #include "Player.h"
+#include "../PostOffice.h"
 
 Enemy::Enemy(GameWorld *world, TextureHolder &textures,
-             Collisions::CollisionSystem *collider, PlayerEntity *player, GameSystems& systems)
-    : m_collision_system(collider), m_player(player), m_systems(&systems),
+             Collisions::CollisionSystem *collider, PlayerEntity *player, GameSystems &systems)
+    : m_player(player), m_systems(&systems),
       GameObject(world, textures, ObjectType::Enemy, collider, player)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
     m_size = {16, 16};
     m_collision_shape->setScale(m_size / 2.);
     m_target_pos = player->getPosition();
+    // m_systems->addEntity();
 }
-
-SparseGridNeighbourSearcher<utils::Vector2f> Enemy::m_neighbour_searcher = {50.f};
 
 Enemy::~Enemy() {}
 
 void Enemy::update(float dt)
 {
-    m_neighbour_searcher.move(getPosition(), getId());
     m_behaviour->update(dt);
-
-    boidSteering();
-    avoidMeteors();
 
     if (m_deactivated)
     {
@@ -65,6 +61,7 @@ void Enemy::update(float dt)
 
 void Enemy::onCollisionWith(GameObject &obj, CollisionData &c_data)
 {
+
     switch (obj.getType())
     {
     case ObjectType::Bullet:
@@ -72,13 +69,13 @@ void Enemy::onCollisionWith(GameObject &obj, CollisionData &c_data)
         auto &bullet = static_cast<Bullet &>(obj);
         if (bullet.getTime() > 3.5f)
         {
-            m_health--;
+            m_world->p_messenger->send<DamageReceivedEvent>({ObjectType::Bullet, obj.getId(), ObjectType::Enemy, m_id, 1.});
         }
         break;
     }
     case ObjectType::Meteor:
     {
-        m_health--;
+        m_world->p_messenger->send<DamageReceivedEvent>({ObjectType::Meteor, obj.getId(), ObjectType::Enemy, m_id, 1.5});
         auto mvt = c_data.separation_axis;
         if (dot(mvt, m_vel) < 0.f)
         {
@@ -98,7 +95,9 @@ void Enemy::onCollisionWith(GameObject &obj, CollisionData &c_data)
         if (distance_factor > 0)
         {
             m_impulse += time_factor * distance_factor * impulse_dir * 100.f;
-            m_health -= distance_factor * time_factor;
+            m_world->p_messenger->send<DamageReceivedEvent>({ObjectType::Meteor, obj.getId(),
+                                                             ObjectType::Enemy, m_id,
+                                                             distance_factor * time_factor});
         }
         break;
     }
@@ -110,16 +109,21 @@ void Enemy::onCollisionWith(GameObject &obj, CollisionData &c_data)
 void Enemy::onCreation()
 {
     setBehaviour();
-    m_neighbour_searcher.insertAt(getPosition(), getPosition(), getId());
 
-    BoidComponent b_comp = {m_pos, m_vel, m_acc, m_boid_radius};
+    BoidComponent b_comp = {m_target_pos, m_pos, m_vel, m_acc, m_boid_radius};
     m_systems->add(b_comp, getId());
+
+    AvoidMeteorsComponent a_comp = {m_target_pos, m_pos, m_vel, m_acc, m_boid_radius};
+    m_systems->add(a_comp, getId());
+
+    HealthComponent h_comp = {10., 10., 0.};
+    m_systems->add(h_comp, getId());
+    
+    TargetComponent t_comp = {p_player, {0,0}, 500.};
+    m_systems->add(t_comp, getId());
 }
 void Enemy::onDestruction()
 {
-    m_neighbour_searcher.remove(getId());
-    m_systems->remove<BoidComponent>(getId());
-
     auto &new_explosion = m_world->addObject2<Explosion>();
     new_explosion.removeCollider();
     new_explosion.m_is_expanding = false;
@@ -151,49 +155,6 @@ void Enemy::draw(LayersHolder &layers)
     target.drawSprite(booster);
 }
 
-void Enemy::avoidMeteors()
-{
-
-    const auto &r = m_pos;
-
-    auto nearest_meteors =
-        m_collision_system->findNearestObjects(ObjectType::Meteor, r, m_boid_radius);
-
-    m_is_avoiding = false;
-    m_cm.clear();
-    utils::Vector2f avoid_force = {0, 0};
-    for (auto *meteor : nearest_meteors)
-    {
-        auto &meteor_shape = meteor->getCollisionShape();
-
-        auto r_meteor = meteor_shape.getPosition();
-        auto radius_meteor = meteor_shape.getScale().x;
-        auto dr_to_target = m_target_pos - m_pos;
-        dr_to_target /= norm(dr_to_target);
-
-        auto dr_to_meteor = (r_meteor - r) / norm(r - r_meteor);
-        utils::Vector2f dr_norm = {dr_to_meteor.y, -dr_to_meteor.x};
-        dr_norm /= utils::norm(dr_norm);
-
-        auto dist_to_meteor = dist(r, r_meteor);
-        if (dist_to_meteor < 2. * radius_meteor)
-        {
-            m_is_avoiding = true;
-            const auto angle = utils::angleBetween(dr_to_meteor, dr_to_target);
-            const float sign = 2 * (angle < 0) - 1;
-
-            if (std::abs(angle) < 110)
-            {
-                m_cm.push_back(r_meteor);
-                avoid_force += sign * dr_norm / (dist_to_meteor - radius_meteor / 2.f);
-                avoid_force *= m_force_multipliers[Multiplier::AVOID];
-            }
-        }
-    }
-    // truncate(avoid_force, 500000.f);
-    m_acc += avoid_force;
-}
-
 std::unordered_map<Multiplier, float> Enemy::m_force_multipliers = {
     {Multiplier::ALIGN, 0.f},
     {Multiplier::AVOID, 25000.f},
@@ -204,161 +165,6 @@ std::unordered_map<Multiplier, float> Enemy::m_force_ranges = {
     {Multiplier::AVOID, 50.f},
     {Multiplier::SCATTER, 30.f},
     {Multiplier::SEEK, 10.f}};
-
-// void Enemy::doBoidSteeringPre(Enemy &e)
-// {
-// }
-// void Enemy::doBoidSteering(Enemy &e1, Enemy &e2)
-// {
-//     const float scatter_multiplier = Enemy::m_force_multipliers[Multiplier::SCATTER];
-//     const float align_multiplier = Enemy::m_force_multipliers[Multiplier::ALIGN];
-//     const float seek_multiplier = Enemy::m_force_multipliers[Multiplier::SEEK];
-
-//     const auto range_align = std::pow(Enemy::m_force_ranges[Multiplier::ALIGN], 2);
-//     const auto range_scatter = std::pow(Enemy::m_force_ranges[Multiplier::SCATTER], 2);
-
-// }
-// void Enemy::applyBoidSteeringForce(Enemy &e)
-// {
-// }
-
-class BoidSystem
-{
-    struct BoidComponent
-    {
-        float radius;
-        utils::Vector2f pos;
-        utils::Vector2f vel;
-        utils::Vector2f boid_force;
-    };
-
-    using GridIndT = std::pair<int, int>;
-    using GridNodeType = ContiguousColony<BoidComponent, int>;
-
-public:
-    BoidSystem()
-        : m_neighbour_searcher(50.)
-    {
-    }
-
-    void insert(BoidComponent &new_comp, int entity_id)
-    {
-        m_neighbour_searcher.insertAt(new_comp.pos, new_comp, entity_id);
-    }
-
-    void remove(int entity_id)
-    {
-        m_neighbour_searcher.remove(entity_id);
-    }
-
-    void preUpdate()
-    {
-    }
-    void update(float dt)
-    {
-        //! construct neighbour list
-
-        //! calculate forces
-    }
-
-    void postUpdate()
-    {
-        //! update component owners
-    }
-
-    ComponentBlock<BoidComponent, 1000> m_data_block;
-    std::array<std::vector<BoidComponent>, 1000> neighbour_lists;
-
-private:
-    SparseGridNeighbourSearcher<BoidComponent> m_neighbour_searcher;
-};
-
-void Enemy::boidSteering()
-{
-    auto neighbours2 = m_neighbour_searcher.getNeighbourList(getId(), m_pos, 50.);
-
-    // auto neighbours = m_collision_system->findNearestObjects(ObjectType::Enemy, m_pos, 50.);
-
-    utils::Vector2f repulsion_force(0, 0);
-    utils::Vector2f push_force(0, 0);
-    utils::Vector2f scatter_force(0, 0);
-    utils::Vector2f cohesion_force(0, 0);
-    utils::Vector2f seek_force(0, 0);
-    float n_neighbours = 0;
-    float n_neighbours_group = 0;
-    utils::Vector2f dr_nearest_neighbours(0, 0);
-    utils::Vector2f average_neighbour_position(0, 0);
-
-    utils::Vector2f align_direction = {0, 0};
-    int align_neighbours_count = 0;
-
-    const float scatter_multiplier = Enemy::m_force_multipliers[Multiplier::SCATTER];
-    const float align_multiplier = Enemy::m_force_multipliers[Multiplier::ALIGN];
-    const float seek_multiplier = Enemy::m_force_multipliers[Multiplier::SEEK];
-
-    auto range_align = std::pow(Enemy::m_force_ranges[Multiplier::ALIGN], 2);
-    auto range_scatter = std::pow(Enemy::m_force_ranges[Multiplier::SCATTER], 2);
-
-    for (auto [neighbour_pos, id] : neighbours2)
-    {
-        // if (p_neighbour == this)
-        if (getId() == id)
-        {
-            continue;
-        }
-        // auto &neighbour_boid =*p_neighbour;
-        // if(ind_j == boid_ind){continue;}
-        // const auto dr = neighbour_boid.getPosition() - m_pos;
-        const auto dr = neighbour_pos - m_pos;
-        const auto dist2 = utils::norm2(dr);
-
-        if (dist2 < range_align)
-        {
-            // align_direction += neighbour_boid.m_vel;
-            align_neighbours_count++;
-        }
-
-        if (dist2 < range_scatter)
-        {
-            scatter_force -= scatter_multiplier * dr / dist2;
-            dr_nearest_neighbours += dr / dist2;
-            n_neighbours++;
-        }
-        if (dist2 < range_scatter * 2.f)
-        {
-            average_neighbour_position += dr;
-            n_neighbours_group++;
-        }
-    }
-
-    dr_nearest_neighbours /= n_neighbours;
-
-    if (n_neighbours > 0 && norm2(dr_nearest_neighbours) >= 0.00001f)
-    {
-        scatter_force += -scatter_multiplier * dr_nearest_neighbours / norm(dr_nearest_neighbours) - m_vel;
-    }
-
-    average_neighbour_position /= n_neighbours_group;
-    if (n_neighbours_group > 0)
-    {
-        // cohesion_force =   * average_neighbour_position - m_vel;
-    }
-
-    auto dr_to_target = m_target_pos - m_pos;
-    if (norm(dr_to_target) > 3.f)
-    {
-        seek_force = seek_multiplier * max_vel * dr_to_target / norm(dr_to_target) - m_vel;
-    }
-
-    utils::Vector2f align_force = {0, 0};
-    if (align_neighbours_count > 0 && norm2(align_direction) >= 0.001f)
-    {
-        align_force = align_multiplier * align_direction / norm(align_direction) - m_vel;
-    }
-
-    m_acc += (scatter_force + align_force + seek_force + cohesion_force);
-    truncate(m_acc, max_acc);
-}
 
 void Enemy::setBehaviour()
 {
@@ -829,10 +635,12 @@ void Turret::update(float dt)
         if (cos_angle_diff < 0.999)
         {
             bool clockwise = utils::cross(my_dir, dr_to_player) > 0;
-            if(clockwise)
+            if (clockwise)
             {
                 m_angle += m_turn_speed * dt;
-            }else{
+            }
+            else
+            {
                 m_angle -= m_turn_speed * dt;
             }
         }
