@@ -68,21 +68,6 @@ void UISystem::draw(Renderer &window)
 void UISystem::update(float dt)
 {
 
-    SizeVariant element_dimensions = Pixels{2.f};
-
-    
-    std::visit([](auto&& value) {
-        using T = std::decay_t<decltype(value)>;
-        if constexpr (std::is_same_v<T, Percentage>)
-            std::cout << "Percentage: " << value << "%\n";
-        else if constexpr (std::is_same_v<T, Pixels>)
-            std::cout << "Pixels: " << value << "px\n";
-        else if constexpr (std::is_same_v<T, Viewport>)
-            std::cout << "Viewport: " << value << "vw\n";
-    }, element_dimensions);
-
-
-
     float booster_ratio = std::min({1.f, p_player->boost_heat / p_player->max_boost_heat});
     window_canvas.getShader("boostBar").use();
     window_canvas.getShader("boostBar").setUniform2("u_booster_disabled", (int)(p_player->booster == BoosterState::Disabled));
