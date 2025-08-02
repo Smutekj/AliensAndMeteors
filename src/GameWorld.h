@@ -66,10 +66,12 @@ using EntityTypes = TypeList<Enemy, Turret, Meteor, SpaceStation, Boss, Bullet,
 using EntityTuple = rebind<EntityTypes, std::tuple, ComponentBlock>;
 using EntityQueue = rebind<EntityTypes, std::tuple, std::queue>;
 
-constexpr int MAX_ENTITY_COUNT = 10000;
 
 class GameWorld
 {
+    
+    
+    
     EntityTuple m_entities2;
     EntityQueue m_entities_to_add;
     EntityQueue m_entities_to_remove;
@@ -96,6 +98,8 @@ public:
     EntityType &addObject2();
     template <class EntityType>
     EntityType createEntity();
+    template <class EntityType>
+    std::shared_ptr<EntityType> createEntity2();
     template <class EntityType>
     EntityType &addObjectForced();
     template <class EntityType>
@@ -130,14 +134,15 @@ public:
     void update(float dt);
     void draw(LayersHolder &window);
 
+    PostOffice* p_messenger = nullptr;
+    
 private:
     void addQueuedEntities();
     void removeQueuedEntities();
     void loadTextures();
-
+    
     std::unordered_map<EffectType, std::function<std::shared_ptr<VisualEffect>()>> m_effect_factories;
-
-    PostOffice* p_messenger;
+    
 };
 
 template <class TriggerType, class... Args>
@@ -152,11 +157,15 @@ template <class EntityType>
 EntityType &GameWorld::addObject2()
 {
     static_assert(std::is_base_of_v<GameObject, EntityType>);
-    auto &queue = std::get<std::queue<EntityType>>(m_entities_to_add);
-    EntityType new_entity = createEntity<EntityType>();
-    queue.push(new_entity);
-    EntityType &thing = queue.back();
-    return thing;
+    // auto &queue = std::get<std::queue<EntityType>>(m_entities_to_add);
+    // auto new_entity = createEntity<EntityType>();
+    // queue.push(new_entity);
+    // EntityType &thing = queue.back();
+    // return thing;
+    
+    auto new_entity = createEntity2<EntityType>();
+    m_to_add.push(new_entity);
+    return *new_entity;
 }
 
 template <class EntityType>
@@ -165,24 +174,39 @@ EntityType GameWorld::createEntity()
     if constexpr (std::is_same_v<EntityType, Enemy>)
     {
         return {this, m_textures, &m_collision_system, m_player, m_systems};
+    }else {
+        return {this, m_textures, &m_collision_system, m_player};
     }
-    return {this, m_textures, &m_collision_system, m_player};
+}
+
+template <class EntityType>
+std::shared_ptr<EntityType> GameWorld::createEntity2()
+{
+    if constexpr (std::is_same_v<EntityType, Enemy>)
+    {
+        return std::make_shared<EntityType>(this, m_textures, &m_collision_system, m_player, m_systems);
+    }else {
+        return std::make_shared<EntityType>(this, m_textures, &m_collision_system, m_player);
+    }
 }
 
 template <class EntityType>
 EntityType &GameWorld::addObjectForced()
 {
-    auto &block = std::get<ComponentBlock<EntityType>>(m_entities2);
-    int new_id = block.insert(createEntity<EntityType>());
-    EntityType &new_entity = block.get(new_id);
-    new_entity.m_block_id = new_id;
+    // auto &block = std::get<ComponentBlock<EntityType>>(m_entities2);
+    // int new_id = block.insert(createEntity<EntityType>());
+    auto new_entity = createEntity2<EntityType>();
+    int new_id = m_entities.addObject(new_entity);
+    // EntityType &new_entity = block.get(new_id);
+    // new_entity.m_block_id = new_id;
+    new_entity->m_id = new_id;
 
-    if (new_entity.collides())
+    if (new_entity->collides())
     {
-        m_collision_system.insertObject(new_entity);
+        m_collision_system.insertObject(*new_entity);
     }
-    new_entity.onCreation();
-    return new_entity;
+    new_entity->onCreation();
+    return *new_entity;
 }
 
 template <class EntityType>
@@ -191,11 +215,15 @@ void GameWorld::addX(std::queue<EntityType> &to_add)
     while (!to_add.empty())
     {
         auto &entity_block = std::get<ComponentBlock<EntityType>>(m_entities2);
-        // new_id = m_entities.addObject(&new_entity);
         int block_id = entity_block.insert(to_add.front());
         auto& new_entity = entity_block.get(block_id);
-        new_entity.m_block_id = block_id;
         
+        std::shared_ptr<EntityType> entity_p(&new_entity);
+        int id = m_entities.addObject(entity_p);
+
+        new_entity.m_block_id = block_id;
+        new_entity.m_id = id;
+
         if (new_entity.collides())
         {
             m_collision_system.insertObject(new_entity);
@@ -221,6 +249,7 @@ void GameWorld::removeX(std::queue<EntityType> &to_remove)
         }
 
         entity_block.deactivate(entity.getBlockId());
+        m_entities.remove(entity.getId());
         to_remove.pop();
     }
 }

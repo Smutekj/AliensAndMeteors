@@ -4,12 +4,22 @@
 
 #include "Utils/RandomTools.h"
 
+#include "Systems/BoidSystem.h"
+#include "Systems/MeteorAvoidanceSystem.h"
+#include "Systems/HealthSystem.h"
+#include "Systems/TargetSystem.h"
+
 GameWorld::GameWorld(PostOffice& messenger)
-: p_messenger(&messenger), m_collision_system(messenger)
+: p_messenger(&messenger), m_collision_system(messenger), m_systems(m_entities)
 {
     loadTextures();
 
     m_neighbour_searcher = std::make_unique<GridNeighbourSearcher>();
+
+    m_systems.registerSystem(std::make_shared<BoidSystem>(m_systems.getComponents<BoidComponent>()));
+    m_systems.registerSystem(std::make_shared<AvoidanceSystem>(m_systems.getComponents<AvoidMeteorsComponent>(), m_collision_system));
+    m_systems.registerSystem(std::make_shared<HealthSystem>(m_systems.getComponents<HealthComponent>(), messenger));
+    m_systems.registerSystem(std::make_shared<TargetSystem>(m_systems.getComponents<TargetComponent>()));
 
     m_effect_factories[EffectType::ParticleEmiter] =
         [this]()
@@ -56,9 +66,10 @@ void GameWorld::updateX(ComponentBlock<EntityType> &entity_block, float dt)
         }
     }
 }
+
 void GameWorld::update2(float dt)
 {
-    m_collision_system.update();
+    // m_collision_system.update();
 
     std::apply([this, dt](auto &...entity_queue)
                { ((updateX(entity_queue, dt)), ...); }, m_entities2);
@@ -116,6 +127,7 @@ void GameWorld::addQueuedEntities()
         auto new_object = m_to_add.front();
         auto new_id = m_entities.addObject(new_object);
         m_entities.at(new_id)->m_block_id = new_id;
+        m_entities.at(new_id)->m_id = new_id;
         if (m_entities.at(new_id)->collides())
         {
             m_collision_system.insertObject(*m_entities.at(new_id));
@@ -137,7 +149,8 @@ void GameWorld::removeQueuedEntities()
         {
             m_collision_system.removeObject(*object);
         }
-        m_entities.remove(object->getBlockId());
+        m_systems.removeEntity(object->getId());
+        m_entities.remove(object->getId());
         m_to_destroy.pop();
     }
 }
@@ -150,18 +163,23 @@ void GameWorld::destroyObject(int entity_id)
 void GameWorld::update(float dt)
 {
 
-    // m_collision_system.update();
+    m_systems.preUpdate(dt);
 
+    m_collision_system.update();
+    m_systems.update(dt);
+    
     for (auto &obj : m_entities.getObjects())
     {
         obj->updateAll(dt);
         obj->update(dt);
         if (obj->isDead())
         {
-            destroyObject(obj->getBlockId());
+            destroyObject(obj->getId());
         }
     }
 
+    m_systems.postUpdate(dt);
+    
     addQueuedEntities();
     removeQueuedEntities();
 }
