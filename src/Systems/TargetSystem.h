@@ -3,6 +3,7 @@
 #include "System.h"
 #include "../Components.h"
 
+//! TODO: what happens when a targeted entity dies? 
 class TargetSystem : public SystemI
 {
 public:
