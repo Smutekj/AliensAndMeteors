@@ -20,6 +20,8 @@ file(GLOB SRC
      "src/Menu/*.cpp"
      "src/Entities/*.h"
      "src/Entities/*.cpp"
+     "src/Systems/*.h"
+     "src/Systems/*.cpp"
 )
 
 include_directories(SYSTEM external)
