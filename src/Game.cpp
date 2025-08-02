@@ -77,7 +77,7 @@ Game::Game(Renderer &window, KeyBindings &bindings)
       m_scene_canvas(m_scene_pixels),
       m_camera(PLAYER_START_POS, {START_VIEW_SIZE, START_VIEW_SIZE * window.getTargetSize().y / window.getTargetSize().x})
 {
-    messanger.registerEvents<EntityDiedEvent, EntityDiedEvent, QuestCompletedEvent, CollisionEvent>();
+    messanger.registerEvents<EntityDiedEvent, EntityDiedEvent, QuestCompletedEvent, CollisionEvent, DamageReceivedEvent>();
 
     initializeLayersAndTextures();
     m_world = std::make_unique<GameWorld>(messanger);
