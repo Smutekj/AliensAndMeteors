@@ -4,10 +4,16 @@
 #include <functional>
 
 #include "Polygon.h"
+#include "Components.h"
 
 class GameWorld;
 class TextureHolder;
 class LayersHolder;
+// class GameSystems;
+
+
+constexpr int MAX_ENTITY_COUNT = 10000;
+
 
 enum class Multiplier
 {
@@ -71,6 +77,9 @@ namespace Collisions
 {
     class CollisionSystem;
 }
+
+
+
 class GameObject
 {
 
@@ -125,6 +134,7 @@ public:
 public:
     utils::Vector2f m_vel = {0, 0};
     int m_block_id;
+    int m_id;
     
 protected:
     TextureHolder *m_textures;

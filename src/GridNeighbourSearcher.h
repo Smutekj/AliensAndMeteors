@@ -53,6 +53,12 @@ public:
     {
     }
 
+    void clear()
+    {
+        m_grid.clear();
+        m_id2grid_ind.clear();
+    }
+
     void drawGrid(DrawLayer &layer)
     {
         auto &canvas = layer.m_canvas;
@@ -97,7 +103,8 @@ public:
 
                 for (std::size_t i = 0; i < data.size(); ++i)
                 {
-                    if (utils::norm2(pos - data[i]) < max_radius_sq)
+                    //! if within range and not neighbour with itself
+                    if (data_inds[i] != ind && utils::norm2(pos - data[i]) < max_radius_sq)
                     {
                         neighbours.push_back({data[i], data_inds[i]});
                     }
