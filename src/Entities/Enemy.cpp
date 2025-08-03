@@ -118,8 +118,8 @@ void Enemy::onCreation()
 
     HealthComponent h_comp = {10., 10., 0.};
     m_systems->add(h_comp, getId());
-    
-    TargetComponent t_comp = {p_player, {0,0}, 500.};
+
+    TargetComponent t_comp = {m_player, {0, 0}, 500.};
     m_systems->add(t_comp, getId());
 }
 void Enemy::onDestruction()
@@ -186,8 +186,8 @@ void Enemy::setBehaviour()
     }
 }
 
-SpaceStation::SpaceStation(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
-    : GameObject(world, textures, ObjectType::SpaceStation)
+SpaceStation::SpaceStation(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player, GameSystems& systems)
+    : p_systems(&systems), GameObject(world, textures, ObjectType::SpaceStation)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
     m_size = {10, 10};
@@ -202,18 +202,6 @@ SpaceStation::~SpaceStation() {}
 
 void SpaceStation::update(float dt)
 {
-
-    m_time += dt;
-    if (m_time > m_spawn_timer && m_produced_ships.size() < 3)
-    {
-        m_time = 0.f;
-        auto &new_enemy = m_world->addObject2<Enemy>();
-        float rand_angle = randf(-180, 180);
-
-        new_enemy.setPosition(m_pos + 10.f * utils::angle2dir(rand_angle));
-        new_enemy.m_vel = 200.f * utils::angle2dir(rand_angle);
-        m_produced_ships.push_back(&new_enemy);
-    }
 
     std::vector<int> to_remove;
     int i = 0;
@@ -275,6 +263,30 @@ void SpaceStation::onCollisionWith(GameObject &obj, CollisionData &c_data)
 
 void SpaceStation::onCreation()
 {
+    auto spawn_enemy = [this]()
+    {
+        if (m_produced_ships.size() <= 3)
+        {
+            auto &new_enemy = m_world->addObject2<Enemy>();
+            float rand_angle = randf(-180, 180);
+            new_enemy.setPosition(m_pos + 10.f * utils::angle2dir(rand_angle));
+            new_enemy.m_vel = 200.f * utils::angle2dir(rand_angle);
+            m_produced_ships.push_back(&new_enemy);
+            new_enemy.setDestructionCallback([this](int id, ObjectType type)
+                                             {for(auto ship_it = m_produced_ships.begin(); ship_it != m_produced_ships.end();ship_it++)
+                                            {
+                                                if((*ship_it)->m_id == id)
+                                                {
+                                                    m_produced_ships.erase(ship_it);
+                                                    break;
+                                                }
+                                            } });
+        }
+    };
+
+    TimedEventComponent t_comp;
+    t_comp.addEvent(TimedEvent{m_spawn_timer, spawn_enemy, TimedEventType::Infinite});
+    p_systems->add(t_comp, getId());
 }
 
 void SpaceStation::onDestruction()

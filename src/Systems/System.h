@@ -5,7 +5,7 @@
 #include "../Utils/ContiguousColony.h"
 #include "../Utils/ObjectPool.h"
 
-using EntityRegistryT = utils::DynamicObjectPool<std::shared_ptr<GameObject>, MAX_ENTITY_COUNT>;
+using EntityRegistryT = DynamicObjectPool2<std::shared_ptr<GameObject>>;
 
 class SystemI
 {
