@@ -91,7 +91,7 @@ Game::Game(Renderer &window, KeyBindings &bindings)
 
     m_background = std::make_unique<Texture>(std::string(RESOURCES_DIR) + "/Textures/background.png");
 
-    for (int i = 0; i < 200; ++i)
+    for (int i = 0; i < 1; ++i)
     {
         auto &meteor = m_world->addObject2<Meteor>();
         auto spawn_pos = m_player->getPosition() + randf(50, 1000) * angle2dir(randf(0, 360));
@@ -313,9 +313,9 @@ void Game::handleEvent(const SDL_Event &event)
         }
         if (event.button.button == SDL_BUTTON_RIGHT)
         {
-            m_camera.startMovingTo(m_window.getMouseInWorld(), 1.);
-            // auto &station = m_world->addObject2<Turret>();
-            // station.setPosition(mouse_position);
+            // m_camera.startMovingTo(m_window.getMouseInWorld(), 1.);
+            auto &station = m_world->addObject2<SpaceStation>();
+            station.setPosition(mouse_position);
         }
     }
 
