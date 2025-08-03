@@ -39,7 +39,6 @@ public:
     void setBehaviour();
     
     private:
-    PlayerEntity* p_player = nullptr;
     
     public:
     static std::unordered_map<Multiplier, float> m_force_multipliers;
@@ -76,7 +75,7 @@ class SpaceStation : public GameObject
     
     public:
     SpaceStation() = default;
-    SpaceStation(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
+    SpaceStation(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player, GameSystems& systems);
     SpaceStation(const SpaceStation &e) = default;
     SpaceStation &operator=(SpaceStation &e) = default;
     SpaceStation &operator=(SpaceStation &&e) = default;
@@ -89,6 +88,7 @@ class SpaceStation : public GameObject
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
 
 private:
+    GameSystems* p_systems;
     std::vector<Enemy *> m_produced_ships;
     float m_time = 0.f;
     float m_spawn_timer = 2.f;
