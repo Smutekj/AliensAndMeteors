@@ -47,7 +47,7 @@ struct ShieldComponent
 
 struct TimedEventComponent
 {
-    int addEvent(TimedEvent& event)
+    int addEvent(TimedEvent event)
     {
         next_id++;
         events.insert({next_id, event});

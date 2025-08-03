@@ -77,7 +77,7 @@ class GameWorld
     EntityQueue m_entities_to_remove;
 
 
-    utils::DynamicObjectPool<std::shared_ptr<GameObject>, MAX_ENTITY_COUNT> m_entities;
+    EntityRegistryT m_entities;
 
     std::unique_ptr<GridNeighbourSearcher> m_neighbour_searcher;
     Collisions::CollisionSystem m_collision_system;
@@ -149,6 +149,7 @@ template <class TriggerType, class... Args>
 TriggerType &GameWorld::addTrigger(Args... args)
 {
     auto new_trigger = std::make_shared<TriggerType>(this, m_textures, args...);
+    new_trigger->m_id = m_entities.reserveIndexForInsertion();
     m_to_add.push(new_trigger);
     return *new_trigger;
 }
@@ -164,6 +165,7 @@ EntityType &GameWorld::addObject2()
     // return thing;
     
     auto new_entity = createEntity2<EntityType>();
+    new_entity->m_id = m_entities.reserveIndexForInsertion();
     m_to_add.push(new_entity);
     return *new_entity;
 }
@@ -182,7 +184,7 @@ EntityType GameWorld::createEntity()
 template <class EntityType>
 std::shared_ptr<EntityType> GameWorld::createEntity2()
 {
-    if constexpr (std::is_same_v<EntityType, Enemy>)
+    if constexpr (std::is_same_v<EntityType, Enemy> || std::is_same_v<EntityType, SpaceStation>)
     {
         return std::make_shared<EntityType>(this, m_textures, &m_collision_system, m_player, m_systems);
     }else {
@@ -196,7 +198,7 @@ EntityType &GameWorld::addObjectForced()
     // auto &block = std::get<ComponentBlock<EntityType>>(m_entities2);
     // int new_id = block.insert(createEntity<EntityType>());
     auto new_entity = createEntity2<EntityType>();
-    int new_id = m_entities.addObject(new_entity);
+    int new_id = m_entities.insert(new_entity);
     // EntityType &new_entity = block.get(new_id);
     // new_entity.m_block_id = new_id;
     new_entity->m_id = new_id;
@@ -219,10 +221,10 @@ void GameWorld::addX(std::queue<EntityType> &to_add)
         auto& new_entity = entity_block.get(block_id);
         
         std::shared_ptr<EntityType> entity_p(&new_entity);
-        int id = m_entities.addObject(entity_p);
+        m_entities.insertAt(entity_p->getId(), entity_p);
 
         new_entity.m_block_id = block_id;
-        new_entity.m_id = id;
+        // new_entity.m_id = id;
 
         if (new_entity.collides())
         {

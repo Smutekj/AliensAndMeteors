@@ -29,7 +29,7 @@ struct ContiguousColony
         id2data_ind[id] = data.size() - 1;
     }
 
-    DataType& get(IdType id)
+    DataType &get(IdType id)
     {
         return data.at(id2data_ind.at(id));
     }
@@ -55,7 +55,12 @@ struct ContiguousColony
         return data.empty();
     }
 
-    bool contains(IdType id)const
+    std::size_t size() const
+    {
+        return data.size();
+    }
+
+    bool contains(IdType id) const
     {
         return id2data_ind.contains(id);
     }
@@ -66,4 +71,84 @@ public:
 
 private:
     std::unordered_map<IdType, std::size_t> id2data_ind;
+};
+
+template <typename DataType>
+class DynamicObjectPool2
+{
+public:
+    int insert(DataType data)
+    {
+        int id;
+        if (!m_free_list.empty())
+        {
+            id = m_free_list.back();
+            m_free_list.pop_back();
+            if (m_free_list.empty())
+            {
+                m_next_id = m_data.size()+1;
+            }
+            m_data.insert(id, data);
+            return id;
+        }
+        
+        id = m_next_id;
+        m_next_id++;
+        m_data.insert(id, data);
+
+        return id;
+    }
+
+    int reserveIndexForInsertion()
+    {
+        if (m_free_list.empty())
+        {
+            //! m_data is full so we add at the end
+            int id = m_next_id;
+            assert(!m_data.contains(id));
+            m_next_id++;
+            return id;
+        }
+
+        int id = m_free_list.back();
+        m_free_list.pop_back();
+        if (m_free_list.empty()) //! if we empty the free list then next id points at m_data end
+        {
+            m_next_id = m_data.size()+1;
+        }
+
+        assert(!m_data.contains(id));
+        return id;
+    }
+
+    void insertAt(int index, DataType datum)
+    {
+        assert(!m_data.contains(index));
+        m_data.insert(index, datum);
+    }
+
+    std::vector<DataType> &data()
+    {
+        return m_data.data;
+    }
+    std::vector<int> &getIds()
+    {
+        return m_data.data_ind2id;
+    }
+
+    DataType &at(int index)
+    {
+        return m_data.get(index);
+    }
+
+    void remove(int id)
+    {
+        m_data.erase(id);
+        m_free_list.push_back(id);
+    }
+
+private:
+    int m_next_id = 0;
+    ContiguousColony<DataType, int> m_data;
+    std::vector<int> m_free_list;
 };

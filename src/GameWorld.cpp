@@ -8,6 +8,7 @@
 #include "Systems/MeteorAvoidanceSystem.h"
 #include "Systems/HealthSystem.h"
 #include "Systems/TargetSystem.h"
+#include "Systems/TimedEventSystem.h"
 
 GameWorld::GameWorld(PostOffice& messenger)
 : p_messenger(&messenger), m_collision_system(messenger), m_systems(m_entities)
@@ -20,6 +21,7 @@ GameWorld::GameWorld(PostOffice& messenger)
     m_systems.registerSystem(std::make_shared<AvoidanceSystem>(m_systems.getComponents<AvoidMeteorsComponent>(), m_collision_system));
     m_systems.registerSystem(std::make_shared<HealthSystem>(m_systems.getComponents<HealthComponent>(), messenger));
     m_systems.registerSystem(std::make_shared<TargetSystem>(m_systems.getComponents<TargetComponent>()));
+    m_systems.registerSystem(std::make_shared<TimedEventSystem>(m_systems.getComponents<TimedEventComponent>()));
 
     m_effect_factories[EffectType::ParticleEmiter] =
         [this]()
@@ -31,7 +33,7 @@ GameWorld::GameWorld(PostOffice& messenger)
 
 std::size_t GameWorld::getNActiveEntities(ObjectType type)
 {
-    auto &entities = m_entities.getObjects();
+    auto &entities = m_entities.data();
     auto n_enemies = std::count_if(entities.begin(), entities.end(), [type](auto &obj)
                                    { return obj->getType() == type; });
     return n_enemies;
@@ -125,9 +127,9 @@ void GameWorld::addQueuedEntities()
     while (!m_to_add.empty())
     {
         auto new_object = m_to_add.front();
-        auto new_id = m_entities.addObject(new_object);
-        m_entities.at(new_id)->m_block_id = new_id;
-        m_entities.at(new_id)->m_id = new_id;
+        auto new_id = new_object->getId(); //! the object already has id because we reserved it
+        m_entities.insertAt(new_id, new_object);
+        assert(new_id == m_entities.at(new_id)->getId());
         if (m_entities.at(new_id)->collides())
         {
             m_collision_system.insertObject(*m_entities.at(new_id));
@@ -168,7 +170,7 @@ void GameWorld::update(float dt)
     m_collision_system.update();
     m_systems.update(dt);
     
-    for (auto &obj : m_entities.getObjects())
+    for (auto &obj : m_entities.data())
     {
         obj->updateAll(dt);
         obj->update(dt);
@@ -186,7 +188,7 @@ void GameWorld::update(float dt)
 
 void GameWorld::draw(LayersHolder &layers)
 {
-    for (auto &obj : m_entities.getObjects())
+    for (auto &obj : m_entities.data())
     {
         obj->draw(layers);
     }
@@ -197,6 +199,7 @@ VisualEffect &GameWorld::addVisualEffect(EffectType type)
     assert(m_effect_factories.count(type) > 0);
 
     auto new_effect = m_effect_factories.at(type)();
+    new_effect->m_id = m_entities.reserveIndexForInsertion();
     m_to_add.push(new_effect);
     return *new_effect;
 }

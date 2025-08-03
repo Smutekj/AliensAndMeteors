@@ -16,10 +16,8 @@ template <class... ComponentTypes>
 class ComponentWorld
 {
 
-    utils::DynamicObjectPool<std::shared_ptr<GameObject>, MAX_ENTITY_COUNT> &m_entity_registry;
-
 public:
-    ComponentWorld(utils::DynamicObjectPool<std::shared_ptr<GameObject>, MAX_ENTITY_COUNT> &entity_registry)
+    ComponentWorld(EntityRegistryT &entity_registry)
         : m_entity_registry(entity_registry)
     {
     }
@@ -94,6 +92,8 @@ public:
     }
 
 private:
+    EntityRegistryT &m_entity_registry;
+
     std::unordered_map<std::type_index, std::shared_ptr<SystemI>> m_systems2;
     std::tuple<ComponentHolder<ComponentTypes>...> m_components;
 };
