@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 
 template <class DataType, class IdType>
 struct ContiguousColony
@@ -55,6 +56,32 @@ struct ContiguousColony
         return data.empty();
     }
 
+
+    void checkConsistency() const
+    {
+        for(auto [entity_id, data_id] : id2data_ind )
+        {
+            assert(data_ind2id.at(data_id) == entity_id);
+        }
+        for(int data_id = 0; data_id < data_ind2id.size(); ++data_id)
+        {
+            assert(data_id == id2data_ind.at(data_ind2id.at(data_id)));
+        }
+        
+        //! entity ids should be a permutation of data ids
+        std::unordered_set<int> entity_inds;
+        int max_entity_id = -1;
+        entity_inds.insert(data_ind2id.begin(), data_ind2id.end());
+        for(int data_id = 0; data_id < data_ind2id.size(); ++data_id)
+        {
+            max_entity_id = std::max(data_ind2id.at(data_id), max_entity_id);
+            entity_inds.erase(data_id);
+            // m_data_inds.insert(data_id);
+
+        }
+        // assert(max_entity_id < data.size());
+    }
+
     std::size_t size() const
     {
         return data.size();
@@ -79,44 +106,25 @@ class DynamicObjectPool2
 public:
     int insert(DataType data)
     {
-        int id;
-        if (!m_free_list.empty())
-        {
-            id = m_free_list.back();
-            m_free_list.pop_back();
-            if (m_free_list.empty())
-            {
-                m_next_id = m_data.size()+1;
-            }
-            m_data.insert(id, data);
-            return id;
-        }
-        
-        id = m_next_id;
-        m_next_id++;
+        int id = reserveIndexForInsertion();
         m_data.insert(id, data);
 
+        m_data.checkConsistency();
         return id;
     }
 
     int reserveIndexForInsertion()
     {
-        if (m_free_list.empty())
+        m_data.checkConsistency();
+        
+        int id = m_next_id;
+        if (!m_free_list.empty())
         {
-            //! m_data is full so we add at the end
-            int id = m_next_id;
-            assert(!m_data.contains(id));
-            m_next_id++;
-            return id;
+            id = m_free_list.back();
+            m_free_list.pop_back();
         }
-
-        int id = m_free_list.back();
-        m_free_list.pop_back();
-        if (m_free_list.empty()) //! if we empty the free list then next id points at m_data end
-        {
-            m_next_id = m_data.size()+1;
-        }
-
+        
+        m_next_id++;
         assert(!m_data.contains(id));
         return id;
     }
@@ -125,6 +133,7 @@ public:
     {
         assert(!m_data.contains(index));
         m_data.insert(index, datum);
+        m_data.checkConsistency();
     }
 
     std::vector<DataType> &data()
@@ -145,6 +154,7 @@ public:
     {
         m_data.erase(id);
         m_free_list.push_back(id);
+        m_next_id--;
     }
 
 private:
