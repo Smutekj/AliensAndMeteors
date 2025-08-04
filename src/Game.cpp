@@ -2,6 +2,7 @@
 
 #include "Entities/Player.h"
 #include "Entities/Attacks.h"
+#include "Entities/Bosses.h"
 
 #include "Utils/RandomTools.h"
 
@@ -314,7 +315,7 @@ void Game::handleEvent(const SDL_Event &event)
         if (event.button.button == SDL_BUTTON_RIGHT)
         {
             // m_camera.startMovingTo(m_window.getMouseInWorld(), 1.);
-            auto &station = m_world->addObject2<SpaceStation>();
+            auto &station = m_world->addObject2<Boss1>();
             station.setPosition(mouse_position);
         }
     }
@@ -409,7 +410,7 @@ void Game::draw(Renderer &window)
     //! clear and draw into scene
     // m_scene_canvas.clear({0, 0, 0, 0});
     // m_scene_canvas.m_view = old_view;
-    m_window.m_blend_factors = {BlendFactor::One, BlendFactor::OneMinusSrcAlpha};
+    m_window.m_blend_factors = {BlendFactor::SrcAlpha, BlendFactor::OneMinusSrcAlpha};
     m_layers.setView(m_window.m_view);
     m_layers.drawInto(m_window);
 
