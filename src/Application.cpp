@@ -46,9 +46,9 @@ void Application::iterate()
         }
     }
 
-    int w, h;
-    SDL_GL_GetDrawableSize(m_window.getHandle(), &w, &h);
-    glViewport(0, 0, w, h);
+    // int w, h;
+    // SDL_GL_GetDrawableSize(m_window.getHandle(), &w, &h);
+    // glViewport(0, 0, w, h);
     m_state_stack->draw();
     Shader::m_time += m_dt;
 }
@@ -68,18 +68,8 @@ void inline gameLoop(void *mainLoopArg)
     Application *p_app = (Application *)mainLoopArg;
 
     p_app->iterate();
-    p_app->m_dt = 16.6666 / 1000. * 3.0;
 
-    // Swap front/back framebuffers
-    SDL_GL_SwapWindow(p_app->m_window.getHandle());
-
-    s_frame_count++;
-    if (s_frame_count > 200)
-    {
-        std::cout << "avg frame time: " << p_app->m_avg_frame_time.getAverage() << " ms" << std::endl;
-        p_app->m_avg_frame_time.averaging_interval = 200;
-        s_frame_count = 0;
-    }
+    SDL_GL_SwapWindow(p_app->m_window.getHandle()); // Swap front/back framebuffers
 
 #ifdef __EMSCRIPTEN__
     double dt = emscripten_get_now() - tic;
@@ -91,23 +81,31 @@ void inline gameLoop(void *mainLoopArg)
 #endif
 
     p_app->m_avg_frame_time.addNumber(dt);
+    s_frame_count++;
+    if (s_frame_count > 200)
+    {
+        std::cout << "frame time " <<  dt << " ms" << std::endl;
+        std::cout << "avg frame time: " << p_app->m_avg_frame_time.getAverage() << " ms" << std::endl;
+        p_app->m_avg_frame_time.averaging_interval = 200;
+        s_frame_count = 0;
+    }
 
-    // std::cout << "dt is: " << dt << std::endl;
+    double dt2;
     if (dt < 33)
     {
-        #ifdef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
         emscripten_sleep(33 - dt);
-        #else
+        dt2 = emscripten_get_now() - tic;
+#else
         // SDL_Delay(33. - dt);
-        #endif
-    }
-    double dt2 = std::chrono::duration_cast<std::chrono::microseconds>(
-                     std::chrono::high_resolution_clock::now() - tic)
-                     .count() /
+        dt2 = std::chrono::duration_cast<std::chrono::microseconds>(
+                         std::chrono::high_resolution_clock::now() - tic)
+                         .count() /
                      1e3;
+#endif
+    }
+
     p_app->m_dt = std::min(0.03, dt2 / 1000.); //! limit the timestep for debugging
-    // std::cout << "Frame with waiting took: " << dt2 << " ms" << std::endl;
-    
 }
 
 #define TO_STRING(x) #x
@@ -119,12 +117,9 @@ static_assert(false)
     Application::Application(int width, int height)
     : m_window(width, height), m_window_canvas(m_window)
 {
-    m_dt = 0.0166667f;
     std::filesystem::path font_path = {RESOURCES_DIR};
     font_path.append("Fonts/DigiGraphics.ttf");
     std::cout << std::filesystem::current_path() << "\n";
-    // std::filesystem::path font_path = {__FILE__};
-    // font_path.remove_filename().append("../Resources/Fonts/arial.ttf");
 
     m_font = std::make_shared<Font>(font_path);
     State::Context context(m_window_canvas, m_window, m_textures, m_bindings, *m_font, m_score);
