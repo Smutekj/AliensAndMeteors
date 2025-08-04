@@ -34,8 +34,10 @@ private:
     void shootLasers();
     void shootLaserAtPlayer();
 
+    void changeState(State target_state);
+
 private:
-    std::unordered_map<State, std::function<void()>> 
+    std::unordered_map<State, std::function<void()>> m_on_state_change;
 
     PlayerEntity *p_player;
 
