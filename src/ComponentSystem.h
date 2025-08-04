@@ -30,7 +30,7 @@ public:
     template <class ComponentType>
     ComponentType &get(int entity_id)
     {
-        std::get<ComponentHolder<ComponentType>>(m_components).get(entity_id);
+        return std::get<ComponentHolder<ComponentType>>(m_components).get(entity_id);
     }
 
     template <class ComponentType>

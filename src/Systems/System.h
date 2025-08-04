@@ -22,7 +22,7 @@ class ComponentHolder
 public:
     ComponentType &get(int entity_id)
     {
-        return m_components.data.get(entity_id);
+        return m_components.get(entity_id);
     }
 
     ContiguousColony<ComponentType, int>  &getComponents()
