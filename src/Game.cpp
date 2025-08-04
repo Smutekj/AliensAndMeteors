@@ -149,6 +149,20 @@ void Game::addDestroyNObjective(ObjectType type, int count)
     };
 }
 
+void Game::startBossFight()
+{
+    m_stage = GameStage::BossFight;
+
+    auto &station = m_world->addObject2<Boss1>();
+    auto player_pos = m_player->getPosition();
+    auto boss_pos = m_player->getPosition() + utils::Vector2f{100, 0};
+    station.setPosition(boss_pos);
+    m_camera.startMovingTo(boss_pos  - utils::Vector2f{150, 0}, 1., [](auto &camera)
+                           {
+        camera.m_view_state = Camera::MoveState::FIXED;
+        camera.startChangingSize({400, 300}, 2., [](auto& camera){camera.m_view_size_state = Camera::SizeState::Fixed;}); });
+}
+
 void Game::spawnBossObjective()
 {
     auto &boss = m_world->addObject2<Boss>();
@@ -172,7 +186,7 @@ void Game::spawnBossObjective()
 void Game::changeStage(GameStage target_stage)
 {
 
-    if (target_stage == GameStage::TIME_RACE)
+    if (target_stage == GameStage::TimeRace)
     {
         auto &new_trigger = m_world->addTrigger<ReachPlace>();
         auto new_pos = m_player->getPosition() + 400.f * utils::angle2dir(randf(0, 150));
@@ -202,7 +216,7 @@ void Game::changeStage(GameStage target_stage)
         //         changeStage(GameStage::FREE); });
     }
 
-    stage = target_stage;
+    m_stage = target_stage;
 }
 
 void Game::spawnNextObjective()
@@ -314,9 +328,10 @@ void Game::handleEvent(const SDL_Event &event)
         }
         if (event.button.button == SDL_BUTTON_RIGHT)
         {
+            startBossFight();
             // m_camera.startMovingTo(m_window.getMouseInWorld(), 1.);
-            auto &station = m_world->addObject2<Boss1>();
-            station.setPosition(mouse_position);
+            // auto &station = m_world->addObject2<Boss1>();
+            // station.setPosition(mouse_position);
         }
     }
 
@@ -437,7 +452,6 @@ void Game::draw(Renderer &window)
     m_window.drawAll();
     // m_ui.draw(window);
 }
-
 
 Game::GameState Game::getState() const
 {

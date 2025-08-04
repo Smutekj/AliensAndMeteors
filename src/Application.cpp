@@ -90,7 +90,7 @@ void inline gameLoop(void *mainLoopArg)
         s_frame_count = 0;
     }
 
-    double dt2;
+    double dt2 = dt;
     if (dt < 33)
     {
 #ifdef __EMSCRIPTEN__

@@ -36,10 +36,11 @@ public:
 
   enum class GameStage
   {
-    FREE,
-    TIME_RACE,
-    DODGE,
-    ARENA,
+    Free,
+    TimeRace,
+    Dodge,
+    Arena,
+    BossFight,
   };
 
   Game(Renderer &window, KeyBindings &bindings);
@@ -66,14 +67,14 @@ public:
   void changeStage(GameStage to);
   GameState getState() const;
   
-  void drawUI(Renderer &window);
   void initializeLayersAndTextures();
   
   void spawnNextObjective();
   void spawnBossObjective();
   void addDestroyNObjective(ObjectType type, int count);
-  
-  GameStage stage = GameStage::FREE;
+  void startBossFight();
+
+  GameStage m_stage = GameStage::Free;
   Camera m_camera;
 
   std::unique_ptr<ObjectiveSystem> m_objective_system;

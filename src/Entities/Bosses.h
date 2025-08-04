@@ -35,6 +35,8 @@ private:
     void shootLaserAtPlayer();
 
 private:
+    std::unordered_map<State, std::function<void()>> 
+
     PlayerEntity *p_player;
 
     State m_state = State::ShootingLasers;
@@ -45,7 +47,7 @@ private:
     Collisions::CollisionSystem *m_collision_system;
 
     float m_motion_time = 0.f;
-    float m_motion_period = 4.f;  
+    float m_motion_period = 6.f;  
 
     float m_bombing_cooldown = 0.5f;
     float m_lasering_cooldown = 3.f;
