@@ -22,8 +22,7 @@ class ComponentHolder
 public:
     ComponentType &get(int entity_id)
     {
-        int comp_id = m_components.id2data_ind.at(entity_id);
-        return m_components.data.at(comp_id);
+        return m_components.data.get(entity_id);
     }
 
     ContiguousColony<ComponentType, int>  &getComponents()
