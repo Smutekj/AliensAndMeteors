@@ -45,6 +45,34 @@ struct ShieldComponent
     float shield_regen;
 };
 
+struct GunComponent
+{
+    float cooldown;
+    float damage;
+    bool homing = false;
+};
+
+struct BombThrowingComponent
+{
+    float cooldown;
+    float explosion_delay;
+    float damage;
+};
+
+struct LaserGunComponent
+{
+    float cooldown;
+    float damage;
+    float max_length;
+    float max_width;
+    float slowing_factor;
+};
+
+struct AIComponent
+{
+    
+};
+
 struct TimedEventComponent
 {
     int addEvent(TimedEvent event)
