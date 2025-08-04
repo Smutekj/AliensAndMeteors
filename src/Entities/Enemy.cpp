@@ -49,10 +49,7 @@ void Enemy::update(float dt)
 
     truncate(m_vel, max_vel);
     m_pos += (m_vel + m_impulse) * dt;
-    if (m_health < 0.f)
-    {
-        kill();
-    }
+
     m_impulse *= 0.f;
     m_acc *= 0.f;
 
@@ -110,16 +107,16 @@ void Enemy::onCreation()
 {
     setBehaviour();
 
-    BoidComponent b_comp = {m_target_pos, m_pos, m_vel, m_acc, m_boid_radius};
+    BoidComponent b_comp = {m_target_pos, m_pos, m_vel, m_acc, 30.f};
     m_systems->add(b_comp, getId());
 
-    AvoidMeteorsComponent a_comp = {m_target_pos, m_pos, m_vel, m_acc, m_boid_radius};
+    AvoidMeteorsComponent a_comp = {m_target_pos, m_pos, m_vel, m_acc, 30.f};
     m_systems->add(a_comp, getId());
 
     HealthComponent h_comp = {10., 10., 0.};
     m_systems->add(h_comp, getId());
 
-    TargetComponent t_comp = {m_player, {0, 0}, 500.};
+    TargetComponent t_comp = {m_player, {0, 0}, 10000.};
     m_systems->add(t_comp, getId());
 }
 void Enemy::onDestruction()
@@ -131,6 +128,7 @@ void Enemy::onDestruction()
     new_explosion.m_max_explosion_radius = 4.f;
     new_explosion.setType("Explosion2");
 
+    GameObject::onDestruction();
     // SoundManager::play(0);
 }
 
@@ -155,16 +153,16 @@ void Enemy::draw(LayersHolder &layers)
     target.drawSprite(booster);
 }
 
-std::unordered_map<Multiplier, float> Enemy::m_force_multipliers = {
-    {Multiplier::ALIGN, 0.f},
-    {Multiplier::AVOID, 25000.f},
-    {Multiplier::SCATTER, 2000.f},
-    {Multiplier::SEEK, 10.f}};
-std::unordered_map<Multiplier, float> Enemy::m_force_ranges = {
-    {Multiplier::ALIGN, 20.f},
-    {Multiplier::AVOID, 50.f},
-    {Multiplier::SCATTER, 30.f},
-    {Multiplier::SEEK, 10.f}};
+// std::unordered_map<Multiplier, float> Enemy::m_force_multipliers = {
+//     {Multiplier::ALIGN, 0.f},
+//     {Multiplier::AVOID, 25000.f},
+//     {Multiplier::SCATTER, 2000.f},
+//     {Multiplier::SEEK, 10.f}};
+// std::unordered_map<Multiplier, float> Enemy::m_force_ranges = {
+//     {Multiplier::ALIGN, 20.f},
+//     {Multiplier::AVOID, 50.f},
+//     {Multiplier::SCATTER, 30.f},
+//     {Multiplier::SEEK, 10.f}};
 
 void Enemy::setBehaviour()
 {
@@ -186,7 +184,7 @@ void Enemy::setBehaviour()
     }
 }
 
-SpaceStation::SpaceStation(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player, GameSystems& systems)
+SpaceStation::SpaceStation(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player, GameSystems &systems)
     : p_systems(&systems), GameObject(world, textures, ObjectType::SpaceStation)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
@@ -205,19 +203,6 @@ void SpaceStation::update(float dt)
 
     std::vector<int> to_remove;
     int i = 0;
-    for (auto &ship : m_produced_ships)
-    {
-        if (ship->isDead())
-        {
-            to_remove.push_back(i);
-        }
-        i++;
-    }
-    while (!to_remove.empty())
-    {
-        m_produced_ships.erase(m_produced_ships.begin() + to_remove.back());
-        to_remove.pop_back();
-    }
 
     if (m_health < 0.f)
     {
@@ -271,16 +256,11 @@ void SpaceStation::onCreation()
             float rand_angle = randf(-180, 180);
             new_enemy.setPosition(m_pos + 10.f * utils::angle2dir(rand_angle));
             new_enemy.m_vel = 200.f * utils::angle2dir(rand_angle);
-            m_produced_ships.push_back(&new_enemy);
+            m_produced_ships.push_back(new_enemy.getId());
             new_enemy.setDestructionCallback([this](int id, ObjectType type)
-                                             {for(auto ship_it = m_produced_ships.begin(); ship_it != m_produced_ships.end();ship_it++)
-                                            {
-                                                if((*ship_it)->m_id == id)
-                                                {
-                                                    m_produced_ships.erase(ship_it);
-                                                    break;
-                                                }
-                                            } });
+                                             { m_produced_ships.erase(
+                                                   std::remove(m_produced_ships.begin(), m_produced_ships.end(), id),
+                                                   m_produced_ships.end()); });
         }
     };
 

@@ -38,11 +38,7 @@ public:
     
     void setBehaviour();
     
-    private:
-    
     public:
-    static std::unordered_map<Multiplier, float> m_force_multipliers;
-    static std::unordered_map<Multiplier, float> m_force_ranges;
     
     bool m_deactivated = false;
     float m_deactivated_time = 1.f;
@@ -51,21 +47,15 @@ public:
     float max_acc = 50.f;
     float max_impulse_vel = 40.f;
     
-    float m_health = 5;
     utils::Vector2f m_impulse = {0, 0};
     utils::Vector2f m_target_pos;
     
     private:
     GameSystems* m_systems;
     
-    float m_boid_radius = 30.f;
-    utils::Vector2f m_acc = {0,0};
-    
     std::shared_ptr<BoidAI2> m_behaviour;
     
     PlayerEntity *m_player = nullptr;
-    
-    bool m_is_avoiding = false;
     
     Sprite m_sprite;
 };
@@ -89,7 +79,7 @@ class SpaceStation : public GameObject
 
 private:
     GameSystems* p_systems;
-    std::vector<Enemy *> m_produced_ships;
+    std::vector<int> m_produced_ships;
     float m_time = 0.f;
     float m_spawn_timer = 2.f;
 
