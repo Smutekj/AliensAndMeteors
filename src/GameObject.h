@@ -133,6 +133,8 @@ public:
 
 public:
     utils::Vector2f m_vel = {0, 0};
+    utils::Vector2f m_acc = {0,0};
+
     int m_block_id;
     int m_id;
     

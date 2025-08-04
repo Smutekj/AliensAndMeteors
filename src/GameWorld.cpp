@@ -169,6 +169,7 @@ void GameWorld::update(float dt)
 
     m_collision_system.update();
     m_systems.update(dt);
+    m_systems.postUpdate(dt);
     
     for (auto &obj : m_entities.data())
     {
@@ -180,7 +181,6 @@ void GameWorld::update(float dt)
         }
     }
 
-    m_systems.postUpdate(dt);
     
     addQueuedEntities();
     removeQueuedEntities();
@@ -209,6 +209,7 @@ void GameWorld::loadTextures()
     m_textures.setBaseDirectory(std::string(RESOURCES_DIR) + "/Textures/");
     m_textures.add("Bomb", "bomb.png");
     m_textures.add("EnemyShip", "EnemyShip.png");
+    m_textures.add("Boss1", "Ships/Boss1.png");
     m_textures.add("EnemyLaser", "EnemyLaser.png");
     m_textures.add("EnemyBomber", "EnemyBomber.png");
     m_textures.add("Meteor", "Meteor.png");

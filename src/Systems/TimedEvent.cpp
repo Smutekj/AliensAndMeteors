@@ -6,7 +6,7 @@ TimedEvent::TimedEvent(float m_delay, std::function<void()> callback, TimedEvent
 }
 TimedEvent::TimedEvent(float m_delay, std::function<void()> callback,
                        int repeats_count)
-    : m_event_delay(m_delay), m_firing_time(m_delay),
+    : m_event_delay(m_delay), m_firing_time(m_delay), m_callback(callback),
       m_total_repeats_count(repeats_count), m_repeats_left(repeats_count), m_timer_type(TimedEventType::Fixed)
 {
 }

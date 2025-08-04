@@ -53,26 +53,26 @@ private:
     ContiguousColony<ComponentType, int> m_components;
 };
 
-template <class ComponentType>
-class System : public SystemI
-{
-public:
-    virtual void preUpdate(float dt) override {}
-    virtual void postUpdate(float dt) override {}
-    virtual void update(float dt) override
-    {
-        auto comp_count = m_components.data.size();
-        for (std::size_t comp_id = 0; comp_id < comp_count; ++comp_id)
-        {
-            updater(m_components.data[comp_id], dt);
-        }
-    }
+// template <class ComponentType>
+// class System : public SystemI
+// {
+// public:
+//     virtual void preUpdate(float dt) override {}
+//     virtual void postUpdate(float dt) override {}
+//     virtual void update(float dt) override
+//     {
+//         auto comp_count = m_components.data.size();
+//         for (std::size_t comp_id = 0; comp_id < comp_count; ++comp_id)
+//         {
+//             updater(m_components.data[comp_id], dt);
+//         }
+//     }
 
-private:
-    ContiguousColony<ComponentType, int> m_components;
+// private:
+//     ContiguousColony<ComponentType, int> m_components;
 
-public:
-    std::function<void(ComponentType &, float)> pre_updater;
-    std::function<void(ComponentType &, float)> updater;
-    std::function<void(ComponentType &, float)> post_updater;
-};
+// public:
+//     std::function<void(ComponentType &, float)> pre_updater;
+//     std::function<void(ComponentType &, float)> updater;
+//     std::function<void(ComponentType &, float)> post_updater;
+// };

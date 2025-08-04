@@ -27,7 +27,7 @@ void TimedEventSystem::update(float dt)
         for (auto& [event_id, event] : comp.events)
         { 
             event.update(dt);
-            if(event.getRepeatsLeft() && !event.isInfinite())
+            if(event.getRepeatsLeft() == 0 && !event.isInfinite())
             {
                 finished_events.push_back(event_id);               
             }

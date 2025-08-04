@@ -26,7 +26,7 @@ void AvoidanceSystem::postUpdate(float dt, EntityRegistryT &entities)
     {
         auto &comp = m_components.data[comp_id];
         //! fetch postition of the owning entity
-        entities.at(m_components.data_ind2id.at(comp_id))->m_vel += comp.vel;
+        entities.at(m_components.data_ind2id.at(comp_id))->m_acc += comp.acc;
     }
 }
 void AvoidanceSystem::update(float dt)
@@ -75,6 +75,6 @@ void AvoidanceSystem::avoidMeteors(AvoidMeteorsComponent &comp, float dt)
             }
         }
     }
-    truncate(avoid_force, 500000.f);
-    comp.vel += dt * avoid_force;
+    truncate(avoid_force, 50000.f);
+    comp.acc =  avoid_force;
 }

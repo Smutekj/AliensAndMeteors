@@ -27,7 +27,7 @@ void BoidSystem::postUpdate(float dt, EntityRegistryT& entities)
     for (std::size_t comp_id = 0; comp_id < comp_count; ++comp_id)
     {
         auto &comp = m_components.data[comp_id];
-        entities.at(m_components.data_ind2id.at(comp_id))->m_vel += comp.acc * dt;
+        entities.at(m_components.data_ind2id.at(comp_id))->m_acc += comp.acc;
     }
     m_neighbour_searcher.clear();
 }   
@@ -117,6 +117,6 @@ void BoidSystem::steer(BoidComponent &comp, int comp_id, float dt)
         align_force = align_multiplier * align_direction / norm(align_direction) - comp.vel;
     }
 
-    comp.acc = dt * (scatter_force + align_force + seek_force + cohesion_force);
+    comp.acc = (scatter_force + align_force + seek_force + cohesion_force);
     truncate(comp.acc, max_acc);
 }

@@ -108,15 +108,11 @@ public:
     {
         int id = reserveIndexForInsertion();
         m_data.insert(id, data);
-
-        m_data.checkConsistency();
         return id;
     }
 
     int reserveIndexForInsertion()
     {
-        m_data.checkConsistency();
-        
         int id = m_next_id;
         if (!m_free_list.empty())
         {
@@ -133,7 +129,6 @@ public:
     {
         assert(!m_data.contains(index));
         m_data.insert(index, datum);
-        m_data.checkConsistency();
     }
 
     std::vector<DataType> &data()

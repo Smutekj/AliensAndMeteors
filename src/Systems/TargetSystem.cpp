@@ -27,7 +27,7 @@ void TargetSystem::postUpdate(float dt, EntityRegistryT &entities)
         }
         auto dr = comp.target_pos - entities.at(entity_ids.at(comp_id))->getPosition(); 
         float dist_to_target = utils::norm(dr);
-        entities.at(entity_ids.at(comp_id))->m_vel += dt * comp.targetting_strength * dr / dist_to_target;
+        entities.at(entity_ids.at(comp_id))->m_acc += comp.targetting_strength * dr / dist_to_target;
     }
 }
 
