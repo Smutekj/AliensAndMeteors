@@ -129,13 +129,16 @@ public:
     float m_min_dmg = 0.f;
     float m_max_dmg = 1.f;
     float m_max_length = 100.f;
-    float m_width = 3.f;
+    float m_max_width = 3.f;
     float m_life_time = 1.;
 
     bool m_rotates_with_owner = true;
+    
+    utils::Vector2f m_offset = {0,0};
 
-private:
     float m_length = 0.f;
+    float m_width = 0.f;
+private:
     float m_time = 0.;
 
     Collisions::CollisionSystem *m_neighbour_searcher;

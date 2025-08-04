@@ -233,10 +233,11 @@ void Laser::update(float dt)
 {
     m_time += dt;
 
+    m_width = m_max_width * (m_time / m_life_time);
     m_length = m_max_length * (m_time / m_life_time);
     if (m_owner)
     {
-        m_pos = m_owner->getPosition();
+        m_pos = m_owner->getPosition() + m_offset;
         if (m_rotates_with_owner)
         {
             m_angle = m_owner->getAngle();
@@ -264,7 +265,8 @@ void Laser::onCollisionWith(GameObject &obj, CollisionData &c_data)
     {
         if (&obj != getOwner())
         {
-            static_cast<Enemy &>(obj).m_health -= m_max_dmg;
+            // DamageReceivedEvent 
+            // p_messanger->
         }
         break;
     }
