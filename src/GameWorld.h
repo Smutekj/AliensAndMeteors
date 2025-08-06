@@ -66,33 +66,19 @@ using EntityTypes = TypeList<Enemy, Turret, Meteor, SpaceStation, Boss, Bullet,
 using EntityTuple = rebind<EntityTypes, std::tuple, ComponentBlock>;
 using EntityQueue = rebind<EntityTypes, std::tuple, std::queue>;
 
-
 class GameWorld
 {
-    
-    
-    
-    EntityTuple m_entities2;
-    EntityQueue m_entities_to_add;
-    EntityQueue m_entities_to_remove;
-
-
-    EntityRegistryT m_entities;
-
-    std::unique_ptr<GridNeighbourSearcher> m_neighbour_searcher;
-    Collisions::CollisionSystem m_collision_system;
-
-    std::queue<std::shared_ptr<GameObject>> m_to_add;
-    std::queue<std::shared_ptr<GameObject>> m_to_destroy;
-
-    TextureHolder m_textures;
 
 public:
-
     GameSystems m_systems;
     PlayerEntity *m_player;
 
-    GameWorld(PostOffice& messenger);
+    GameWorld(PostOffice &messenger);
+
+    Collisions::CollisionSystem &getCollisionSystem()
+    {
+        return m_collision_system;
+    }
 
     template <class EntityType>
     EntityType &addObject2();
@@ -134,15 +120,30 @@ public:
     void update(float dt);
     void draw(LayersHolder &window);
 
-    PostOffice* p_messenger = nullptr;
-    
+    PostOffice *p_messenger = nullptr;
+
 private:
+    void registerSystems();
     void addQueuedEntities();
     void removeQueuedEntities();
     void loadTextures();
-    
+
+private:
     std::unordered_map<EffectType, std::function<std::shared_ptr<VisualEffect>()>> m_effect_factories;
-    
+
+    EntityTuple m_entities2;
+    EntityQueue m_entities_to_add;
+    EntityQueue m_entities_to_remove;
+
+    EntityRegistryT m_entities;
+
+    std::unique_ptr<GridNeighbourSearcher> m_neighbour_searcher;
+    Collisions::CollisionSystem m_collision_system;
+
+    std::queue<std::shared_ptr<GameObject>> m_to_add;
+    std::queue<std::shared_ptr<GameObject>> m_to_destroy;
+
+    TextureHolder m_textures;
 };
 
 template <class TriggerType, class... Args>
@@ -163,7 +164,7 @@ EntityType &GameWorld::addObject2()
     // queue.push(new_entity);
     // EntityType &thing = queue.back();
     // return thing;
-    
+
     auto new_entity = createEntity2<EntityType>();
     new_entity->m_id = m_entities.reserveIndexForInsertion();
     m_to_add.push(new_entity);
@@ -176,7 +177,9 @@ EntityType GameWorld::createEntity()
     if constexpr (std::is_same_v<EntityType, Enemy>)
     {
         return {this, m_textures, &m_collision_system, m_player, m_systems};
-    }else {
+    }
+    else
+    {
         return {this, m_textures, &m_collision_system, m_player};
     }
 }
@@ -187,7 +190,9 @@ std::shared_ptr<EntityType> GameWorld::createEntity2()
     if constexpr (std::is_same_v<EntityType, Enemy> || std::is_same_v<EntityType, SpaceStation>)
     {
         return std::make_shared<EntityType>(this, m_textures, &m_collision_system, m_player, m_systems);
-    }else {
+    }
+    else
+    {
         return std::make_shared<EntityType>(this, m_textures, &m_collision_system, m_player);
     }
 }
@@ -203,11 +208,11 @@ EntityType &GameWorld::addObjectForced()
     // new_entity.m_block_id = new_id;
     new_entity->m_id = new_id;
 
-    if (new_entity->collides())
+    new_entity->onCreation();
+    if (m_systems.has<CollisionComponent>(new_id))
     {
         m_collision_system.insertObject(*new_entity);
     }
-    new_entity->onCreation();
     return *new_entity;
 }
 
@@ -218,8 +223,8 @@ void GameWorld::addX(std::queue<EntityType> &to_add)
     {
         auto &entity_block = std::get<ComponentBlock<EntityType>>(m_entities2);
         int block_id = entity_block.insert(to_add.front());
-        auto& new_entity = entity_block.get(block_id);
-        
+        auto &new_entity = entity_block.get(block_id);
+
         std::shared_ptr<EntityType> entity_p(&new_entity);
         m_entities.insertAt(entity_p->getId(), entity_p);
 
@@ -242,7 +247,7 @@ void GameWorld::removeX(std::queue<EntityType> &to_remove)
     {
         auto &entity = to_remove.front();
         entity.onDestruction();
-        
+
         p_messenger->send(EntityDiedEvent{entity.getType(), entity.getId(), entity.getPosition()});
 
         if (entity.collides())

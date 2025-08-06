@@ -10,18 +10,14 @@
 #include "Systems/TargetSystem.h"
 #include "Systems/TimedEventSystem.h"
 
-GameWorld::GameWorld(PostOffice& messenger)
-: p_messenger(&messenger), m_collision_system(messenger), m_systems(m_entities)
+GameWorld::GameWorld(PostOffice &messenger)
+    : p_messenger(&messenger), m_systems(m_entities), m_collision_system(messenger, m_systems.getComponents<CollisionComponent>())
 {
     loadTextures();
 
     m_neighbour_searcher = std::make_unique<GridNeighbourSearcher>();
 
-    m_systems.registerSystem(std::make_shared<BoidSystem>(m_systems.getComponents<BoidComponent>()));
-    m_systems.registerSystem(std::make_shared<AvoidanceSystem>(m_systems.getComponents<AvoidMeteorsComponent>(), m_collision_system));
-    m_systems.registerSystem(std::make_shared<HealthSystem>(m_systems.getComponents<HealthComponent>(), messenger));
-    m_systems.registerSystem(std::make_shared<TargetSystem>(m_systems.getComponents<TargetComponent>()));
-    m_systems.registerSystem(std::make_shared<TimedEventSystem>(m_systems.getComponents<TimedEventComponent>()));
+    registerSystems();
 
     m_effect_factories[EffectType::ParticleEmiter] =
         [this]()
@@ -38,7 +34,6 @@ std::size_t GameWorld::getNActiveEntities(ObjectType type)
                                    { return obj->getType() == type; });
     return n_enemies;
 }
-
 
 void GameWorld::addQueuedEntities2()
 {
@@ -130,12 +125,12 @@ void GameWorld::addQueuedEntities()
         auto new_id = new_object->getId(); //! the object already has id because we reserved it
         m_entities.insertAt(new_id, new_object);
         assert(new_id == m_entities.at(new_id)->getId());
-        if (m_entities.at(new_id)->collides())
+        m_entities.at(new_id)->onCreation();
+        if (m_systems.has<CollisionComponent>(new_id))
         {
             m_collision_system.insertObject(*m_entities.at(new_id));
         }
 
-        m_entities.at(new_id)->onCreation();
         m_to_add.pop();
     }
 }
@@ -147,7 +142,7 @@ void GameWorld::removeQueuedEntities()
         auto object = m_to_destroy.front();
         object->onDestruction();
 
-        if (object->collides())
+        if (m_systems.has<CollisionComponent>(object->getId()))
         {
             m_collision_system.removeObject(*object);
         }
@@ -167,10 +162,10 @@ void GameWorld::update(float dt)
 
     m_systems.preUpdate(dt);
 
-    m_collision_system.update();
+    m_collision_system.preUpdate(dt, m_entities);
     m_systems.update(dt);
     m_systems.postUpdate(dt);
-    
+
     for (auto &obj : m_entities.data())
     {
         obj->updateAll(dt);
@@ -181,7 +176,6 @@ void GameWorld::update(float dt)
         }
     }
 
-    
     addQueuedEntities();
     removeQueuedEntities();
 }
@@ -192,6 +186,8 @@ void GameWorld::draw(LayersHolder &layers)
     {
         obj->draw(layers);
     }
+
+    m_collision_system.draw(layers.getCanvas("Unit"));
 }
 
 VisualEffect &GameWorld::addVisualEffect(EffectType type)
@@ -228,4 +224,22 @@ void GameWorld::loadTextures()
     m_textures.add("FireNoise", "fireNoise.png");
     m_textures.add("Turrets", "Turrets.png");
     m_textures.add("Arrow", "arrow.png");
+    m_textures.add("LongShield", "Animations/LongShield.png");
+}
+
+void GameWorld::registerSystems()
+{
+
+    m_systems.registerSystem(std::make_shared<BoidSystem>(m_systems.getComponents<BoidComponent>()));
+    m_systems.registerSystem(std::make_shared<AvoidanceSystem>(m_systems.getComponents<AvoidMeteorsComponent>(), m_collision_system));
+    m_systems.registerSystem(std::make_shared<HealthSystem>(m_systems.getComponents<HealthComponent>(), *p_messenger));
+    m_systems.registerSystem(std::make_shared<TargetSystem>(m_systems.getComponents<TargetComponent>()));
+    m_systems.registerSystem(std::make_shared<TimedEventSystem>(m_systems.getComponents<TimedEventComponent>()));
+    
+    std::filesystem::path animation_directory = {RESOURCES_DIR};
+    animation_directory /= "Textures/Animations/";
+    auto animation_system = std::make_shared<AnimationSystem>(m_systems.getComponents<AnimationComponent>(), animation_directory);
+    animation_system->registerAnimation("LongShield.png", AnimationId::Shield, animation_directory / "LongShield.json");
+ 
+    m_systems.registerSystem(animation_system);
 }

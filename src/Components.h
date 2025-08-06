@@ -3,8 +3,30 @@
 
 #include "Vector2.h"
 #include "Systems/TimedEvent.h"
+#include "Rect.h"
 
 class GameObject;
+
+enum class ObjectType
+{
+    Enemy,
+    Bullet,
+    Missile,
+    Bomb,
+    Laser,
+    Meteor,
+    Heart,
+    SpaceStation,
+    Explosion,
+    Player,
+    Flag,
+    Boss,
+    Trigger,
+    EMP,
+    Count
+};
+
+
 
 struct BoidComponent
 {
@@ -90,4 +112,47 @@ enum class ComponentId
     Boid,
     Shield,
     Hp
+};
+
+#include "Polygon.h"
+
+
+struct CollisionShape
+{
+    std::vector<Polygon> convex_shapes;
+
+    AABB getBoundingRect() const
+    {
+        AABB box;
+        for (auto &p : convex_shapes)
+        {
+            box = makeUnion(box, p.getBoundingRect());
+        }
+        return box;
+    }
+};
+
+struct CollisionComponent
+{
+    CollisionShape shape;
+    ObjectType type;
+};
+
+enum class AnimationId
+{
+    Shield,
+    Explosion1,
+    Explosion2,
+};
+
+struct AnimationComponent
+{
+    AnimationId id;
+    unsigned int texture_id = 0;
+    float time = 0.;
+    float cycle_duration = 1.;
+    int current_frame_id = 0;
+    int n_repeats_left = 1;
+    Rect<int> tex_rect = {0,0,0,0};
+    utils::Vector2i texture_size = {1,1};
 };

@@ -3,6 +3,38 @@
 #include <Rect.h>
 #include <Utils/Vector2.h>
 
+#include <filesystem>
+
+#include "Components.h"
+#include "Systems/System.h"
+#include "Texture.h"
+
+class AnimationSystem : public SystemI
+{
+public:
+    AnimationSystem(ContiguousColony<AnimationComponent, int> &comps, std::filesystem::path animations_dir);
+
+    void registerAnimation(std::string atlas_id, AnimationId id, std::filesystem::path animation_datafile);
+
+    virtual void preUpdate(float dt, EntityRegistryT &entities) override {}
+    virtual void update(float dt) override;
+    virtual void postUpdate(float dt, EntityRegistryT &entities) override {}
+
+private:
+    Rect<int> getNextFrame(AnimationComponent &comp);
+
+private:
+    struct FrameData
+    {
+        std::shared_ptr<Texture> p_texture;
+        std::vector<Rect<int>> tex_rects;
+    };
+
+    ContiguousColony<AnimationComponent, int> &m_components;
+    std::unordered_map<AnimationId, FrameData> m_frame_data;
+    TextureHolder m_atlases;
+};
+
 class Animation
 {
 

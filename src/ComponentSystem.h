@@ -40,6 +40,11 @@ public:
     }
 
     template <class ComponentType>
+    void addDelayed(ComponentType comp, int entity_id)
+    {
+        std::get<ComponentHolder<ComponentType>>(m_components).addToQueue(comp, entity_id);
+    }
+    template <class ComponentType>
     void add(ComponentType comp, int entity_id)
     {
         std::get<ComponentHolder<ComponentType>>(m_components).add(comp, entity_id);
@@ -89,6 +94,9 @@ public:
         {
             system->postUpdate(dt, m_entity_registry);
         }
+
+        //! add components to their holders at the end of update steps
+        std::apply(([](auto&&... comps){(comps.addWaiting(),...);}), m_components);
     }
 
 private:
@@ -103,4 +111,6 @@ using GameSystems = ComponentWorld<BoidComponent,
                                    ShieldComponent,
                                    AvoidMeteorsComponent,
                                    TargetComponent,
+                                   CollisionComponent,
+                                   AnimationComponent,
                                    TimedEventComponent>;
