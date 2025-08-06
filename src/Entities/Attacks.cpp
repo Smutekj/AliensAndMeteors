@@ -137,7 +137,7 @@ void Bullet::draw(LayersHolder &layers)
     }
 }
 
-Bomb::Bomb(GameWorld *world, TextureHolder &textures,Collisions::CollisionSystem *collider, PlayerEntity *player)
+Bomb::Bomb(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
     : m_neighbour_searcher(collider), GameObject(world, textures, ObjectType::Bomb)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
@@ -219,10 +219,9 @@ void Bomb::draw(LayersHolder &layers)
     target.drawSprite(rect);
 }
 
-Laser::Laser(GameWorld *world, TextureHolder &textures,Collisions::CollisionSystem *collider, PlayerEntity *player)
+Laser::Laser(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
     : m_neighbour_searcher(collider), GameObject(world, textures, ObjectType::Laser)
 {
-    m_collision_shape = std::make_unique<Polygon>(4);
 
     m_is_bloomy = true;
 }
@@ -232,30 +231,31 @@ Laser::~Laser() {}
 void Laser::stopAgainst(ObjectType type)
 {
     auto hit = m_neighbour_searcher->findClosestIntesection(type, m_pos, utils::angle2dir(m_angle), m_length);
-    
+
     m_length = dist(hit, m_pos);
     setSize({m_length / sqrtf(2), m_width});
     //! m_pos of laser is special, it is starting position not center so we set it manually
-    m_collision_shape->setPosition(m_pos + m_length / 2.f * utils::angle2dir(m_angle));
+    // setPosition(m_pos + m_length / 2.f * utils::angle2dir(m_angle));
 }
 
 void Laser::update(float dt)
 {
     m_time += dt;
     m_updater(dt);
-    
+
     m_width = m_max_width * (m_time / m_life_time);
     m_length = m_max_length * (m_time / m_life_time);
     if (m_owner)
     {
-        m_pos = m_owner->getPosition() + m_offset;
         if (m_rotates_with_owner)
         {
             m_angle = m_owner->getAngle();
         }
+        m_pos = m_owner->getPosition() + m_offset + utils::angle2dir(m_angle) * m_length/2;
     }
+    setSize({m_length, m_width});
 
-    if(m_owner && m_owner->getType() != ObjectType::Boss)
+    if (m_owner && m_owner->getType() != ObjectType::Boss)
     {
         stopAgainst(ObjectType::Boss);
     }
@@ -275,7 +275,7 @@ void Laser::onCollisionWith(GameObject &obj, CollisionData &c_data)
     {
         if (&obj != getOwner())
         {
-            // DamageReceivedEvent 
+            // DamageReceivedEvent
             // p_messanger->
         }
         break;
@@ -293,6 +293,9 @@ void Laser::onCollisionWith(GameObject &obj, CollisionData &c_data)
 
 void Laser::onCreation()
 {
+    Polygon shape = {4};
+    CollisionComponent c_comp = {std::vector<Polygon>{shape}, ObjectType::Laser};
+    m_world->m_systems.add(c_comp, getId());
 }
 
 void Laser::onDestruction()
@@ -307,7 +310,7 @@ void Laser::draw(LayersHolder &layers)
 
     Sprite rect;
     rect.setTexture(*m_textures->get("BoosterPurple"));
-    rect.setPosition(m_collision_shape->getPosition());
+    rect.setPosition(getPosition());
     rect.setRotation(glm::radians(m_angle));
     rect.setScale(m_length / 2., m_width / 2.);
     rect.m_color = {255, 255, 50, 255};
