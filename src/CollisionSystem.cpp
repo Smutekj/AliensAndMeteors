@@ -1,11 +1,13 @@
 #include "CollisionSystem.h"
 #include "GameObject.h"
 
+#include "Systems/System.h"
+
 namespace Collisions
 {
 
-    CollisionSystem::CollisionSystem(PostOffice& messenger)
-    : p_post_office(&messenger)
+    CollisionSystem::CollisionSystem(PostOffice &messenger, ContiguousColony<CollisionComponent, int> &comps)
+        : p_post_office(&messenger), m_components(comps)
     {
         messenger.registerEvents<CollisionEventEntities, CollisionEventTypeEntity, CollisionEventTypes>();
 
@@ -22,25 +24,14 @@ namespace Collisions
 
     void CollisionSystem::insertObject(GameObject &object)
     {
-        auto bounding_rect = object.getCollisionShape().getBoundingRect().inflate(1.2f);
+        auto bounding_rect = m_components.get(object.getId()).shape.getBoundingRect().inflate(1.2f);
         m_object_type2tree[object.getType()].addRect(bounding_rect, object.getId());
-        
+
         assert(m_objects2.count(getId(object)) == 0);
         m_objects2[getId(object)] = &object;
     }
 
-    void CollisionSystem::insertObject(std::shared_ptr<GameObject> &p_obj)
-    {
-        assert(false);
-        auto &object = *p_obj;
-        auto bounding_rect = object.getCollisionShape().getBoundingRect().inflate(1.2f);
-        m_object_type2tree[object.getType()].addRect(bounding_rect, object.getId());
-
-        assert(m_objects.count(object.getId()) == 0);
-        m_objects[object.getId()] = p_obj;
-    }
-
-    CollisionSystem::ObjectId CollisionSystem::getId(GameObject& object) const
+    CollisionSystem::ObjectId CollisionSystem::getId(GameObject &object) const
     {
         return {object.getType(), object.getId()};
     }
@@ -54,59 +45,115 @@ namespace Collisions
         assert(m_objects.size() == 0);
     }
 
-    void CollisionSystem::update()
+    void CollisionSystem::preUpdate(float dt, EntityRegistryT &entities)
     {
 
-        for (auto &[id, p_entity] : m_objects2)
+        auto &comps = m_components.data;
+        auto &comp_ids = m_components.data_ind2id;
+        for (std::size_t comp_id = 0; comp_id < comps.size(); ++comp_id)
         {
-            auto [type, ind] = id;
-            auto &entity = *p_entity;
-            auto &tree = m_object_type2tree.at(type);
-            auto fitting_rect = entity.getCollisionShape().getBoundingRect();
-            auto big_bounding_rect = tree.getObjectRect(ind);
+            auto &comp = comps[comp_id];
+            for (auto &shape : comp.shape.convex_shapes)
+            {
+                shape.setPosition(entities.at(comp_ids.at(comp_id))->getPosition());
+                // shape.setScale(entities.at(comp_ids.at(comp_id))->getSize()/2.f);
+                shape.setRotation(entities.at(comp_ids.at(comp_id))->getAngle());
+            }
+        }
+
+        for (std::size_t comp_id = 0; comp_id < comps.size(); ++comp_id)
+        {
+            //! update the tree if the entity moved outside of it's BoundingBox
+            // auto& entity
+            auto &comp = comps[comp_id];
+            auto &tree = m_object_type2tree.at(comp.type);
+            auto entity_ind = comp_ids.at(comp_id);
+
+            auto fitting_rect = comp.shape.getBoundingRect();
+            auto big_bounding_rect = tree.getObjectRect(entity_ind);
 
             //! if object moved in a way that rect in the collision tree does not fully contain it
             if (makeUnion(fitting_rect, big_bounding_rect).volume() > big_bounding_rect.volume())
             {
-                tree.removeObject(ind);
-                tree.addRect(fitting_rect.inflate(1.2f), ind);
+                tree.removeObject(entity_ind);
+                tree.addRect(fitting_rect.inflate(1.2f), entity_ind);
             }
         }
 
-        for (int i = 0; i < static_cast<int>(ObjectType::Count); ++i)
+        for (auto &[type_pair, callback] : m_registered_resolvers)
         {
-            auto &tree_i = m_object_type2tree.at(static_cast<ObjectType>(i));
-            for (int j = i; j < static_cast<int>(ObjectType::Count); ++j)
-            { //! for all pairs of object trees;
-                if (m_exceptions.count({i, j}) > 0)
-                {
-                    continue;
-                }
-                auto &tree_j = m_object_type2tree.at(static_cast<ObjectType>(j));
+            auto &[type_a, type_b] = type_pair;
+            auto &tree_a = m_object_type2tree.at((ObjectType)type_a);
+            auto &tree_b = m_object_type2tree.at((ObjectType)type_b);
 
-                auto close_pairs = tree_i.findClosePairsWith2(tree_j);
-
-                std::vector<std::pair<ObjectId, ObjectId>> pairs;
-                pairs.reserve(close_pairs.size());
-                for(auto& [ind1, ind2] : close_pairs)
-                {
-                    
-                    pairs.push_back({{static_cast<ObjectType>(i), ind1}, {static_cast<ObjectType>(j), ind2}});
-                    assert(m_objects2.count(pairs.back().first) != 0);
-                    assert(m_objects2.count(pairs.back().second) != 0);
-                }
-                
-                narrowPhase(pairs);
+            std::vector<std::pair<int, int>> close_pairs;
+            if (type_a == type_b)
+            {
+                close_pairs = tree_a.findClosePairsWithin();
             }
+            else
+            {
+                close_pairs = tree_a.findClosePairsWith2(tree_b);
+            }
+
+            narrowPhase2(close_pairs, entities, callback);
         }
+
+        for (std::size_t comp_id = 0; comp_id < comps.size(); ++comp_id)
+        {
+        }
+
+        // for (auto &[id, p_entity] : m_objects2)
+        // {
+        //     auto [type, ind] = id;
+        //     auto &entity = *p_entity;
+        //     auto &tree = m_object_type2tree.at(type);
+        //     auto fitting_rect = entity.getCollisionShape().getBoundingRect();
+        //     auto big_bounding_rect = tree.getObjectRect(ind);
+
+        //     //! if object moved in a way that rect in the collision tree does not fully contain it
+        //     if (makeUnion(fitting_rect, big_bounding_rect).volume() > big_bounding_rect.volume())
+        //     {
+        //         tree.removeObject(ind);
+        //         tree.addRect(fitting_rect.inflate(1.2f), ind);
+        //     }
+        // }
+
+        // for (int i = 0; i < static_cast<int>(ObjectType::Count); ++i)
+        // {
+        //     auto &tree_i = m_object_type2tree.at(static_cast<ObjectType>(i));
+        //     for (int j = i; j < static_cast<int>(ObjectType::Count); ++j)
+        //     { //! for all pairs of object trees;
+        //         if (m_exceptions.count({i, j}) > 0)
+        //         {
+        //             continue;
+        //         }
+        //         auto &tree_j = m_object_type2tree.at(static_cast<ObjectType>(j));
+
+        //         auto close_pairs = tree_i.findClosePairsWith2(tree_j);
+
+        //         std::vector<std::pair<ObjectId, ObjectId>> pairs;
+        //         pairs.reserve(close_pairs.size());
+        //         for (auto &[ind1, ind2] : close_pairs)
+        //         {
+
+        //             pairs.push_back({{static_cast<ObjectType>(i), ind1}, {static_cast<ObjectType>(j), ind2}});
+        //             assert(m_objects2.count(pairs.back().first) != 0);
+        //             assert(m_objects2.count(pairs.back().second) != 0);
+        //         }
+
+        //         narrowPhase(pairs);
+        //     }
+        // }
         m_collided.clear();
+        m_collided2.clear();
     }
 
     void CollisionSystem::narrowPhase(const std::vector<std::pair<ObjectId, ObjectId>> &colliding_pairs)
     {
         for (auto [i1, i2] : colliding_pairs)
         {
-            
+
             if (i1 == i2 || m_collided.count({i1, i2}) > 0) //! no self collisions and evaluate each collision once
             {
                 continue;
@@ -133,13 +180,44 @@ namespace Collisions
             }
         }
     }
+    void CollisionSystem::narrowPhase2(const std::vector<std::pair<int, int>> &colliding_pairs,
+                                       EntityRegistryT &entities, CollisionCallbackT &callback)
+    {
+        for (auto [i1, i2] : colliding_pairs)
+        {
+
+            if (i1 == i2 || m_collided2.count({i1, i2}) > 0) //! no self collisions and evaluate each collision once
+            {
+                continue;
+            }
+
+            auto &obj1 = *entities.at(i1);
+            auto &obj2 = *entities.at(i2);
+            m_collided2.insert({i1, i2});
+
+            CollisionData collision_data;
+            collision_data = getCollisionData(m_components.get(i1).shape.convex_shapes.at(0),
+                                              m_components.get(i2).shape.convex_shapes.at(0));
+
+            if (collision_data.minimum_translation > 0) //! there is a collision
+            {
+                if (obj1.doesPhysics() && obj2.doesPhysics()) //! if both objects have rigid bodies we do physics
+                {
+                    bounce(obj1, obj2, collision_data);
+                }
+
+                p_post_office->send(CollisionEvent{obj1.getId(), obj2.getId()});
+                callback(obj1, obj2, collision_data);
+            }
+        }
+    }
 
     CollisionData CollisionSystem::getCollisionData(Polygon &pa, Polygon &pb) const
     {
         auto points_a = pa.getPointsInWorld();
         auto points_b = pb.getPointsInWorld();
         auto c_data = calcCollisionData(points_a, points_b);
-        
+
         if (c_data.minimum_translation < 0.f)
         {
             return c_data; //! there is no collision so we don't need to extract manifold
@@ -248,29 +326,33 @@ namespace Collisions
         auto inters = m_object_type2tree.at(type).rayCast(at, dir, length);
         for (auto ent_ind : inters)
         {
-            auto &obj = *m_objects2.at({type, ent_ind});
-            auto points = obj.getCollisionShape().getPointsInWorld();
+            // auto &obj = *m_objects2.at({type, ent_ind});
 
-            int next = 1;
-            for (int i = 0; i < points.size(); ++i)
+            auto &comp = m_components.get(ent_ind);
+            for (auto &shape : comp.shape.convex_shapes)
             {
-                utils::Vector2f r1 = points.at(i);
-                utils::Vector2f r2 = points.at(next);
+                auto points = shape.getPointsInWorld();
+                int next = 1;
+                for (int i = 0; i < points.size(); ++i)
+                {
+                    utils::Vector2f r1 = points.at(i);
+                    utils::Vector2f r2 = points.at(next);
 
-                utils::Vector2f segment_intersection;
-                if (utils::segmentsIntersect(r1, r2, at, at + dir * length, segment_intersection))
-                {
-                    auto new_dist = dist(segment_intersection, at);
-                    if (new_dist < min_dist)
+                    utils::Vector2f segment_intersection;
+                    if (utils::segmentsIntersect(r1, r2, at, at + dir * length, segment_intersection))
                     {
-                        closest_intersection = segment_intersection;
-                        min_dist = new_dist;
+                        auto new_dist = dist(segment_intersection, at);
+                        if (new_dist < min_dist)
+                        {
+                            closest_intersection = segment_intersection;
+                            min_dist = new_dist;
+                        }
                     }
-                }
-                next++;
-                if (next == points.size())
-                {
-                    next = 0;
+                    next++;
+                    if (next == points.size())
+                    {
+                        next = 0;
+                    }
                 }
             }
         }
@@ -518,7 +600,7 @@ namespace Collisions
         auto n = c_data.separation_axis;
 
         //! resolve interpenetration;
-        float alpha = mass2 / (mass1 + mass2)*0.5;
+        float alpha = mass2 / (mass1 + mass2) * 0.5;
         obj1.move(-c_data.separation_axis * c_data.minimum_translation * alpha); //! separation axis always points from 1 to 2
         obj2.move(c_data.separation_axis * c_data.minimum_translation * (1 - alpha));
 
@@ -547,6 +629,28 @@ namespace Collisions
         angle_vel2 -= rbn * j_factor / inertia2;
         obj1.m_vel += j_factor / mass1 * n;
         obj2.m_vel -= j_factor / mass2 * n;
+    }
+
+    void drawComponent(const CollisionComponent &comp, Renderer &canvas)
+    {
+        for (auto &shape : comp.shape.convex_shapes)
+        {
+            auto n_points = shape.points.size();
+            auto points = shape.getPointsInWorld();
+            for (int i = 0; i < n_points; ++i)
+            {
+                canvas.drawLineBatched(points[i], points[(i + 1) % n_points], 0.5, {0, 1., 0., 1.});
+            }
+        }
+    }
+
+    void CollisionSystem::draw(Renderer &canvas)
+    {
+
+        for (std::size_t comp_id = 0; comp_id < m_components.data.size(); comp_id++)
+        {
+            drawComponent(m_components.data[comp_id], canvas);
+        }
     }
 
 } //! namespace collisions
