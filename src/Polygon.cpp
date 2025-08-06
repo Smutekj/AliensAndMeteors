@@ -23,21 +23,20 @@ std::vector<utils::Vector2f> Polygon::getPointsInWorld() const
 {
   auto n_points = points.size();
   std::vector<utils::Vector2f> world_points(n_points);
+  //! scaling
+  for (int i = 0; i < n_points; ++i)
+  {
+    world_points[i] =  {points[i].x * getScale().x, points[i].y * getScale().y};
+  }
   //! rotation
   for (int i = 0; i < n_points; ++i)
   {
     float angle_rads = glm::radians(getRotation());
     world_points[i] =
         {
-            points[i].x * glm::cos(angle_rads) - points[i].y * glm::sin(angle_rads),
-            points[i].x * glm::sin(angle_rads) + points[i].y * glm::cos(angle_rads),
+          world_points[i].x * glm::cos(angle_rads) - world_points[i].y * glm::sin(angle_rads),
+          world_points[i].x * glm::sin(angle_rads) + world_points[i].y * glm::cos(angle_rads),
         };
-  }
-  //! scaling
-  for (int i = 0; i < n_points; ++i)
-  {
-    world_points[i].x *=  getScale().x;
-    world_points[i].y *=  getScale().y;
   }
   //! translation
   for (int i = 0; i < n_points; ++i)
