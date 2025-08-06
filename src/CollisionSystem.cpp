@@ -56,7 +56,7 @@ namespace Collisions
             for (auto &shape : comp.shape.convex_shapes)
             {
                 shape.setPosition(entities.at(comp_ids.at(comp_id))->getPosition());
-                // shape.setScale(entities.at(comp_ids.at(comp_id))->getSize()/2.f);
+                shape.setScale(entities.at(comp_ids.at(comp_id))->getSize());
                 shape.setRotation(entities.at(comp_ids.at(comp_id))->getAngle());
             }
         }
@@ -639,7 +639,7 @@ namespace Collisions
             auto points = shape.getPointsInWorld();
             for (int i = 0; i < n_points; ++i)
             {
-                canvas.drawLineBatched(points[i], points[(i + 1) % n_points], 0.5, {0, 1., 0., 1.});
+                canvas.drawLineBatched(points[i], points[(i + 1) % n_points], 0.25, {0, 1., 0., 1.});
             }
         }
     }
