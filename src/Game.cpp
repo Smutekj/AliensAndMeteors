@@ -39,7 +39,7 @@ void Game::initializeLayersAndTextures()
     // unit_layer.addEffect(std::make_unique<EdgeDetect>(width, height));
     // unit_layer.addEffect(std::make_unique<BloomFinal>(width, height));
 
-    auto &shiny_layer = m_layers.addLayer("Bloom", 5, options, width, height);
+    auto &shiny_layer = m_layers.addLayer("Bloom", 2, options, width, height);
     shiny_layer.m_canvas.setShadersPath(shaders_directory);
     shiny_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
     shiny_layer.addEffect(std::make_unique<BloomFinal>(width, height));
@@ -82,6 +82,8 @@ Game::Game(Renderer &window, KeyBindings &bindings)
 
     initializeLayersAndTextures();
     m_world = std::make_unique<GameWorld>(messanger);
+    registerCollisions();
+    
     //! PLAYER NEEDS TO BE FIRST BECAUSE OTHER OBJECTS MIGHT REFERENCE IT!
     m_player = &m_world->addObjectForced<PlayerEntity>();
     m_player->setPosition({500, 500});
@@ -466,4 +468,22 @@ int Game::getScore() const
 PlayerEntity *Game::getPlayer()
 {
     return m_player;
+}
+
+void Game::registerCollisions()
+{
+    auto& colllider = m_world->getCollisionSystem();
+    
+    colllider.registerResolver(ObjectType::Player, ObjectType::Meteor);
+    colllider.registerResolver(ObjectType::Player, ObjectType::Bullet);
+    colllider.registerResolver(ObjectType::Player, ObjectType::Laser);
+    colllider.registerResolver(ObjectType::Player, ObjectType::Explosion);
+    colllider.registerResolver(ObjectType::Player, ObjectType::Trigger);
+    colllider.registerResolver(ObjectType::Player, ObjectType::Heart);
+
+    colllider.registerResolver(ObjectType::Enemy, ObjectType::Meteor);
+    colllider.registerResolver(ObjectType::Enemy, ObjectType::Bullet);
+    colllider.registerResolver(ObjectType::Enemy, ObjectType::Laser);
+    colllider.registerResolver(ObjectType::Enemy, ObjectType::Explosion);
+
 }

@@ -68,7 +68,8 @@ public:
   GameState getState() const;
   
   void initializeLayersAndTextures();
-  
+  void registerCollisions();
+
   void spawnNextObjective();
   void spawnBossObjective();
   void addDestroyNObjective(ObjectType type, int count);
