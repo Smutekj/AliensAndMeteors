@@ -240,6 +240,8 @@ void GameWorld::registerSystems()
     animation_directory /= "Textures/Animations/";
     auto animation_system = std::make_shared<AnimationSystem>(m_systems.getComponents<AnimationComponent>(), animation_directory);
     animation_system->registerAnimation("LongShield.png", AnimationId::Shield, animation_directory / "LongShield.json");
+    animation_system->registerAnimation("BlueExplosion.png", AnimationId::BlueExplosion, animation_directory / "BlueExplosion.json");
+    animation_system->registerAnimation("PurpleExplosion.png", AnimationId::PurpleExplosion, animation_directory / "PurpleExplosion.json");
  
     m_systems.registerSystem(animation_system);
 }
