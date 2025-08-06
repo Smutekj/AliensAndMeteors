@@ -126,6 +126,10 @@ public:
         return m_owner;
     }
 
+private:
+    void stopAgainst(ObjectType type);
+public:
+
     float m_min_dmg = 0.f;
     float m_max_dmg = 1.f;
     float m_max_length = 100.f;
@@ -135,6 +139,8 @@ public:
     bool m_rotates_with_owner = true;
     
     utils::Vector2f m_offset = {0,0};
+
+    std::function<void(float )> m_updater = [](float ){};    
 
     float m_length = 0.f;
     float m_width = 0.f;

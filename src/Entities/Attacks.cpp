@@ -229,10 +229,21 @@ Laser::Laser(GameWorld *world, TextureHolder &textures,Collisions::CollisionSyst
 
 Laser::~Laser() {}
 
+void Laser::stopAgainst(ObjectType type)
+{
+    auto hit = m_neighbour_searcher->findClosestIntesection(type, m_pos, utils::angle2dir(m_angle), m_length);
+    
+    m_length = dist(hit, m_pos);
+    setSize({m_length / sqrtf(2), m_width});
+    //! m_pos of laser is special, it is starting position not center so we set it manually
+    m_collision_shape->setPosition(m_pos + m_length / 2.f * utils::angle2dir(m_angle));
+}
+
 void Laser::update(float dt)
 {
     m_time += dt;
-
+    m_updater(dt);
+    
     m_width = m_max_width * (m_time / m_life_time);
     m_length = m_max_length * (m_time / m_life_time);
     if (m_owner)
@@ -244,12 +255,11 @@ void Laser::update(float dt)
         }
     }
 
-    auto hit = m_neighbour_searcher->findClosestIntesection(ObjectType::Meteor, m_pos, utils::angle2dir(m_angle), m_length);
-
-    m_length = dist(hit, m_pos);
-    setSize({m_length / sqrtf(2), m_width});
-    //! m_pos of laser is special, it is starting position not center so we set it manually
-    m_collision_shape->setPosition(m_pos + m_length / 2.f * utils::angle2dir(m_angle));
+    if(m_owner && m_owner->getType() != ObjectType::Boss)
+    {
+        stopAgainst(ObjectType::Boss);
+    }
+    stopAgainst(ObjectType::Meteor);
 
     if (m_time > m_life_time)
     {
