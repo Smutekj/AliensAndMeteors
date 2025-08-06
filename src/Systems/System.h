@@ -5,6 +5,8 @@
 #include "../Utils/ContiguousColony.h"
 #include "../Utils/ObjectPool.h"
 
+#include <queue>
+
 using EntityRegistryT = DynamicObjectPool2<std::shared_ptr<GameObject>>;
 
 class SystemI
@@ -35,6 +37,21 @@ public:
         return m_components.contains(entity_id);
     }
 
+    void addToQueue(ComponentType comp, int entity_id)
+    {
+        m_to_add.push({comp, entity_id});
+    }
+
+    void addWaiting()
+    {
+        while(!m_to_add.empty())
+        {
+            auto& [comp, id] = m_to_add.front();
+            add(comp, id);
+            m_to_add.pop();
+        }
+    }
+
     void add(ComponentType comp, int entity_id)
     {
         m_components.insert(entity_id, comp);
@@ -49,6 +66,7 @@ public:
     }
 
 private:
+    std::queue<std::pair<ComponentType, int>> m_to_add;
     ContiguousColony<ComponentType, int> m_components;
 };
 
