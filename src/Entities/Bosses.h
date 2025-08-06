@@ -2,6 +2,7 @@
 
 #include "../GameObject.h"
 #include "Player.h"
+#include "../Animation.h"
 
 class Boss1 : public GameObject
 {
@@ -12,6 +13,7 @@ class Boss1 : public GameObject
         ShootingGuns,
         Exposed,
         ShootingBigLaser,
+        SpawningShips,
     };
 public:
     Boss1() = default;
@@ -43,10 +45,11 @@ private:
 
     State m_state = State::ShootingLasers;
 
-    PlayerEntity *m_player;
     utils::Vector2f m_acc;
 
     Collisions::CollisionSystem *m_collision_system;
+
+    std::unique_ptr<Animation> m_shield_animation;
 
     float m_motion_time = 0.f;
     float m_motion_period = 6.f;  
