@@ -25,17 +25,42 @@ void AnimationSystem::registerAnimation(std::string atlas_id, AnimationId id, st
 
         m_frame_data[id] = {m_atlases.get(atlas_id), {}};
 
+        auto& rects = m_frame_data[id].tex_rects;
+        std::vector<int> frame_nums;
+        int min_num = std::numeric_limits<int>::max();
+        //! find frame numbers from filenames
         auto frames = animation_file.at("frames");
         for (auto &frame_js : frames.items())
         {
             nlohmann::json frame = frame_js.value();
-
+            std::string filename = frame.at("filename").template get<std::string>();
+            auto id_pos = filename.find_last_not_of("0123456789");
+            
+            if (id_pos == std::string::npos)
+            {
+                id_pos = 0;
+            }else{
+                id_pos++; //! the first number is one to the right
+            }
+            frame_nums.push_back(std::stoi(filename.substr(id_pos)));
+            min_num = std::min(frame_nums.back(), min_num);
+        }
+        std::for_each(frame_nums.begin(), frame_nums.end(), [min_num](auto& num){num -= min_num;});
+        
+        rects.resize(frames.size());
+        int i = 0;
+        for (auto &frame_js : frames.items())
+        {
+            // int id = frame_js.key();
+            nlohmann::json frame = frame_js.value();
             int x = frame["frame"].at("x").template get<int>();
             int y = frame["frame"].at("y").template get<int>();
             int w = frame["frame"].at("w").template get<int>();
             int h = frame["frame"].at("h").template get<int>();
-            m_frame_data[id].tex_rects.emplace_back(x, y, w, h);
+            rects[frame_nums[i]] = {x, y, w, h};
+            i++;
         }
+
     }
     catch (std::exception &e)
     {
