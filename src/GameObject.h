@@ -32,25 +32,6 @@ struct CollisionData
     utils::Vector2f contact_point = {0,0};
 };
 
-enum class ObjectType
-{
-    Enemy,
-    Bullet,
-    Missile,
-    Bomb,
-    Laser,
-    Meteor,
-    Heart,
-    SpaceStation,
-    Explosion,
-    Player,
-    Flag,
-    Boss,
-    Trigger,
-    EMP,
-    Count
-};
-
 enum class EffectType
 {
     ParticleEmiter,

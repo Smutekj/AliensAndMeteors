@@ -245,9 +245,6 @@ void ExplosionAnimation::draw(LayersHolder& layers)
 Heart::Heart(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider,  PlayerEntity *player, Pickup type)
     : GameObject(world, textures, ObjectType::Heart)
 {
-    m_collision_shape = std::make_unique<Polygon>(4);
-    m_size = 6.;
-    m_collision_shape->setScale(m_size / 2.);
 }
 
 Heart::~Heart() {}
@@ -258,6 +255,13 @@ void Heart::update(float dt)
 }
 void Heart::onCreation()
 {
+    CollisionComponent c_comp;
+    Polygon shape = {4};
+    m_size = 6.;
+    shape.setScale(m_size/2.);
+    c_comp.shape.convex_shapes.push_back(shape);
+    c_comp.type = ObjectType::Heart;
+    m_world->m_systems.add(c_comp, getId());
 }
 
 void Heart::onDestruction()
