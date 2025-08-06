@@ -43,6 +43,12 @@ private:
     std::vector<std::shared_ptr<Observer<T>>> m_observers;
 };
 
+struct CollisionTriggerComponent
+{
+
+    std::function<void(GameObject&, GameObject&)> callback;
+};
+
 class Trigger : public GameObject, public Subject<Trigger>
 {
 
@@ -69,6 +75,7 @@ public:
         m_callback();
         notify();
     }
+    
     const std::function<void()> &getCallback() const
     {
         return m_callback;
@@ -91,22 +98,6 @@ struct Timer : public Trigger
     virtual void update(float dt) override;
 };
 
-class EntityDestroyed : public Trigger
-{
-
-public:
-    EntityDestroyed(GameWorld *world, TextureHolder &textures, GameObject *entity);
-    virtual ~EntityDestroyed() override;
-
-    virtual void update(float dt) override;
-    virtual void onCreation() override;
-    virtual void onDestruction() override;
-    virtual void draw(LayersHolder &target) override;
-    virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
-
-private:
-    GameObject *m_watched_entity = nullptr;
-};
 
 class ReachPlace : public Trigger
 {

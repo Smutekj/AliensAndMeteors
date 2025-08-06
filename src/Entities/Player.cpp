@@ -5,12 +5,11 @@
 // #include "../ResourceHolder.h"
 #include "Entities.h"
 #include "Attacks.h"
+#include "../GameWorld.h"
 
 PlayerEntity::PlayerEntity(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
     : GameObject(world, textures, ObjectType::Player, collider, player)
 {
-    m_collision_shape = std::make_unique<Polygon>(4);
-    m_collision_shape->setScale(2 * m_radius, 2 * m_radius);
 }
 
 void PlayerEntity::update(float dt)
@@ -66,6 +65,7 @@ void PlayerEntity::update(float dt)
     m_particles_right->setSpawnPos(m_pos - m_radius * utils::angle2dir(m_angle - 40));
     m_particles_right->update(dt);
 }
+
 
 void PlayerEntity::onCollisionWith(GameObject &obj, CollisionData &c_data)
 {
@@ -130,6 +130,18 @@ void PlayerEntity::draw(LayersHolder &layers)
 }
 void PlayerEntity::onCreation()
 {
+    m_collision_shape = std::make_unique<Polygon>(4);
+    m_collision_shape->setScale(2 * m_radius, 2 * m_radius);
+
+    CollisionComponent c_comp;
+    Polygon shape = {4};
+    shape.setScale(2*m_radius, 2*m_radius);
+    c_comp.shape.convex_shapes.push_back(shape);
+    c_comp.type = ObjectType::Player;
+
+    HealthComponent h_comp = {100, 100, 1.};
+    m_world->m_systems.addEntity(getId(), c_comp, h_comp);
+
     m_particles_left = std::make_unique<Particles>(100);
     m_particles_right = std::make_unique<Particles>(100);
 

@@ -56,37 +56,6 @@ void ReachPlace::onCollisionWith(GameObject &obj, CollisionData &c_data)
     }
 }
 
-EntityDestroyed::EntityDestroyed(GameWorld *world, TextureHolder &textures, GameObject *entity)
-    : m_watched_entity(entity), Trigger(world, textures)
-{
-}
-EntityDestroyed::~EntityDestroyed() {}
-
-void EntityDestroyed::onCreation()
-{
-}
-void EntityDestroyed::onDestruction()
-{
-}
-void EntityDestroyed::update(float dt)
-{
-    if (m_watched_entity && m_watched_entity->isDead())
-    {
-        kill();
-        callback();
-    }
-}
-
-void EntityDestroyed::draw(LayersHolder &layers)
-{
-    auto& target = layers.getCanvas("Unit");
-    // target.drawCricleBatched(m_watched_entity->getPosition(), 10.f, {0.5, 0.5, 0, 0.5});
-}
-
-void EntityDestroyed::onCollisionWith(GameObject &obj, CollisionData &c_data)
-{
-}
-
 StayAtPlace::StayAtPlace(GameWorld *world, TextureHolder &textures, PlayerEntity *player, float trigger_time)
     : m_trigger_time(trigger_time), m_player(player), Trigger(world, textures)
 {
