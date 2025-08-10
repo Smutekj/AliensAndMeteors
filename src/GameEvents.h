@@ -81,4 +81,10 @@ struct DamageReceivedEvent
     float dmg = 0.f;
 };
 
+struct StartedBossFightEvent
+{
+    int boss_id;
+    int boss_fight_id = -1; ///???
+};
+
 
