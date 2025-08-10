@@ -1,7 +1,7 @@
 {
   "frames": [
     {
-      "filename": "00.png",
+      "filename": "00",
       "frame": {
         "x": 0,
         "y": 0,
@@ -26,7 +26,7 @@
       }
     },
     {
-      "filename": "01.png",
+      "filename": "01",
       "frame": {
         "x": 0,
         "y": 295,
@@ -51,7 +51,7 @@
       }
     },
     {
-      "filename": "02.png",
+      "filename": "02",
       "frame": {
         "x": 0,
         "y": 590,
@@ -76,7 +76,7 @@
       }
     },
     {
-      "filename": "03.png",
+      "filename": "03",
       "frame": {
         "x": 0,
         "y": 885,
@@ -101,7 +101,7 @@
       }
     },
     {
-      "filename": "04.png",
+      "filename": "04",
       "frame": {
         "x": 0,
         "y": 1180,
@@ -126,7 +126,7 @@
       }
     },
     {
-      "filename": "05.png",
+      "filename": "05",
       "frame": {
         "x": 0,
         "y": 1475,
@@ -151,7 +151,7 @@
       }
     },
     {
-      "filename": "06.png",
+      "filename": "06",
       "frame": {
         "x": 152,
         "y": 0,
@@ -176,7 +176,7 @@
       }
     },
     {
-      "filename": "07.png",
+      "filename": "07",
       "frame": {
         "x": 152,
         "y": 295,
@@ -201,7 +201,7 @@
       }
     },
     {
-      "filename": "08.png",
+      "filename": "08",
       "frame": {
         "x": 152,
         "y": 590,
@@ -226,7 +226,7 @@
       }
     },
     {
-      "filename": "09.png",
+      "filename": "09",
       "frame": {
         "x": 152,
         "y": 885,
@@ -251,7 +251,7 @@
       }
     },
     {
-      "filename": "10.png",
+      "filename": "10",
       "frame": {
         "x": 152,
         "y": 1180,
@@ -276,7 +276,7 @@
       }
     },
     {
-      "filename": "11.png",
+      "filename": "11",
       "frame": {
         "x": 152,
         "y": 1475,
@@ -304,7 +304,7 @@
   "meta": {
     "app": "http://free-tex-packer.com",
     "version": "0.6.7",
-    "image": "LongShield.png",
+    "image": "LongShield",
     "format": "RGBA8888",
     "size": {
       "w": 304,
