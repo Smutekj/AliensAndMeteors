@@ -111,7 +111,8 @@ struct UIElement
 
     Sizing sizing = Sizing::FIXED;
     Layout layout = Layout::X;
-    Alignement align = Alignement::None;
+    Alignement align_x = Alignement::None;
+    Alignement align_y = Alignement::None;
     Alignement content_align = Alignement::Left;
     Alignement content_align_x = Alignement::Left;
     Alignement content_align_y = Alignement::Top;
@@ -124,52 +125,18 @@ public:
     virtual void update();
     virtual void draw(Renderer &canvas);
 
-    void calculateBoundingBoxSize()
-    {
-
-        std::visit([this](auto &&w)
-                   {
-            using T = std::decay_t<decltype(w)>;
-            if constexpr (std::is_same_v<T, Pixels>)
-            {
-                bounding_box.width = w;
-            }
-            if constexpr (std::is_same_v<T, Percentage>)
-            {
-                bounding_box.width = (w * (float)parent->widthContent());
-            }
-            if constexpr (std::is_same_v<T, Viewport>)
-            {
-                // assert(false && "Don't do this, you were too lazy to finish it!");
-            } }, dimensions.x);
-
-        std::visit([this](auto &&h)
-                   {
-            using T = std::decay_t<decltype(h)>;
-            if constexpr (std::is_same_v<T, Pixels>)
-            {
-                bounding_box.height = h;
-            }
-            if constexpr (std::is_same_v<T, Percentage>)
-            {
-                bounding_box.height = h * (float)parent->heightContent();
-            }
-            if constexpr (std::is_same_v<T, Viewport>)
-            {
-                // assert(false && "Don't do this, you were too lazy to finish it!");
-            } }, dimensions.y);
-    }
-
+    void drawBoundingBox(Renderer& canvas);
+    
     template <class... Args>
     void addChildren(Args... child_el);
-
+    
     void addChild(UIElementP child_el);
     void addChildAfter(UIElementP child_el, UIElementP after_who);
-
+    
     UIElement *getElementById(const std::string &id);
-
+    
     void drawX(Renderer &canvas);
-
+    
     int widthContent() const;
     int width() const;
     int heightContent() const;
@@ -184,10 +151,13 @@ public:
     int top() const;
     utils::Vector2i centerContent() const;
     int center() const;
-
+    
 private:
-    utils::Vector2i totalChildrenMargin() const;
+    
+    void calculateBoundingBoxSize();
 
+    utils::Vector2i totalChildrenMargin() const;
+    
     double maxChildrenHeight() const;
     double maxChildrenWidth() const;
     double totalChildrenWidth() const;
@@ -263,6 +233,8 @@ public:
     UIElement *getElementById(const std::string &id) const;
 
     void forEach(std::function<void(UIElement::UIElementP)> callback);
+
+    void drawBoundingBoxes();
 
     void drawUI();
 

@@ -9,7 +9,7 @@
 
 void UIElement::update() {}
 
-void UIElement::draw(Renderer &canvas)
+void UIElement::drawBoundingBox(Renderer &canvas)
 {
     utils::Vector2f ul = {bounding_box.pos_x, bounding_box.pos_y};
     utils::Vector2f ur = {bounding_box.pos_x + bounding_box.width, bounding_box.pos_y};
@@ -30,6 +30,45 @@ void UIElement::draw(Renderer &canvas)
     canvas.drawLineBatched(ul, ll, 1., {0, 1, 1, 1});
     canvas.drawLineBatched(ur, lr, 1., {0, 1, 1, 1});
     canvas.drawLineBatched(ll, lr, 1., {0, 1, 1, 1});
+}
+
+void UIElement::calculateBoundingBoxSize()
+{
+    std::visit([this](auto &&w)
+               {
+        using T = std::decay_t<decltype(w)>;
+        if constexpr (std::is_same_v<T, Pixels>)
+        {
+            bounding_box.width = w;
+        }
+        if constexpr (std::is_same_v<T, Percentage>)
+        {
+            bounding_box.width = (w * (float)parent->widthContent());
+        }
+        if constexpr (std::is_same_v<T, Viewport>)
+        {
+            // assert(false && "Don't do this, you were too lazy to finish it!");
+        } }, dimensions.x);
+
+    std::visit([this](auto &&h)
+               {
+        using T = std::decay_t<decltype(h)>;
+        if constexpr (std::is_same_v<T, Pixels>)
+        {
+            bounding_box.height = h;
+        }
+        if constexpr (std::is_same_v<T, Percentage>)
+        {
+            bounding_box.height = h * (float)parent->heightContent();
+        }
+        if constexpr (std::is_same_v<T, Viewport>)
+        {
+            // assert(false && "Don't do this, you were too lazy to finish it!");
+        } }, dimensions.y);
+}
+
+void UIElement::draw(Renderer &canvas) {
+    drawBoundingBox(canvas);
 };
 
 double UIElement::maxChildrenHeight() const
@@ -158,103 +197,28 @@ void UIElement::drawX(Renderer &canvas)
         }
     }
 
-    // //! determine my position from my prev sibling or a parent
-    // if (prev_sibling)
-    // {
-    //     if (parent->layout == Layout::X)
-    //     {
-    //         bounding_box.pos_x = prev_sibling->x() + prev_sibling->width() + prev_sibling->margin.x + margin.x;
-    //         bounding_box.pos_y = parent->y() + parent->bounding_box.height / 2. - bounding_box.height / 2.;
-    //     }
-    //     else if (parent->layout == Layout::Y)
-    //     {
-    //         bounding_box.pos_y = prev_sibling->y() + prev_sibling->height() + prev_sibling->margin.y + margin.y;
-    //         if (align == Alignement::Center)
-    //         {
-    //             bounding_box.pos_x = parent->x() + parent->bounding_box.width / 2. - bounding_box.width / 2.;
-    //         }
-    //         else if (align == Alignement::Right)
-    //         {
-    //             bounding_box.pos_x = parent->x() + parent->bounding_box.width - parent->padding.x - bounding_box.width;
-    //         }
-    //         else if (align == Alignement::Left)
-    //         {
-    //             bounding_box.pos_x = parent->x() + parent->padding.x;
-    //         }
-    //     }
-    //     else if (parent->layout == Layout::Grid)
-    //     {
-    //         int new_x = prev_sibling->x() + prev_sibling->width() + prev_sibling->margin.x + margin.x;
-    //         if (new_x > parent->x() + parent->width() - parent->padding.x) //! grid overflow on right
-    //         {
-    //             bounding_box.pos_x = parent->x() + parent->padding.x + margin.x;
-    //             bounding_box.pos_y = prev_sibling->y() + prev_sibling->height() + prev_sibling->margin.y + margin.y;
-    //         }
-    //         else
-    //         {
-    //             bounding_box.pos_x = new_x;
-    //             bounding_box.pos_y = prev_sibling->y();
-    //         }
-    //     }
-    // }
-    // else if (parent)
-    // { //! has no prev sibling so is the first child
-
-    //     bounding_box.pos_x = parent->x() + parent->padding.x + margin.x;
-    //     bounding_box.pos_y = parent->y() + parent->padding.y + margin.y;
-
-    //     if (parent->layout == Layout::X)
-    //     {
-    //         auto total_width = parent->totalChildrenWidth() + parent->totalChildrenMargin().x;
-    //         if (align == Alignement::Right)
-    //         {
-    //             bounding_box.pos_x = parent->x() + parent->width() - parent->padding.x - total_width + margin.x;
-    //         }
-    //         else if (align == Alignement::Center)
-    //         {
-    //             bounding_box.pos_x = parent->x() + parent->width() / 2. - total_width / 2. + margin.x;
-    //         }
-    //         // bounding_box.pos_y = parent->y() + parent->bounding_box.height/2. - bounding_box.height/2.;
-    //     }
-    //     else if (parent->layout == Layout::Y)
-    //     {
-    //         auto total_height = parent->totalChildrenHeight() + parent->totalChildrenMargin().y;
-    //         if (align == Alignement::Center)
-    //         {
-    //             bounding_box.pos_x = parent->x() + parent->width() / 2. - width() / 2.;
-    //         }
-    //         else if (align == Alignement::Left)
-    //         {
-    //             bounding_box.pos_x = parent->x() + parent->padding.x + margin.x;
-    //         }
-    //         else if (align == Alignement::Right)
-    //         {
-    //             bounding_box.pos_x = parent->x() + parent->width() - parent->padding.x - width();
-    //         }
-    //     }
-    // }
-    // else
-    // {
-    // }
-
     // ! align myself within my bb
-    if(parent)
+    if (parent)
     {
-        if(align == Alignement::Right)
+        if (align_x == Alignement::Right)
         {
             bounding_box.pos_x = (parent->rightContent() - width() - margin.x);
         }
-        if(align == Alignement::Center || align == Alignement::CenterX)
+        if (align_x == Alignement::Center || align_x == Alignement::CenterX)
         {
-            bounding_box.pos_x = (parent->centerContent().x - width()/2);
+            bounding_box.pos_x = (parent->centerContent().x - width() / 2);
         }
-        if(align == Alignement::Center || align == Alignement::CenterY)
-        {
-            bounding_box.pos_y = (parent->centerContent().y - height()/2);
-        }
-        if(align == Alignement::Left)
+        if (align_x == Alignement::Left)
         {
             bounding_box.pos_x = (parent->leftContent() + margin.x);
+        }
+        if (align_y == Alignement::Center || align_y == Alignement::CenterY)
+        {
+            bounding_box.pos_y = (parent->centerContent().y - height() / 2);
+        }
+        if (align_y == Alignement::Top)
+        {
+            bounding_box.pos_y = (parent->topContent() + margin.y);
         }
     }
 
@@ -347,48 +311,6 @@ void UIElement::drawX(Renderer &canvas)
             y += (2 * children.at(i)->margin.y + child.height());
         }
     }
-
-    // for (int i = 0; i < children.size(); ++i)
-    // {
-    //     auto &child = *children.at(i);
-    //     auto &child_box = children.at(i)->bounding_box;
-
-    //     if (layout == Layout::Grid && x + child_box.width > max_x) //! x-overflow
-    //     {
-    //         y += prev_height;
-    //         x = bounding_box.pos_x + padding.x;
-    //         children_height += prev_height;
-    //     }
-
-    //     if (layout == Layout::X && align == Alignement::Center)
-    //     {
-    //         child_box.pos_x = x + child.margin.x;
-    //         child_box.pos_y = y + (bounding_box.height - 2 * padding.y - child.height()) / 2.;
-    //     }
-    //     else if (layout == Layout::Y && align == Alignement::Center)
-    //     {
-    //         child_box.pos_x = x + (bounding_box.width - 2 * padding.x - child.width()) / 2.;
-    //         child_box.pos_y = y + child.margin.y;
-    //     }
-    //     else
-    //     {
-    //         child_box.pos_x = x + child.margin.x;
-    //         child_box.pos_y = y + child.margin.y;
-    //     }
-
-    //     prev_height = std::max(prev_height, children.at(i)->margin.y + child_box.height);
-
-    //     if (layout == Layout::X || layout == Layout::Grid)
-    //     {
-    //         x += (2 * children.at(i)->margin.x + child_box.width);
-    //     }
-    //     else if (layout == Layout::Y)
-    //     {
-    //         y += (2 * children.at(i)->margin.y + child_box.height);
-    //     }
-
-    //     children_width += (2 * children.at(i)->margin.x + child_box.width);
-    // }
 
     draw(canvas);
     canvas.drawAll();
@@ -588,6 +510,13 @@ void UIDocument::forEach(std::function<void(UIElement::UIElementP)> callback)
     }
 }
 
+void UIDocument::drawBoundingBoxes()
+{
+    forEach([this](auto el_p){
+        el_p->drawBoundingBox(document);
+    });
+}
+
 void UIDocument::drawUI()
 {
     root->drawX(document);
@@ -652,11 +581,12 @@ void SpriteUIELement::draw(Renderer &canvas)
     utils::Vector2f size = {width(), -height()};
     image.setScale(size / 2.f);
     image.setPosition(center_pos);
-    if(m_shader_id.empty())
+    if (m_shader_id.empty())
     {
         canvas.drawSprite(image);
-
-    }else{
+    }
+    else
+    {
         canvas.drawSprite(image, m_shader_id);
     }
 }
