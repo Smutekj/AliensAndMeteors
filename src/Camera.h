@@ -47,7 +47,7 @@ public:
 private:
   float m_move_view_time = 0.;
   float m_move_view_duration = 5.;
-  float m_max_view_speed = 50.;
+  float m_max_view_speed = 150.;
   float m_size_change_speed = 1.;
   float m_resize_view_duration;
   float m_resize_view_time = 0.f;

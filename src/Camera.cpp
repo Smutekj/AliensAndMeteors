@@ -128,7 +128,7 @@ void Camera::followPlayer(float dt, PlayerEntity *m_player)
         m_view_acc.y = dy + threshold.y;
     }
 
-    m_view_acc *= 100.;
+    m_view_acc *= 200;
     m_view_velocity += m_view_acc * dt;
     utils::truncate(m_view_velocity, m_max_view_speed);
     m_view.setCenter(m_view.getCenter() + m_view_velocity * dt);
