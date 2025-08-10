@@ -78,6 +78,8 @@ public:
         }
     }
 
+    //! TODO: Optimize this: neighbours vector can be provided by the caller
+    //! TODO: Optimize: too many .count calls. Should find first all pairs of neighbouring grid cells and then look at neighbours within them 
     std::vector<std::pair<utils::Vector2f, int>> getNeighbourList(int ind, utils::Vector2f pos, float max_radius)
     {
         assert(max_radius <= grid_size.x);
