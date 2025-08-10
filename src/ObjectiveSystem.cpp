@@ -160,6 +160,7 @@ void ObjectiveSystem::add(std::shared_ptr<Quest> quest)
 {
     m_quests.insert(quest);
     quest->start();
+    // m_objectives.
     // m_quests.at(objective_id)->m_id = objective_id;
 }
 
@@ -277,7 +278,7 @@ ObjectiveSystem::ObjectiveSystem(PostOffice &messanger)
         
         for(const QuestCompletedEvent& event : events)
         {
-            remove(event.id);
+            // remove(event.id);
         } });
 }
 

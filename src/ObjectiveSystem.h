@@ -76,17 +76,16 @@ public:
     bool isFinished() const;
 
 public:
+    std::function<void()> m_on_completion_callback = []() {};
+    std::function<void()> m_on_failure_callback = []() {};
 
-std::function<void()> m_on_completion_callback = []() {};
-std::function<void()> m_on_failure_callback = []() {};
-
-int m_id;
-float m_text_y_pos = 100.f;
+    int m_id;
+    float m_text_y_pos = 100.f;
 
 protected:
-PostOffice *m_post_office = nullptr;
-Quest *m_parent = nullptr;
-Font *m_font = nullptr;
+    PostOffice *m_post_office = nullptr;
+    Quest *m_parent = nullptr;
+    Font *m_font = nullptr;
 
     bool m_is_finished = false;
     bool m_active = false;
@@ -151,9 +150,9 @@ public:
     {
     }
 
-    void draw(Renderer& window, const TextureHolder& textures);
+    void draw(Renderer &window, const TextureHolder &textures);
 
-    void addTask(std::shared_ptr<Task> task, Task* precondition = nullptr)
+    void addTask(std::shared_ptr<Task> task, Task *precondition = nullptr)
     {
         assert(task);
 
@@ -192,6 +191,7 @@ public:
 
     void completeQuest()
     {
+        m_on_completion();
         m_state = QuestState::Completed;
         p_post_office->send(QuestCompletedEvent{m_id});
     }
@@ -205,12 +205,10 @@ public:
         }
     }
 
-private:
-    bool checkCircularDependencies() const
-    {
-        return true;
-    }
+public:
+    std::function<void()> m_on_completion = []() {};
 
+private:
     struct TaskGraphNode
     {
         std::shared_ptr<Task> task;
@@ -297,7 +295,6 @@ private:
 };
 
 class PostOffice;
-
 
 class ObjectiveSystem
 {
