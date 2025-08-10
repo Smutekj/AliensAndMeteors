@@ -4,14 +4,17 @@
 #include <fstream>
 #include <iostream>
 
-AnimationSystem::AnimationSystem(ContiguousColony<AnimationComponent, int> &comps, std::filesystem::path animations_dir)
-    : m_components(comps)
+AnimationSystem::AnimationSystem(ContiguousColony<AnimationComponent, int> &comps, std::filesystem::path animations_texture_dir, std::filesystem::path animations_data_dir)
+    : m_components(comps), m_animations_data_dir(animations_data_dir)
 {
-    m_atlases.setBaseDirectory(animations_dir);
+    m_atlases.setBaseDirectory(animations_texture_dir);
 }
 
 void AnimationSystem::registerAnimation(std::string atlas_id, AnimationId id, std::filesystem::path animation_datafile)
 {
+    auto anim_data_path = m_animations_data_dir / animation_datafile;
+    assert(anim_data_path.is_absolute() && std::filesystem::exists(anim_data_path));
+    assert(anim_data_path.extension() == ".json");
     if (!m_atlases.get(atlas_id))
     {
         m_atlases.add(atlas_id, atlas_id); //! yes the id and name should conicide
@@ -20,7 +23,7 @@ void AnimationSystem::registerAnimation(std::string atlas_id, AnimationId id, st
     using json = nlohmann::json;
     try
     {
-        std::ifstream file(animation_datafile);
+        std::ifstream file(anim_data_path);
         json animation_file = json::parse(file);
 
         m_frame_data[id] = {m_atlases.get(atlas_id), {}};
@@ -51,7 +54,6 @@ void AnimationSystem::registerAnimation(std::string atlas_id, AnimationId id, st
         int i = 0;
         for (auto &frame_js : frames.items())
         {
-            // int id = frame_js.key();
             nlohmann::json frame = frame_js.value();
             int x = frame["frame"].at("x").template get<int>();
             int y = frame["frame"].at("y").template get<int>();
@@ -60,7 +62,6 @@ void AnimationSystem::registerAnimation(std::string atlas_id, AnimationId id, st
             rects[frame_nums[i]] = {x, y, w, h};
             i++;
         }
-
     }
     catch (std::exception &e)
     {
@@ -72,8 +73,13 @@ void AnimationSystem::update(float dt)
 {
     for (auto &comp : m_components.data)
     {
+        if(comp.time == 0.)
+        {
+            // comp.tex_rect = getNextFrame(comp);
+        }
         comp.time += dt;
-        if (comp.time > comp.cycle_duration / m_frame_data.at(comp.id).tex_rects.size())
+        float frame_duration = comp.cycle_duration / m_frame_data.at(comp.id).tex_rects.size();
+        if (comp.time > frame_duration)
         {
             comp.time = 0.;
             comp.n_repeats_left--;

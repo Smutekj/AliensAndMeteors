@@ -12,7 +12,9 @@
 class AnimationSystem : public SystemI
 {
 public:
-    AnimationSystem(ContiguousColony<AnimationComponent, int> &comps, std::filesystem::path animations_dir);
+    AnimationSystem(ContiguousColony<AnimationComponent, int> &comps,
+                    std::filesystem::path animations_dir,
+                    std::filesystem::path animations_data_dir);
 
     void registerAnimation(std::string atlas_id, AnimationId id, std::filesystem::path animation_datafile);
 
@@ -33,6 +35,7 @@ private:
     ContiguousColony<AnimationComponent, int> &m_components;
     std::unordered_map<AnimationId, FrameData> m_frame_data;
     TextureHolder m_atlases;
+    std::filesystem::path m_animations_data_dir;
 };
 
 class Animation
