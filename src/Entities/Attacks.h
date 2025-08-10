@@ -57,6 +57,7 @@ private:
     BulletType m_type = BulletType::Lightning;
 
     GameObject *m_target = nullptr;
+    GameObject *m_shooter = nullptr;
 
     float m_tail_timer = 0.f;
     float m_time = 0.f;

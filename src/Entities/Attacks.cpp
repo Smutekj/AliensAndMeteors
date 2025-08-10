@@ -70,12 +70,15 @@ void Bullet::update(float dt)
 
 void Bullet::onCollisionWith(GameObject &obj, CollisionData &c_data)
 {
+
     switch (obj.getType())
     {
     case ObjectType::Enemy:
     {
-        if (m_life_time < 10.f)
+        if (m_shooter != &obj)
         {
+            m_world->p_messenger->send(DamageReceivedEvent{ObjectType::Bullet, getId(),
+                                                           ObjectType::Enemy, obj.getId(), 3.});
             kill();
         }
         break;
@@ -87,6 +90,8 @@ void Bullet::onCollisionWith(GameObject &obj, CollisionData &c_data)
     }
     case ObjectType::Player:
     {
+        m_world->p_messenger->send(DamageReceivedEvent{ObjectType::Bullet, getId(),
+                                                       ObjectType::Player, obj.getId(), 3.});
         kill();
         break;
     }
@@ -98,6 +103,10 @@ void Bullet::onCollisionWith(GameObject &obj, CollisionData &c_data)
 
 void Bullet::onCreation()
 {
+    CollisionComponent c_comp;
+    c_comp.type = ObjectType::Bullet;
+    c_comp.shape.convex_shapes.emplace_back(8);
+    m_world->m_systems.add(c_comp, getId());
 }
 
 void Bullet::onDestruction()
@@ -118,23 +127,23 @@ void Bullet::draw(LayersHolder &layers)
     rect.setTexture(*m_textures->get("Bomb"));
     rect.setPosition(m_pos);
     rect.setRotation(glm::radians(dir2angle(m_vel)));
-    rect.setScale(m_size);
+    rect.setScale(m_size / 2.f);
     rect.m_color = {255, 0, 0, 255};
 
     assert(m_type2shader_id.count(m_type) > 0);
     auto shader_id = m_type2shader_id.at(m_type);
     target.drawSprite(rect, shader_id);
 
-    int alpha = 255;
-    for (auto pos : m_past_positions)
-    {
-        alpha -= 255 / m_past_positions.size();
-        alpha = std::max(0, alpha);
-        rect.setPosition(pos);
-        rect.m_color = {255, 0, 0, static_cast<unsigned char>(alpha)};
-        rect.setScale(m_size * 0.69);
-        target.drawSprite(rect, shader_id);
-    }
+    // int alpha = 255;
+    // for (auto pos : m_past_positions)
+    // {
+    //     alpha -= 255 / m_past_positions.size();
+    //     alpha = std::max(0, alpha);
+    //     rect.setPosition(pos);
+    //     rect.m_color = {255, 0, 0, static_cast<unsigned char>(alpha)};
+    //     rect.setScale(m_size * 0.69);
+    //     target.drawSprite(rect, shader_id);
+    // }
 }
 
 Bomb::Bomb(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
@@ -180,6 +189,7 @@ void Bomb::onCollisionWith(GameObject &obj, CollisionData &c_data)
 
 void Bomb::onCreation()
 {
+    
 }
 
 void Bomb::onDestruction()
@@ -188,14 +198,14 @@ void Bomb::onDestruction()
     auto meteors = m_neighbour_searcher->findNearestObjects(ObjectType::Meteor, m_pos, m_explosion_radius);
     for (auto p_meteor : meteors)
     {
-        auto dr_to_center = m_pos - p_meteor->getPosition();
+        auto dr_to_center = m_pos - p_meteor->shape.convex_shapes[0].getPosition();
         auto dist_to_center = norm(dr_to_center);
         auto impulse_dir = -dr_to_center / dist_to_center;
 
         auto distance_factor = 1 - dist_to_center / m_explosion_radius;
         if (distance_factor > 0)
         {
-            p_meteor->m_vel += distance_factor * impulse_dir * 5.f;
+            // p_meteor->m_vel += distance_factor * impulse_dir * 5.f;
         }
     }
 
@@ -230,10 +240,11 @@ Laser::~Laser() {}
 
 void Laser::stopAgainst(ObjectType type)
 {
-    auto hit = m_neighbour_searcher->findClosestIntesection(type, m_pos, utils::angle2dir(m_angle), m_length);
+    auto dir = utils::angle2dir(m_angle);
+    auto hit = m_neighbour_searcher->findClosestIntesection(type, m_pos - dir * m_length / 2., utils::angle2dir(m_angle), m_length);
 
-    m_length = dist(hit, m_pos);
-    setSize({m_length / sqrtf(2), m_width});
+    m_length = dist(hit, m_pos - dir * m_length / 2.);
+    setSize({m_length, m_width});
     //! m_pos of laser is special, it is starting position not center so we set it manually
     // setPosition(m_pos + m_length / 2.f * utils::angle2dir(m_angle));
 }
@@ -243,23 +254,22 @@ void Laser::update(float dt)
     m_time += dt;
     m_updater(dt);
 
-    m_width = m_max_width * (m_time / m_life_time);
-    m_length = m_max_length * (m_time / m_life_time);
+    m_width += m_max_width * (dt / m_life_time);
+    m_length += m_max_length * (dt / m_life_time);
+    if (m_owner && m_owner->getType() != ObjectType::Boss)
+    {
+        stopAgainst(ObjectType::Boss);
+    }
+    stopAgainst(ObjectType::Meteor);
     if (m_owner)
     {
         if (m_rotates_with_owner)
         {
             m_angle = m_owner->getAngle();
         }
-        m_pos = m_owner->getPosition() + m_offset + utils::angle2dir(m_angle) * m_length/2;
+        m_pos = m_owner->getPosition() + m_offset + utils::angle2dir(m_angle) * m_length / 2.;
     }
     setSize({m_length, m_width});
-
-    if (m_owner && m_owner->getType() != ObjectType::Boss)
-    {
-        stopAgainst(ObjectType::Boss);
-    }
-    stopAgainst(ObjectType::Meteor);
 
     if (m_time > m_life_time)
     {
@@ -269,25 +279,10 @@ void Laser::update(float dt)
 
 void Laser::onCollisionWith(GameObject &obj, CollisionData &c_data)
 {
-    switch (obj.getType())
+    if (&obj != getOwner())
     {
-    case ObjectType::Enemy:
-    {
-        if (&obj != getOwner())
-        {
-            // DamageReceivedEvent
-            // p_messanger->
-        }
-        break;
-    }
-    case ObjectType::Player:
-    {
-        if (&obj != getOwner())
-        {
-            static_cast<PlayerEntity &>(obj).health -= m_max_dmg;
-        }
-        break;
-    }
+        DamageReceivedEvent dmg = {obj.getType(), obj.getId(), ObjectType::Laser, obj.getId(), m_max_dmg};
+        m_world->p_messenger->send(dmg);
     }
 }
 
@@ -315,4 +310,6 @@ void Laser::draw(LayersHolder &layers)
     rect.setScale(m_length / 2., m_width / 2.);
     rect.m_color = {255, 255, 50, 255};
     target.drawSprite(rect, "laser");
+    // target.drawCricleBatched(m_pos, 2, {1,0,0,1});
+    // target.drawCricleBatched(m_pos + utils::angle2dir(m_angle) * m_length/2., 2, {1,0,1,1});
 }
