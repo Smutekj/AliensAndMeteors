@@ -22,6 +22,8 @@
 #include "Entities/Triggers.h"
 #include "ComponentSystem.h"
 
+#include "Systems/TargetSystem.h"
+
 #include "PostOffice.h"
 
 struct PlayerEntity;
@@ -70,9 +72,6 @@ class GameWorld
 {
 
 public:
-    GameSystems m_systems;
-    PlayerEntity *m_player;
-
     GameWorld(PostOffice &messenger);
 
     Collisions::CollisionSystem &getCollisionSystem()
@@ -120,13 +119,18 @@ public:
     void update(float dt);
     void draw(LayersHolder &window);
 
-    PostOffice *p_messenger = nullptr;
-
 private:
     void registerSystems();
     void addQueuedEntities();
     void removeQueuedEntities();
     void loadTextures();
+
+public:
+    GameSystems m_systems;
+    PlayerEntity *m_player;
+
+    Collisions::CollisionSystem m_collision_system;
+    PostOffice *p_messenger = nullptr;
 
 private:
     std::unordered_map<EffectType, std::function<std::shared_ptr<VisualEffect>()>> m_effect_factories;
@@ -138,7 +142,7 @@ private:
     EntityRegistryT m_entities;
 
     std::unique_ptr<GridNeighbourSearcher> m_neighbour_searcher;
-    Collisions::CollisionSystem m_collision_system;
+    std::shared_ptr<TargetSystem> m_ts;
 
     std::queue<std::shared_ptr<GameObject>> m_to_add;
     std::queue<std::shared_ptr<GameObject>> m_to_destroy;

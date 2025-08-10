@@ -159,9 +159,10 @@ void GameWorld::destroyObject(int entity_id)
 
 void GameWorld::update(float dt)
 {
+    addQueuedEntities();
+    removeQueuedEntities();
 
     m_systems.preUpdate(dt);
-
     m_collision_system.preUpdate(dt, m_entities);
     m_systems.update(dt);
     m_systems.postUpdate(dt);
@@ -176,8 +177,6 @@ void GameWorld::update(float dt)
         }
     }
 
-    addQueuedEntities();
-    removeQueuedEntities();
 }
 
 void GameWorld::draw(LayersHolder &layers)
@@ -187,7 +186,10 @@ void GameWorld::draw(LayersHolder &layers)
         obj->draw(layers);
     }
 
+#ifdef DEBUG
+// m_ts->draw(layers.getCanvas("Unit"));
     m_collision_system.draw(layers.getCanvas("Unit"));
+#endif
 }
 
 VisualEffect &GameWorld::addVisualEffect(EffectType type)
@@ -233,15 +235,20 @@ void GameWorld::registerSystems()
     m_systems.registerSystem(std::make_shared<BoidSystem>(m_systems.getComponents<BoidComponent>()));
     m_systems.registerSystem(std::make_shared<AvoidanceSystem>(m_systems.getComponents<AvoidMeteorsComponent>(), m_collision_system));
     m_systems.registerSystem(std::make_shared<HealthSystem>(m_systems.getComponents<HealthComponent>(), *p_messenger));
-    m_systems.registerSystem(std::make_shared<TargetSystem>(m_systems.getComponents<TargetComponent>()));
+    m_ts = std::make_shared<TargetSystem>(m_systems.getComponents<TargetComponent>(), m_entities);
+    m_systems.registerSystem(m_ts);
     m_systems.registerSystem(std::make_shared<TimedEventSystem>(m_systems.getComponents<TimedEventComponent>()));
-    
+
     std::filesystem::path animation_directory = {RESOURCES_DIR};
     animation_directory /= "Textures/Animations/";
-    auto animation_system = std::make_shared<AnimationSystem>(m_systems.getComponents<AnimationComponent>(), animation_directory);
-    animation_system->registerAnimation("LongShield.png", AnimationId::Shield, animation_directory / "LongShield.json");
-    animation_system->registerAnimation("BlueExplosion.png", AnimationId::BlueExplosion, animation_directory / "BlueExplosion.json");
-    animation_system->registerAnimation("PurpleExplosion.png", AnimationId::PurpleExplosion, animation_directory / "PurpleExplosion.json");
- 
+    auto animation_system = std::make_shared<AnimationSystem>(
+        m_systems.getComponents<AnimationComponent>(),
+        animation_directory, animation_directory);
+
+    animation_system->registerAnimation("LongShield.png", AnimationId::Shield, "LongShield.json");
+    animation_system->registerAnimation("BlueExplosion.png", AnimationId::BlueExplosion, "BlueExplosion.json");
+    animation_system->registerAnimation("PurpleExplosion.png", AnimationId::PurpleExplosion, "PurpleExplosion.json");
+    animation_system->registerAnimation("GreenBeam.png", AnimationId::GreenBeam, "GreenBeam.json");
+
     m_systems.registerSystem(animation_system);
 }
