@@ -86,7 +86,9 @@ void inline gameLoop(void *mainLoopArg)
     {
         std::cout << "frame time " <<  dt << " ms" << std::endl;
         std::cout << "avg frame time: " << p_app->m_avg_frame_time.getAverage() << " ms" << std::endl;
+        std::cout << "max frame time: " << p_app->m_avg_frame_time.getMax() << " ms" << std::endl;
         p_app->m_avg_frame_time.averaging_interval = 200;
+        p_app->m_avg_frame_time.reset();
         s_frame_count = 0;
     }
 
@@ -141,6 +143,7 @@ static_assert(false)
     m_window_canvas.addShader("Text", "basicinstanced.vert", "textBorder.frag");
 
     m_textures.setBaseDirectory(std::string(RESOURCES_DIR) + "/Textures/");
+    m_textures.add("TestArrow", "Arrow.png");
     m_textures.add("Fuel", "fuel.png");
     m_textures.add("Heart", "Heart.png");
     m_textures.add("ShopItemFrame", "UIShopFrame.png");
