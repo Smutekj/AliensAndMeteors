@@ -10,10 +10,18 @@
 PlayerEntity::PlayerEntity(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
     : GameObject(world, textures, ObjectType::Player, collider, player)
 {
+    meteor_detector.points = {{0., 0.}, {1., -0.7}, {1., 0.7}};
 }
 
 void PlayerEntity::update(float dt)
 {
+    meteor_detector.setPosition(m_pos);
+    meteor_detector.setScale(m_size.x*2., m_size.y/2.);
+    meteor_detector.setRotation(m_angle);
+
+    auto detected_meteor_ids = m_world->m_collision_system.findIntersections(ObjectType::Meteor, meteor_detector);
+
+
     fixAngle();
     boost(dt);
     if (m_is_turning_left)
@@ -60,9 +68,9 @@ void PlayerEntity::update(float dt)
         // speed = std::max(0.f, speed);
     }
 
-    m_particles_left->setSpawnPos(m_pos - m_radius * utils::angle2dir(m_angle + 40));
+    m_particles_left->setSpawnPos(m_pos - m_size.x/2. * utils::angle2dir(m_angle + 40));
     m_particles_left->update(dt);
-    m_particles_right->setSpawnPos(m_pos - m_radius * utils::angle2dir(m_angle - 40));
+    m_particles_right->setSpawnPos(m_pos - m_size.x/2. * utils::angle2dir(m_angle - 40));
     m_particles_right->update(dt);
 }
 
@@ -74,7 +82,7 @@ void PlayerEntity::onCollisionWith(GameObject &obj, CollisionData &c_data)
     case ObjectType::Meteor:
     {
         auto mvt = c_data.separation_axis;
-        if (dot(mvt, m_vel) < 0.f)
+        if (dot(mvt, m_vel) > 0.f)
         {
             m_vel -= 2.f * dot(mvt, m_vel) * mvt;
             m_angle = utils::dir2angle(m_vel);
@@ -109,7 +117,7 @@ void PlayerEntity::draw(LayersHolder &layers)
     // shiny_target.drawSprite(m_player_shape, "boostBar");
 
     m_player_shape.setPosition(m_pos);
-    m_player_shape.setScale(2 * m_radius, 2 * m_radius);
+    m_player_shape.setScale(m_size/2.f);
     m_player_shape.setRotation(glm::radians(m_angle));
     m_player_shape.setTexture(*m_textures->get("PlayerShip"));
     target.drawSprite(m_player_shape);
@@ -127,15 +135,15 @@ void PlayerEntity::draw(LayersHolder &layers)
 
     m_particles_left->draw(shiny_target);
     m_particles_right->draw(shiny_target);
+
+    drawShape(target, meteor_detector);
 }
 void PlayerEntity::onCreation()
 {
-    m_collision_shape = std::make_unique<Polygon>(4);
-    m_collision_shape->setScale(2 * m_radius, 2 * m_radius);
+    m_size = 12.;
 
     CollisionComponent c_comp;
     Polygon shape = {4};
-    shape.setScale(2*m_radius, 2*m_radius);
     c_comp.shape.convex_shapes.push_back(shape);
     c_comp.type = ObjectType::Player;
 
@@ -170,7 +178,10 @@ void PlayerEntity::onCreation()
     m_particles_left->setFinalColor({2.5, 500.3, 0, 0.0});
     m_particles_right->setFinalColor({2.5, 500.3, 0, 0.0});
 }
-void PlayerEntity::onDestruction() {}
+void PlayerEntity::onDestruction() 
+{
+    GameObject::onDestruction();
+}
 
 void PlayerEntity::fixAngle()
 {
@@ -213,3 +224,23 @@ void PlayerEntity::boost(float dt)
         booster = BoosterState::Ready;
     }
 }
+
+
+float PlayerEntity::getHp() const
+{
+    if(m_world->m_systems.has<HealthComponent>(getId()))
+    {
+        return m_world->m_systems.get<HealthComponent>(getId()).hp;
+    }
+    return 0.;
+} 
+
+float PlayerEntity::getHpRatio() const
+{
+    if(m_world->m_systems.has<HealthComponent>(getId()))
+    {
+        auto& comp = m_world->m_systems.get<HealthComponent>(getId());
+        return comp.hp / comp.max_hp;
+    }
+    return 0.;
+} 

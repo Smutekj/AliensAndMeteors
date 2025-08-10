@@ -32,4 +32,7 @@ private:
 
     utils::Vector2f m_center_tex;
     utils::Vector2f m_center_offset;
+
+    std::vector<Vertex> m_verts;
+
 };

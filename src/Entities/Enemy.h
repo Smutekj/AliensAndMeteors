@@ -43,8 +43,8 @@ public:
     bool m_deactivated = false;
     float m_deactivated_time = 1.f;
     
-    float max_vel = 30.f;
-    float max_acc = 50.f;
+    float max_vel = 60.f;
+    float max_acc = 350.f;
     float max_impulse_vel = 40.f;
     
     utils::Vector2f m_impulse = {0, 0};

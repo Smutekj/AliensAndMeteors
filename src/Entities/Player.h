@@ -35,6 +35,9 @@ public:
     virtual void onDestruction() override;
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
 
+    float getHp() const;
+    float getHpRatio() const;
+
     void onBoostDown()
     {
         if (m_fuel > 0. && booster != BoosterState::CoolingDown && booster != BoosterState::Disabled)
@@ -83,8 +86,6 @@ public:
     float boost_heat = 0.f;
     float max_boost_heat = 100.f;
 
-    float m_radius = 3.f;
-
     float health = 100;
     float max_health = 100;
 
@@ -93,4 +94,7 @@ public:
     Sprite m_player_shape;
     std::shared_ptr<Particles> m_particles_left;
     std::shared_ptr<Particles> m_particles_right;
+
+    private:
+    Polygon meteor_detector;
 };

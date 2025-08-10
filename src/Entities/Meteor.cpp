@@ -34,6 +34,11 @@ void Meteor::update(float dt)
 }
 void Meteor::onCreation()
 {
+    CollisionComponent c_comp;
+    Polygon shape;
+    shape.points = m_collision_shape->points;
+    c_comp = {std::vector<Polygon>{shape}, ObjectType::Meteor};
+    m_world->m_systems.add(c_comp, getId());
 }
 void Meteor::onDestruction()
 {
@@ -43,6 +48,7 @@ void Meteor::onDestruction()
 
 void Meteor::onCollisionWith(GameObject &obj, CollisionData &c_data)
 {
+
 }
 
 void Meteor::draw(LayersHolder &layers)
@@ -54,7 +60,6 @@ void Meteor::draw(LayersHolder &layers)
     auto points = m_collision_shape->getPointsInWorld();
     auto &target = layers.getCanvas("Unit");
 
-    VertexArray m_verts;
     m_verts.resize(3 * points.size());
 
     Color c = {1, 0, 0, 1};
@@ -64,6 +69,7 @@ void Meteor::draw(LayersHolder &layers)
         m_verts[3 * i + 0] = {points[i], c, points_orig[i]*0.1 + m_center_offset};
         m_verts[3 * i + 1] = {points[(i + 1) % n_points], c, points_orig[(i + 1) % n_points]*0.1 +m_center_offset};
         m_verts[3 * i + 2] = {center, c, m_center_tex*0.1 + m_center_offset};
+        // target.
     }
 
     target.drawVertices(m_verts, "Meteor", DrawType::Dynamic, m_textures->get("Meteor"));
@@ -195,6 +201,7 @@ void Meteor::initializeRandomMeteor()
 {
     auto polygon = generateRandomConvexPolygon(12 + rand() % 3);
     auto radius = randf(5, 20);
+    m_size = {radius*2};
     polygon.setScale(radius, radius);
     auto rand_pos = randomPosInBox(utils::Vector2f{0, 0}, utils::Vector2f{500, 500});
     polygon.setPosition(rand_pos.x, rand_pos.y);
@@ -204,7 +211,7 @@ void Meteor::initializeRandomMeteor()
 
     m_vel = {randf(-6, 6), randf(-6, 6)};
 
-    m_rigid_body->angle_vel = randf(-50.09, 50.09);
+    m_rigid_body->angle_vel = randf(-10., 10.);
     m_rigid_body->mass = radius * radius;
     m_rigid_body->inertia = 0.1 * radius * radius * m_rigid_body->mass;
 

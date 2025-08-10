@@ -2,6 +2,7 @@
 
 #include <Utils/Vector2.h>
 #include <Transform.h>
+#include <Renderer.h>
 
 #include <vector>
 
@@ -35,5 +36,14 @@ struct Polygon : public Transform
     return points.size() < 3;
   }
   utils::Vector2f getMVTOfSphere(utils::Vector2f center, float radius);
-
 };
+
+void inline drawShape(Renderer &canvas, const Polygon &shape)
+{
+  auto n_points = shape.points.size();
+  auto points = shape.getPointsInWorld();
+  for (int i = 0; i < n_points; ++i)
+  {
+    canvas.drawLineBatched(points[i], points[(i + 1) % n_points], 0.25, {0, 1., 0., 1.});
+  }
+}

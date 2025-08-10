@@ -1,6 +1,7 @@
 #include "Triggers.h"
 #include "Player.h"
 #include "../DrawLayer.h"
+#include "../GameWorld.h"
 
 Trigger::Trigger(GameWorld *world, TextureHolder &textures)
     : GameObject(world, textures, ObjectType::Trigger)
@@ -28,15 +29,19 @@ void Timer::update(float dt)
 ReachPlace::ReachPlace(GameWorld *world, TextureHolder &textures, PlayerEntity *player)
     : m_player(player), Trigger(world, textures)
 {
-    m_collision_shape = std::make_unique<Polygon>(10);
-    m_collision_shape->setScale(4, 4);
-    m_callback = []() {};
+
 }
 ReachPlace::~ReachPlace() {}
 
 void ReachPlace::onCreation()
 {
+    CollisionComponent c_comp;
+    Polygon shape= {10};
+    c_comp.shape.convex_shapes.push_back(shape);
+    c_comp.type = ObjectType::Trigger;
+    m_world->m_systems.add(c_comp, getId());
 }
+
 void ReachPlace::onDestruction()
 {
 }
