@@ -28,6 +28,7 @@ void BoidSystem::postUpdate(float dt, EntityRegistryT& entities)
     {
         auto &comp = m_components.data[comp_id];
         entities.at(m_components.data_ind2id.at(comp_id))->m_acc += comp.acc;
+        comp.acc *= 0.;
     }
     m_neighbour_searcher.clear();
 }   
@@ -59,7 +60,7 @@ void BoidSystem::steer(BoidComponent &comp, int comp_id, float dt)
     int align_neighbours_count = 0;
 
     const float scatter_multiplier = 100;//Enemy::m_force_multipliers[Multiplier::SCATTER];
-    const float align_multiplier = 1.;//Enemy::m_force_multipliers[Multiplier::ALIGN];
+    const float align_multiplier = 10.;//Enemy::m_force_multipliers[Multiplier::ALIGN];
     const float seek_multiplier = 1.;//Enemy::m_force_multipliers[Multiplier::SEEK];
 
     auto range_align = 100.;//std::pow(Enemy::m_force_ranges[Multiplier::ALIGN], 2);
@@ -67,15 +68,12 @@ void BoidSystem::steer(BoidComponent &comp, int comp_id, float dt)
 
     for (auto [neighbour_pos, id] : neighbours2)
     {
-        // if (p_neighbour == this)
-
-        // if(ind_j == boid_ind){continue;}
         const auto dr = neighbour_pos - comp.pos;
         const auto dist2 = utils::norm2(dr);
 
         if (dist2 < range_align)
         {
-            // align_direction += neighbour_boid.comp.vel;
+            align_direction += comp.vel;
             align_neighbours_count++;
         }
 
@@ -118,5 +116,5 @@ void BoidSystem::steer(BoidComponent &comp, int comp_id, float dt)
     }
 
     comp.acc = (scatter_force + align_force + seek_force + cohesion_force);
-    truncate(comp.acc, max_acc);
+    // truncate(comp.acc, max_acc);
 }
