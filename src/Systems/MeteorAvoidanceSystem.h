@@ -23,11 +23,14 @@ public:
 
 private:
     void avoidMeteors(AvoidMeteorsComponent& comp, float dt);
+    void avoidMeteors2(AvoidMeteorsComponent& comp, float dt);
 
 private:
 
     Collisions::CollisionSystem& m_collision_system;
     ContiguousColony<AvoidMeteorsComponent, int> &m_components;
+
+    Polygon meteor_detector;
 };
 
 
