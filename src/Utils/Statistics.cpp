@@ -18,15 +18,26 @@ void Statistics::addNumber(double num)
     }
     avg = std::accumulate(data.begin(), data.end(), 0.) / data.size();
     m_hist.addNumber(num);
+
+    max = std::max(max, num);
 }
 double Statistics::getAverage()
 {
     return avg;
 }
+void Statistics::reset()
+{
+    max = std::numeric_limits<double>::min();
+}
 double Statistics::getVariance()
 {
     auto avg2 = std::accumulate(data.begin(), data.end(), 0., [](double sum_2, double datum){ return sum_2 + datum*datum;}) / data.size();
     return avg2 - avg * avg;
+}
+
+double Statistics::getMax()
+{
+    return max;
 }
 
 Histogram::Histogram(std::size_t n_bins, double min_val, double max_val)

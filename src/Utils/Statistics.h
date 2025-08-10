@@ -2,6 +2,7 @@
 
 #include <deque>
 #include <vector>
+#include <limits>
 
 class Histogram
 {
@@ -38,9 +39,13 @@ struct Statistics
 
     double getAverage();
     double getVariance();
+    double getMax();
+
+    void reset();
 
     std::deque<double> data;
     double avg = 0.;
+    double max = std::numeric_limits<double>::min();
     int averaging_interval = 60;
 
     Histogram m_hist;
