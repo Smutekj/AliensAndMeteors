@@ -3,14 +3,14 @@
 
 #include "TargetSystem.h"
 
-TargetSystem::TargetSystem(ContiguousColony<TargetComponent, int> &comps)
-    : m_components(comps)
+TargetSystem::TargetSystem(ContiguousColony<TargetComponent, int> &comps, EntityRegistryT& entities)
+    : m_components(comps), m_entities(entities)
 {
 }
 
 void TargetSystem::preUpdate(float dt, EntityRegistryT &entities)
 {
-
+    m_entities = entities;
 }
 
 void TargetSystem::postUpdate(float dt, EntityRegistryT &entities)
@@ -37,12 +37,28 @@ void TargetSystem::update(float dt)
     for (std::size_t comp_id = 0; comp_id < comp_count; ++comp_id)
     {
         auto &comp = m_components.data[comp_id];
-
+        
         if(comp.p_target)
         {
             comp.target_pos = comp.p_target->getPosition();
         }
-
         
+        
+    }
+}
+
+
+void TargetSystem::draw(Renderer& canvas)
+{
+    auto comp_count = m_components.data.size();
+    for (std::size_t comp_id = 0; comp_id < comp_count; ++comp_id)
+    {
+        auto &comp = m_components.data[comp_id];
+
+        if(comp.p_target)
+        {
+            auto pos = m_entities.at(m_components.data_ind2id.at(comp_id))->getPosition(); 
+            canvas.drawLineBatched(comp.target_pos, pos, 0.4, {1,0,0,1});
+        }
     }
 }
