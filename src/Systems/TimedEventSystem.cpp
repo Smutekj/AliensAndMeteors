@@ -40,12 +40,12 @@ void TimedEventSystem::update(float dt)
         //! if there are no more events, delete the component
         if(comp.events.empty())
         {
-            comps_to_remove.push_back(comp_id);
+            comps_to_remove.push_back(m_components.data_ind2id.at(comp_id));
         }
     }
 
-    for(auto comp_id : comps_to_remove)
+    for(auto id : comps_to_remove)
     {
-        m_components.erase(m_components.data_ind2id.at(comp_id));
+        m_components.erase(id);
     }
 }
