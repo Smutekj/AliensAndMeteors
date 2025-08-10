@@ -709,9 +709,15 @@ std::vector<std::pair<int, int>> BoundingVolumeTree::findClosePairsWithin() cons
         return {};
     }
 
+    
     std::vector<std::pair<int, int>> close_pairs;
     
     const auto& root = nodes.at(root_ind);
+    if(root.child_index_1 == -1 && root.child_index_2 == -1)
+    {
+        return {};
+    }
+    
     std::vector<std::pair<int, int>> to_visit = {{root.child_index_1, root.child_index_2}};
     to_visit.reserve(nodes.size());
     while(!to_visit.empty())
@@ -742,7 +748,7 @@ std::vector<std::pair<int, int>> BoundingVolumeTree::findClosePairsWithin() cons
             to_visit.emplace_back(node_ind_i, node_j.child_index_1);
             to_visit.emplace_back(node_ind_i, node_j.child_index_2);
         }else{
-            close_pairs.emplace_back(node_ind_i, node_ind_j);
+            close_pairs.emplace_back(node_i.object_index, node_j.object_index);
         }
     }
 
