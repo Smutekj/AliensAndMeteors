@@ -123,10 +123,11 @@ struct CollisionShape
 
     AABB getBoundingRect() const
     {
-        AABB box;
-        for (auto &p : convex_shapes)
+        assert(convex_shapes.size() > 0);
+        AABB box = convex_shapes.at(0).getBoundingRect();
+        for (std::size_t i = 1; i < convex_shapes.size(); ++i)
         {
-            box = makeUnion(box, p.getBoundingRect());
+            box = makeUnion(box, convex_shapes.at(i).getBoundingRect());
         }
         return box;
     }
@@ -136,13 +137,15 @@ struct CollisionComponent
 {
     CollisionShape shape;
     ObjectType type;
+    std::function<void(int, ObjectType)> on_collision = [](auto, auto){};
 };
 
 enum class AnimationId
 {
     Shield,
-    Explosion1,
-    Explosion2,
+    BlueExplosion,
+    PurpleExplosion,
+    GreenBeam,
 };
 
 struct AnimationComponent

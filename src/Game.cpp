@@ -32,9 +32,12 @@ void Game::initializeLayersAndTextures()
     std::filesystem::path shaders_directory = {RESOURCES_DIR};
     shaders_directory.append("Shaders/");
 
+    auto &shields_layer = m_layers.addLayer("Shields", 4, text_options, width, height);
+    shields_layer.m_canvas.setShadersPath(shaders_directory);
+
     auto &unit_layer = m_layers.addLayer("Unit", 3, text_options, width, height);
     unit_layer.m_canvas.setShadersPath(shaders_directory);
-    unit_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
+    // unit_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
     unit_layer.m_canvas.addShader("Meteor", "basictex.vert", "Meteor.frag");
     // unit_layer.addEffect(std::make_unique<EdgeDetect>(width, height));
     // unit_layer.addEffect(std::make_unique<BloomFinal>(width, height));
@@ -58,6 +61,7 @@ void Game::initializeLayersAndTextures()
     m_window.addShader("Arrow", "basicinstanced.vert", "texture.frag");
     m_window.addShader("LastPass", "basicinstanced.vert", "lastPass.frag");
     m_window.addShader("healthBar", "basicinstanced.vert", "healthBar.frag");
+    m_window.addShader("bossHealthBar", "basicinstanced.vert", "bossHealthBar.frag");
     m_window.addShader("boostBar", "basicinstanced.vert", "boostBar.frag");
     m_window.addShader("fuelBar", "basicinstanced.vert", "fuelBar.frag");
     m_window.addShader("boostBar2", "basicinstanced.vert", "boostBar2.frag");
@@ -78,45 +82,46 @@ Game::Game(Renderer &window, KeyBindings &bindings)
       m_scene_canvas(m_scene_pixels),
       m_camera(PLAYER_START_POS, {START_VIEW_SIZE, START_VIEW_SIZE * window.getTargetSize().y / window.getTargetSize().x})
 {
-    messanger.registerEvents<EntityDiedEvent, EntityDiedEvent, QuestCompletedEvent, CollisionEvent, DamageReceivedEvent>();
+    messanger.registerEvents<EntityDiedEvent, EntityDiedEvent, QuestCompletedEvent, CollisionEvent, DamageReceivedEvent, StartedBossFightEvent>();
 
     initializeLayersAndTextures();
     m_world = std::make_unique<GameWorld>(messanger);
     registerCollisions();
-    
+
     //! PLAYER NEEDS TO BE FIRST BECAUSE OTHER OBJECTS MIGHT REFERENCE IT!
     m_player = &m_world->addObjectForced<PlayerEntity>();
     m_player->setPosition({500, 500});
     m_world->m_player = m_player;
+    m_player->setDestructionCallback([this](int id, ObjectType type)
+                                     { m_state = GameState::PLAYER_DIED; });
 
     m_objective_system = std::make_unique<ObjectiveSystem>(messanger);
-    m_ui_system = std::make_unique<UISystem>(window, m_textures, messanger, m_player, *m_font);
+    m_ui_system = std::make_unique<UISystem>(window, m_textures, messanger, m_player, *m_font, m_world->m_systems);
 
     m_background = std::make_unique<Texture>(std::string(RESOURCES_DIR) + "/Textures/background.png");
 
-    for (int i = 0; i < 1; ++i)
+    for (int i = 0; i < 200; ++i)
     {
         auto &meteor = m_world->addObject2<Meteor>();
-        auto spawn_pos = m_player->getPosition() + randf(50, 1000) * angle2dir(randf(0, 360));
+        auto spawn_pos = m_player->getPosition() + randf(200, 5000) * angle2dir(randf(0, 360));
+        meteor.setPosition(spawn_pos);
+    }
+    for (int i = 0; i < 0; ++i)
+    {
+        auto &meteor = m_world->addObject2<Enemy>();
+        auto spawn_pos = m_player->getPosition() + randf(100, 500) * angle2dir(randf(0, 360));
         meteor.setPosition(spawn_pos);
     }
 
     spawnNextObjective();
     // addDestroyNObjective(ObjectType::SpaceStation, 2);
 
-    // for (int i = 0; i < 100; ++i)
-    // {
-    //     auto &enemy = m_world->addObject2<Enemy>();
-    //     auto spawn_pos = m_player->getPosition() + randf(100, 400) * angle2dir(randf(0, 360));
-    //     enemy.setPosition(spawn_pos);
-    // }
-
     auto &heart_spawner = m_world->addTrigger<Timer>();
     heart_spawner.setCallback(
         [this]()
         {
             auto &heart = m_world->addObject2<Heart>();
-            heart.type = Pickup::Fuel;
+            
             auto spawn_pos = m_player->getPosition() + randf(20, 200) * angle2dir(randf(0, 360));
             heart.setPosition(spawn_pos);
         });
@@ -155,14 +160,16 @@ void Game::startBossFight()
 {
     m_stage = GameStage::BossFight;
 
-    auto &station = m_world->addObject2<Boss1>();
+    auto &boss = m_world->addObject2<Boss1>();
     auto player_pos = m_player->getPosition();
     auto boss_pos = m_player->getPosition() + utils::Vector2f{100, 0};
-    station.setPosition(boss_pos);
-    m_camera.startMovingTo(boss_pos  - utils::Vector2f{150, 0}, 1., [](auto &camera)
+    boss.setPosition(boss_pos);
+    m_camera.startMovingTo(boss_pos - utils::Vector2f{150, 0}, 1., [](auto &camera)
                            {
         camera.m_view_state = Camera::MoveState::FIXED;
         camera.startChangingSize({400, 300}, 2., [](auto& camera){camera.m_view_size_state = Camera::SizeState::Fixed;}); });
+
+    messanger.send(StartedBossFightEvent{boss.getId()});
 }
 
 void Game::spawnBossObjective()
@@ -248,7 +255,7 @@ void Game::spawnNextObjective()
 
     quest->addTask(objective);
     quest->addTask(objective2, objective.get());
-    objective->m_on_completion_callback = [this, new_pos = spot1.getPosition()]()
+    quest->m_on_completion = [this, new_pos = spot2.getPosition()]()
     {
         auto &star_effect = m_world->addVisualEffect(EffectType::ParticleEmiter);
         star_effect.setPosition(new_pos);
@@ -289,7 +296,9 @@ void Game::handleEvent(const SDL_Event &event)
             laser.setAngle(m_player->getAngle());
             laser.setOwner(m_player);
             laser.m_rotates_with_owner = true;
-            laser.m_max_dmg = 1.;
+            laser.m_max_dmg = 0.2;
+            laser.m_life_time = 3.;
+            laser.m_max_length = 400.;
             m_player->m_is_shooting_laser = true;
             m_player->m_laser_timer = laser.m_life_time;
         }
@@ -320,19 +329,19 @@ void Game::handleEvent(const SDL_Event &event)
             m_player->m_is_turning_right = false;
         }
     }
+
     if (event.type == SDL_MOUSEBUTTONUP)
     {
-
-        if (isKeyPressed(SDL_SCANCODE_LCTRL) && event.button.button == SDL_BUTTON_RIGHT)
+        if (isKeyPressed(SDLK_LCTRL) && event.button.button == SDL_BUTTON_RIGHT)
         {
-            auto &new_enemy = m_world->addObject2<Boss>();
+            auto &new_enemy = m_world->addObject2<Enemy>();
             new_enemy.setPosition(mouse_position);
         }
-        if (event.button.button == SDL_BUTTON_RIGHT)
+        else if (event.button.button == SDL_BUTTON_RIGHT)
         {
             startBossFight();
-            // m_camera.startMovingTo(m_window.getMouseInWorld(), 1.);
-            // auto &station = m_world->addObject2<Boss1>();
+            // // m_camera.startMovingTo(m_window.getMouseInWorld(), 1.);
+            // auto &station = m_world->addObject2<Meteor>();
             // station.setPosition(mouse_position);
         }
     }
@@ -363,7 +372,7 @@ void Game::parseInput(Renderer &window, float dt)
     }
     else if (isKeyPressed(m_key_binding[PlayerControl::MOVE_BACK]))
     {
-        m_player->acceleration = -15.f;
+        m_player->acceleration = -35.f;
     }
     else
     {
@@ -377,11 +386,6 @@ void Game::update(const float dt, Renderer &window)
     window.m_view = m_camera.getView();
 
     parseInput(window, dt);
-
-    if (m_player->health < 0)
-    {
-        m_state = GameState::PLAYER_DIED;
-    }
 
     m_world->update2(dt);
     m_world->update(dt);
@@ -472,8 +476,11 @@ PlayerEntity *Game::getPlayer()
 
 void Game::registerCollisions()
 {
-    auto& colllider = m_world->getCollisionSystem();
-    
+    auto &colllider = m_world->getCollisionSystem();
+
+    colllider.registerResolver(ObjectType::Meteor, ObjectType::Meteor, [](GameObject &obj1, GameObject &obj2, CollisionData c_data)
+                               { Collisions::bounce(obj1, obj2, c_data); });
+
     colllider.registerResolver(ObjectType::Player, ObjectType::Meteor);
     colllider.registerResolver(ObjectType::Player, ObjectType::Bullet);
     colllider.registerResolver(ObjectType::Player, ObjectType::Laser);
@@ -481,9 +488,10 @@ void Game::registerCollisions()
     colllider.registerResolver(ObjectType::Player, ObjectType::Trigger);
     colllider.registerResolver(ObjectType::Player, ObjectType::Heart);
 
+    colllider.registerResolver(ObjectType::Boss, ObjectType::Laser);
+
     colllider.registerResolver(ObjectType::Enemy, ObjectType::Meteor);
     colllider.registerResolver(ObjectType::Enemy, ObjectType::Bullet);
     colllider.registerResolver(ObjectType::Enemy, ObjectType::Laser);
     colllider.registerResolver(ObjectType::Enemy, ObjectType::Explosion);
-
 }

@@ -106,6 +106,8 @@ public:
   LayersHolder m_ui_layers;
   
   std::unique_ptr<UISystem> m_ui_system;
+
+  std::unique_ptr<PostBox<EntityDiedEvent>> m_player_died_postbox;
   // friend UI;
 };
 
