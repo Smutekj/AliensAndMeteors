@@ -27,7 +27,7 @@ public:
     float m_explosion_radius = 5.f;
     float m_max_explosion_radius = 25.f;
 
-    void setType(std::string texture_id);
+    void setType(AnimationId texture_id);
     // explicit Explosion(GameWorld *world, TextureHolder &textures);
     Explosion() = default;
     Explosion(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
@@ -61,7 +61,7 @@ private:
     float max_acc = 20.f;
 
     float m_time = 0.f;
-    float m_life_time = 1.;
+    float m_life_time = 5.;
     Sprite m_explosion_sprite;
 };
 
@@ -142,7 +142,12 @@ private:
 enum class Pickup
 {
     Heart,
-    Fuel
+    Fuel,
+    LaserAmmo,
+    BombAmmo,
+    TimeSlow,
+    Boost,
+    Shield,
 };
 
 class Heart : public GameObject
@@ -163,8 +168,12 @@ public:
     virtual void draw(LayersHolder &target) override;
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
 
-    Pickup type = Pickup::Heart;
+    void setPickupType(Pickup type);
+
 private:
+    PlayerEntity *p_player;
+
+    Pickup m_pickup_type = Pickup::Heart;
 
     utils::Vector2f m_acc;
     float max_vel = 100.f;

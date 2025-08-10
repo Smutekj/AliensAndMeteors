@@ -12,34 +12,26 @@
 #include "Player.h"
 #include "Attacks.h"
 
-
-Explosion::Explosion(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider,  PlayerEntity *player)
+Explosion::Explosion(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
     : GameObject(world, textures, ObjectType::Explosion)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
-
-    setType("Explosion");
 }
 
 Explosion::~Explosion() {}
 
-void Explosion::setType(std::string texture_id)
+void Explosion::setType(AnimationId id)
 {
-    //! TODO: ADD some animation manager
-    if (texture_id == "Explosion2")
+    if (!m_world->m_systems.has<AnimationComponent>(getId()))
     {
-        m_explosion_sprite.setTexture(*m_textures->get(texture_id));
-        auto texture_size = static_cast<utils::Vector2i>(m_textures->get(texture_id)->getSize());
-        m_animation = std::make_unique<Animation>(texture_size,
-                                                  12, 1, m_life_time, 1, true);
+        AnimationComponent anim;
+        anim.id = id;
+        anim.cycle_duration = 2.;
+        m_world->m_systems.add<AnimationComponent>(anim, getId());
     }
-    else if (texture_id == "Explosion")
+    else
     {
-        m_explosion_sprite.setTexture(*m_textures->get(texture_id));
-        auto texture_size = static_cast<utils::Vector2i>(m_textures->get(texture_id)->getSize());
-        m_life_time = 0.5f;
-        m_animation = std::make_unique<Animation>(texture_size,
-                                                  4, 4, m_life_time , 1, false);
+        m_world->m_systems.get<AnimationComponent>(getId()).id = id;
     }
 }
 
@@ -50,10 +42,12 @@ void Explosion::update(float dt)
     {
         kill();
     }
-    if(m_is_expanding)
+    if (m_is_expanding)
     {
         m_explosion_radius = m_time / m_life_time * m_max_explosion_radius;
-    }else{
+    }
+    else
+    {
         m_explosion_radius = m_max_explosion_radius;
     }
     setSize({m_explosion_radius, m_explosion_radius});
@@ -61,7 +55,7 @@ void Explosion::update(float dt)
     // {
     //     m_collision_shape->setScale(2 * m_explosion_radius, 2 * m_explosion_radius);
     // }
-    m_animation->update(dt);
+    // m_animation->update(dt);
 
     m_pos += m_vel * dt;
 }
@@ -78,17 +72,26 @@ void Explosion::onDestruction()
 {
 }
 
-void Explosion::draw(LayersHolder& layers)
+void Explosion::draw(LayersHolder &layers)
 {
-    auto& target = layers.getCanvas("Unit");
-    m_explosion_sprite.m_tex_rect = m_animation->getCurrentTextureRect();
-    m_explosion_sprite.setPosition(m_pos);
-    m_explosion_sprite.setRotation(m_angle);
-    m_explosion_sprite.setScale(2 * m_explosion_radius, 2 * m_explosion_radius);
-    target.drawSprite(m_explosion_sprite);
+    auto &target = layers.getCanvas("Unit");
+
+    // assert(m_world->m_systems.has<AnimationComponent>(getId()));
+    if (m_world->m_systems.has<AnimationComponent>(getId()))
+    {
+        auto &anim = m_world->m_systems.get<AnimationComponent>(getId());
+
+        m_explosion_sprite.m_tex_rect = anim.tex_rect;
+        m_explosion_sprite.m_tex_size = anim.texture_size;
+        m_explosion_sprite.setTexture(anim.texture_id, 0);
+        m_explosion_sprite.setPosition(m_pos);
+        m_explosion_sprite.setRotation(m_angle);
+        m_explosion_sprite.setScale(2 * m_explosion_radius, 2 * m_explosion_radius);
+        target.drawSprite(m_explosion_sprite);
+    }
 }
 
-EMP::EMP(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider,  PlayerEntity *player)
+EMP::EMP(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
     : m_collider(collider), GameObject(world, textures, ObjectType::EMP)
 {
     m_collision_shape = std::make_unique<Polygon>(8);
@@ -157,23 +160,23 @@ void EMP::onDestruction()
 
 void EMP::onExplosion()
 {
-    auto enemies = m_collider->findNearestObjects(ObjectType::Enemy, m_pos, m_explosion_radius);
-    for (auto enemy : enemies)
-    {
-        static_cast<Enemy *>(enemy)->m_deactivated = true;
-        static_cast<Enemy *>(enemy)->m_deactivated_time = 2.0f;
-    }
-    auto players = m_collider->findNearestObjects(ObjectType::Player, m_pos, m_explosion_radius);
-    for (auto player : players)
-    {
-        static_cast<PlayerEntity *>(player)->m_deactivated_time = 2.0f;
-    }
+    // auto enemies = m_collider->findNearestObjects(ObjectType::Enemy, m_pos, m_explosion_radius);
+    // for (auto enemy : enemies)
+    // {
+    //     static_cast<Enemy *>(enemy)->m_deactivated = true;
+    //     static_cast<Enemy *>(enemy)->m_deactivated_time = 2.0f;
+    // }
+    // auto players = m_collider->findNearestObjects(ObjectType::Player, m_pos, m_explosion_radius);
+    // for (auto player : players)
+    // {
+    //     static_cast<PlayerEntity *>(player)->m_deactivated_time = 2.0f;
+    // }
 }
 
-void EMP::draw(LayersHolder& layers)
+void EMP::draw(LayersHolder &layers)
 {
 
-    auto& target = layers.getCanvas("Unit");
+    auto &target = layers.getCanvas("Unit");
 
     m_texture_rect.m_tex_rect = m_animation->getCurrentTextureRect();
 
@@ -187,7 +190,7 @@ void EMP::draw(LayersHolder& layers)
     target.drawSprite(m_texture_rect);
 }
 
-ExplosionAnimation::ExplosionAnimation(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider,  PlayerEntity *player)
+ExplosionAnimation::ExplosionAnimation(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
     : GameObject(world, textures, ObjectType::Explosion)
 {
     m_collision_shape = std::make_unique<Polygon>(4);
@@ -227,9 +230,9 @@ void ExplosionAnimation::onDestruction()
 {
 }
 
-void ExplosionAnimation::draw(LayersHolder& layers)
+void ExplosionAnimation::draw(LayersHolder &layers)
 {
-    auto& target = layers.getCanvas("Unit");
+    auto &target = layers.getCanvas("Unit");
 
     Sprite rect;
     rect.setTexture(*m_textures->get("Explosion"));
@@ -242,7 +245,7 @@ void ExplosionAnimation::draw(LayersHolder& layers)
     target.drawSprite(rect);
 }
 
-Heart::Heart(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider,  PlayerEntity *player, Pickup type)
+Heart::Heart(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player, Pickup type)
     : GameObject(world, textures, ObjectType::Heart)
 {
 }
@@ -258,19 +261,51 @@ void Heart::onCreation()
     CollisionComponent c_comp;
     Polygon shape = {4};
     m_size = 6.;
-    shape.setScale(m_size/2.);
+
+    shape.setScale(m_size / 2.);
     c_comp.shape.convex_shapes.push_back(shape);
     c_comp.type = ObjectType::Heart;
     m_world->m_systems.add(c_comp, getId());
+
+    if (rand() % 2 == 0)
+    {
+        setPickupType(Pickup::Heart);
+    }
+    else
+    {
+        setPickupType(Pickup::Fuel);
+    }
 }
 
 void Heart::onDestruction()
 {
-    auto& effect = m_world->addVisualEffect(EffectType::ParticleEmiter);
+    auto &effect = m_world->addVisualEffect(EffectType::ParticleEmiter);
     effect.setPosition(m_pos);
     effect.setLifeTime(2.f);
 }
 
+void Heart::setPickupType(Pickup type)
+{
+
+    auto &c_comp = m_world->m_systems.get<CollisionComponent>(getId());
+
+    if (type == Pickup::Heart)
+    {
+        c_comp.on_collision = [this](int id, auto type)
+        {
+            m_world->m_systems.get<HealthComponent>(id).hp += 2;
+        };
+    }
+    else if (type == Pickup::Fuel)
+    {
+        c_comp.on_collision = [this](int id, auto type)
+        {
+            p_player->m_fuel += 2;
+        };
+    }
+
+    m_pickup_type = type;
+}
 void Heart::onCollisionWith(GameObject &obj, CollisionData &c_data)
 {
     if (obj.getType() == ObjectType::Player)
@@ -279,15 +314,16 @@ void Heart::onCollisionWith(GameObject &obj, CollisionData &c_data)
     }
 }
 
-void Heart::draw(LayersHolder& layers)
+void Heart::draw(LayersHolder &layers)
 {
-    auto& target = layers.getCanvas("Unit");
+    auto &target = layers.getCanvas("Unit");
 
     Sprite rect;
-    if(type==Pickup::Heart)
+    if (m_pickup_type == Pickup::Heart)
     {
         rect.setTexture(*m_textures->get("Heart"));
-    }else if(type == Pickup::Fuel)
+    }
+    else if (m_pickup_type == Pickup::Fuel)
     {
         rect.setTexture(*m_textures->get("Fuel"));
     }
