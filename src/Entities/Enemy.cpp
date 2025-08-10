@@ -54,6 +54,8 @@ void Enemy::update(float dt)
     m_acc *= 0.f;
 
     m_angle = utils::dir2angle(m_vel);
+
+    m_world->m_systems.get<AvoidMeteorsComponent>(getId()).target_pos = m_target_pos;
 }
 
 void Enemy::onCollisionWith(GameObject &obj, CollisionData &c_data)
@@ -66,7 +68,8 @@ void Enemy::onCollisionWith(GameObject &obj, CollisionData &c_data)
         auto &bullet = static_cast<Bullet &>(obj);
         if (bullet.getTime() > 3.5f)
         {
-            m_world->p_messenger->send<DamageReceivedEvent>({ObjectType::Bullet, obj.getId(), ObjectType::Enemy, m_id, 1.});
+            m_world->p_messenger->send<DamageReceivedEvent>({ObjectType::Bullet, obj.getId(),
+                                                             ObjectType::Enemy, m_id, 1.});
         }
         break;
     }
@@ -74,7 +77,7 @@ void Enemy::onCollisionWith(GameObject &obj, CollisionData &c_data)
     {
         m_world->p_messenger->send<DamageReceivedEvent>({ObjectType::Meteor, obj.getId(), ObjectType::Enemy, m_id, 1.5});
         auto mvt = c_data.separation_axis;
-        if (dot(mvt, m_vel) < 0.f)
+        if (dot(mvt, m_vel) > 0.f)
         {
             m_vel -= 2.f * dot(mvt, m_vel) * mvt;
         }
@@ -108,25 +111,36 @@ void Enemy::onCreation()
     setBehaviour();
 
     BoidComponent b_comp = {m_target_pos, m_pos, m_vel, m_acc, 30.f};
-    m_systems->add(b_comp, getId());
+    AvoidMeteorsComponent a_comp = {m_target_pos, m_pos, m_vel, m_acc, 50.f};
+    HealthComponent h_comp = {30., 30., 0.};
+    TargetComponent t_comp = {m_player, {0, 0}, 1000.};
 
-    AvoidMeteorsComponent a_comp = {m_target_pos, m_pos, m_vel, m_acc, 30.f};
-    m_systems->add(a_comp, getId());
+    Polygon shape = {4};
+    CollisionComponent c_comp = {std::vector<Polygon>{shape}, ObjectType::Enemy};
 
-    HealthComponent h_comp = {10., 10., 0.};
-    m_systems->add(h_comp, getId());
-
-    TargetComponent t_comp = {m_player, {0, 0}, 10000.};
-    m_systems->add(t_comp, getId());
+    m_systems->addEntity(getId(), b_comp, a_comp, h_comp, t_comp, c_comp);
 }
+
 void Enemy::onDestruction()
 {
     auto &new_explosion = m_world->addObject2<Explosion>();
+    AnimationComponent anim;
+    anim.id = AnimationId::PurpleExplosion;
+    anim.cycle_duration = 1.f;
+
+    TimedEventComponent timer;
+    timer.addEvent(TimedEvent{1.f,
+                              [&new_explosion]()
+                              { new_explosion.kill(); },
+                              1});
+
     new_explosion.removeCollider();
     new_explosion.m_is_expanding = false;
     new_explosion.setPosition(m_pos);
     new_explosion.m_max_explosion_radius = 4.f;
-    new_explosion.setType("Explosion2");
+    // new_explosion.setType(AnimationId::BlueExplosion);
+
+    m_world->m_systems.addEntity(new_explosion.getId(), anim, timer);
 
     GameObject::onDestruction();
     // SoundManager::play(0);
@@ -410,10 +424,7 @@ void Boss::update(float dt)
 
     truncate(m_vel, m_max_vel);
     m_pos += (m_vel + m_impulse) * dt;
-    if (m_health < 0.f)
-    {
-        kill();
-    }
+
     m_impulse *= 0.f;
     m_acc *= 0.f;
 }
@@ -536,7 +547,6 @@ void Boss::onDestruction()
     new_explosion.removeCollider();
     new_explosion.setPosition(m_pos);
     new_explosion.m_explosion_radius = 10.f;
-    new_explosion.setType("Explosion2");
 
     // SoundManager::play(0);
 }
