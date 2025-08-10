@@ -33,10 +33,12 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
                                             renderer tinyxml2 nlohmann_json::nlohmann_json)
 
 if( ${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
-target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE RESOURCES_DIR="/Resources") ### add correct resources path here                        
+     target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE RESOURCES_DIR="/Resources") ### add correct resources path here                        
 else()
-target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE RESOURCES_DIR="${CMAKE_SOURCE_DIR}/Resources") ### add correct resources path here                        
+     target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE RESOURCES_DIR="${CMAKE_SOURCE_DIR}/Resources" $<$<CONFIG:Debug>:DEBUG>) ### add correct resources path here                        
 endif()
+
+set_target_compiler_flags(${CMAKE_PROJECT_NAME})
 
 if( ${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
 
