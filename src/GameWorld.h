@@ -264,3 +264,78 @@ void GameWorld::removeX(std::queue<EntityType> &to_remove)
         to_remove.pop();
     }
 }
+
+struct EntityTreeNode
+{
+    std::vector<int> children;
+    int parent = -1;
+};
+
+class SceneGraph
+{
+public:
+    SceneGraph(GameWorld &world, EntityRegistryT &entities)
+        : m_world(world), m_entities(entities)
+    {
+    }
+
+    void update(float dt)
+    {
+        
+    }
+
+    void addEntity(int id)
+    {
+        EntityTreeNode node = {{}, id};
+        m_scene.addObject(node);
+    }
+
+    void addNewChild(int parent, int child_id)
+    {
+        //! the child should not exist yet!
+        assert(!m_scene.contains(child_id));
+    
+        addEntity(child_id);
+        addExistingChild(parent, child_id);
+    }
+
+    void addExistingChild(int parent, int child_id)
+    {
+        //! the child should already exist!
+        assert(m_scene.contains(child_id));
+    
+        auto& children = m_scene.at(parent).children;    
+        //! do not add anything twice!
+        assert(std::find(children.begin(), children.end(), child_id) == children.end());
+        children.push_back(child_id);
+        m_scene.at(child_id).parent = parent;
+    }
+
+    void removeEntity(int id)
+    {
+        
+        std::deque<int> to_remove = {id};
+        while(!to_remove.empty())
+        {
+            int removed_id = to_remove.front();
+            to_remove.pop_front();
+            
+            auto& node = m_scene.at(removed_id);
+            for(auto child_id : node.children)
+            {
+                to_remove.push_back(child_id);
+            }
+            m_scene.remove(id);
+            m_entities.at(id)->kill();
+        }
+    }
+
+
+
+private:
+
+    utils::DynamicObjectPool<EntityTreeNode, MAX_ENTITY_COUNT> m_scene;
+
+    EntityRegistryT &m_entities;
+    GameWorld &m_world;
+};

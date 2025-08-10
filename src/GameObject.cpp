@@ -17,6 +17,12 @@ void GameObject::updateAll(float dt)
         m_collision_shape->setRotation(m_angle);
     }
 
+    if(m_parent)
+    {
+        m_pos = m_parent->getPosition();
+        m_angle = m_parent->getAngle(); 
+        m_vel = m_parent->m_vel; 
+    }
     // update(dt);
 }
 
@@ -89,6 +95,10 @@ bool GameObject::isBloomy() const
 
 void GameObject::kill()
 {
+    if(m_parent)
+    {
+        m_parent->removeChild(this);
+    }
     m_is_dead = true;
 }
 

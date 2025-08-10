@@ -19,9 +19,7 @@ Enemy::Enemy(GameWorld *world, TextureHolder &textures,
     : m_player(player), m_systems(&systems),
       GameObject(world, textures, ObjectType::Enemy, collider, player)
 {
-    m_collision_shape = std::make_unique<Polygon>(4);
     m_size = {16, 16};
-    m_collision_shape->setScale(m_size / 2.);
     m_target_pos = player->getPosition();
     // m_systems->addEntity();
 }
@@ -201,9 +199,7 @@ void Enemy::setBehaviour()
 SpaceStation::SpaceStation(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player, GameSystems &systems)
     : p_systems(&systems), GameObject(world, textures, ObjectType::SpaceStation)
 {
-    m_collision_shape = std::make_unique<Polygon>(4);
     m_size = {10, 10};
-    m_collision_shape->setScale(m_size.x, m_size.y);
     m_rigid_body = std::make_unique<RigidBody>();
     m_rigid_body->mass = 5000000.f;
     m_rigid_body->inertia = 50000000.f;
@@ -316,8 +312,6 @@ Boss::Boss(GameWorld *world, TextureHolder &textures, Collisions::CollisionSyste
     : m_player(player),
       GameObject(world, textures, ObjectType::Boss)
 {
-    m_collision_shape = std::make_unique<Polygon>(4);
-    m_collision_shape->setScale(10, 10);
 }
 
 Boss::~Boss() {}
@@ -602,9 +596,7 @@ void Boss::draw(LayersHolder &layers)
 Turret::Turret(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
     : p_player(player), GameObject(world, textures, ObjectType::SpaceStation)
 {
-    m_collision_shape = std::make_unique<Polygon>(4);
     m_size = {10, 10};
-    m_collision_shape->setScale(m_size.x, m_size.y);
     m_rigid_body = std::make_unique<RigidBody>();
     m_rigid_body->mass = 5000000.f;
     m_rigid_body->inertia = 50000000.f;

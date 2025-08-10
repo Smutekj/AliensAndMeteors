@@ -10,4 +10,3 @@ sdfg 0
 s 0
 dsf 0
 sdf 0
-d 0

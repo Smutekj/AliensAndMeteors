@@ -112,6 +112,17 @@ public:
         m_on_destruction_callback = callback;
     }
 
+    void addChild(GameObject* child)
+    {
+        m_children.push_back(child);
+        child->m_parent = this;
+    }
+
+    void removeChild(GameObject* child)
+    {
+        m_children.erase(std::remove(m_children.begin(), m_children.end(), child), m_children.end());
+    }
+
 public:
     utils::Vector2f m_vel = {0, 0};
     utils::Vector2f m_acc = {0,0};
@@ -134,6 +145,9 @@ protected:
     bool m_is_bloomy = false;
 
     utils::Vector2f m_size = {1, 1};
+
+    GameObject* m_parent = nullptr;
+    std::vector<GameObject*> m_children;
 
 private:
     std::function<void(int, ObjectType)> m_on_destruction_callback = [](int, ObjectType) {};

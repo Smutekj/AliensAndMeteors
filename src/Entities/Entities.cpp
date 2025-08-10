@@ -15,7 +15,6 @@
 Explosion::Explosion(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
     : GameObject(world, textures, ObjectType::Explosion)
 {
-    m_collision_shape = std::make_unique<Polygon>(4);
 }
 
 Explosion::~Explosion() {}
@@ -51,11 +50,6 @@ void Explosion::update(float dt)
         m_explosion_radius = m_max_explosion_radius;
     }
     setSize({m_explosion_radius, m_explosion_radius});
-    // if (m_collision_shape)
-    // {
-    //     m_collision_shape->setScale(2 * m_explosion_radius, 2 * m_explosion_radius);
-    // }
-    // m_animation->update(dt);
 
     m_pos += m_vel * dt;
 }
@@ -94,8 +88,6 @@ void Explosion::draw(LayersHolder &layers)
 EMP::EMP(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
     : m_collider(collider), GameObject(world, textures, ObjectType::EMP)
 {
-    m_collision_shape = std::make_unique<Polygon>(8);
-    m_collision_shape->setScale(2, 2);
     auto texture_size = static_cast<utils::Vector2i>(m_textures->get("Bomb")->getSize());
 
     m_animation = std::make_unique<Animation>(texture_size,
@@ -118,7 +110,6 @@ void EMP::update(float dt)
         {
             m_time = 0;
             m_is_ticking = false;
-            m_collision_shape = nullptr;
             m_collider->removeObject(*this);
 
             auto texture_size = static_cast<utils::Vector2i>(m_textures->get("Emp")->getSize());
@@ -138,8 +129,6 @@ void EMP::update(float dt)
             kill();
         }
 
-        // m_explosion_radius = m_time / m_life_time * m_max_explosion_radius;
-        // m_collision_shape->setScale({2 * m_explosion_radius, 2 * m_explosion_radius});
     }
     m_animation->update(dt);
 
@@ -193,8 +182,6 @@ void EMP::draw(LayersHolder &layers)
 ExplosionAnimation::ExplosionAnimation(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
     : GameObject(world, textures, ObjectType::Explosion)
 {
-    m_collision_shape = std::make_unique<Polygon>(4);
-    m_collision_shape->setScale(2 * m_explosion_radius, 2 * m_explosion_radius);
 
     auto texture_size = static_cast<utils::Vector2i>(m_textures->get("Explosion")->getSize());
 

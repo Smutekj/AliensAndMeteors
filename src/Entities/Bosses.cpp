@@ -6,9 +6,7 @@
 Boss1::Boss1(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
     : p_player(player), GameObject(world, textures, ObjectType::Boss)
 {
-    // m_collision_shape = std::make_unique<Polygon>(4);
     m_size = {398 / 2, 230 / 2};
-    // m_collision_shape->setScale(m_size / 2.);
 
     auto texture_size = static_cast<utils::Vector2i>(m_textures->get("LongShield")->getSize());
 

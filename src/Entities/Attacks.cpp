@@ -16,8 +16,6 @@ Bullet::Bullet(GameWorld *world, TextureHolder &textures, Collisions::CollisionS
     : GameObject(world, textures, ObjectType::Bullet)
 {
     m_size = {2.5f};
-    m_collision_shape = std::make_unique<Polygon>(4);
-    m_collision_shape->setScale(m_size);
 }
 
 float Bullet::getTime() const
@@ -149,8 +147,6 @@ void Bullet::draw(LayersHolder &layers)
 Bomb::Bomb(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
     : m_neighbour_searcher(collider), GameObject(world, textures, ObjectType::Bomb)
 {
-    m_collision_shape = std::make_unique<Polygon>(4);
-    m_collision_shape->setScale(2, 2);
     // m_rigid_body = std::make_unique<RigidBody>();
     // m_rigid_body->mass = 0.01f;
     // // m_rigid_body->angle_vel = 0.0;
