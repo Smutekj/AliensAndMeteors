@@ -93,7 +93,7 @@ ShopState::ShopState(StateStack &stack, State::Context context)
     auto money_text = std::make_shared<TextUIELement>(*context.font, std::to_string(p_player->m_money) + " $");
     money_text->dimensions = {Pixels{120}, Pixels{60}};
     money_text->id = "moneyText";
-    money_text->align = Alignement::Left;
+    money_text->align_x = Alignement::Left;
     // money_text->margin = {20, 20};
     shop_header->addChildren(money_text,exit_button);
 
@@ -101,7 +101,7 @@ ShopState::ShopState(StateStack &stack, State::Context context)
     auto grid_holder = std::make_shared<SpriteUIELement>();
     grid_holder->setTexture(*m_context.textures->get("ShopItemFrame"));
     grid_holder->layout = Layout::Grid;
-    grid_holder->align = Alignement::CenterX;
+    grid_holder->align_x = Alignement::CenterX;
     grid_holder->dimensions = {Percentage{0.9}, Pixels{600}};
     // grid_holder->sizing = Sizing::SCALE_TO_FIT;
     grid_holder->padding = {20, 50};
@@ -135,7 +135,7 @@ ShopState::ShopState(StateStack &stack, State::Context context)
         auto icon = std::make_shared<SpriteUIELement>();
         icon->setTexture(*m_context.textures->get(icon_textures.at(i)));
         icon->dimensions = {Pixels{80}, Pixels{80}};
-        icon->align = Alignement::CenterX;
+        icon->align_x = Alignement::CenterX;
 
         auto text = std::make_shared<TextUIELement>(*m_context.font, "100");
         text->dimensions = {Pixels{40}, Pixels{40}};
