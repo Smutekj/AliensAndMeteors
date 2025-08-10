@@ -30,7 +30,7 @@ void main()
     //
     float id_f = float(gl_VertexID); 
     float ix = float(gl_VertexID/2);
-    float iy = mod(id_f, 2.);
-    v_tex_coord = vec2(a_tex_coord.x + a_tex_dim.x*ix, a_tex_coord.y + a_tex_dim.y*iy) ;
+    float iy = 1.-mod(id_f, 2.);
+    v_tex_coord = vec2(a_tex_coord.x + a_tex_dim.x*ix, a_tex_coord.y - a_tex_dim.y*iy) ;
     v_color     = a_color;      
 }                                             
