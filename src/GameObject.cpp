@@ -65,10 +65,6 @@ RigidBody &GameObject::getRigidBody()
     return *m_rigid_body;
 }
 
-int GameObject::getBlockId() const
-{
-    return m_block_id;
-}
 
 int GameObject::getId() const
 {

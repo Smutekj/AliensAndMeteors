@@ -11,9 +11,7 @@ class TextureHolder;
 class LayersHolder;
 // class GameSystems;
 
-
 constexpr int MAX_ENTITY_COUNT = 10000;
-
 
 enum class Multiplier
 {
@@ -29,7 +27,7 @@ struct CollisionData
     utils::Vector2f separation_axis;
     float minimum_translation = -1;
     bool belongs_to_a = true;
-    utils::Vector2f contact_point = {0,0};
+    utils::Vector2f contact_point = {0, 0};
 };
 
 enum class EffectType
@@ -59,13 +57,11 @@ namespace Collisions
     class CollisionSystem;
 }
 
-
-
 class GameObject
 {
 
 public:
-    GameObject(){};
+    GameObject() {};
     GameObject(GameWorld *world, TextureHolder &textures,
                ObjectType type = ObjectType::Count, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
     GameObject(const GameObject &other) = default;
@@ -100,36 +96,38 @@ public:
     bool doesPhysics() const;
     RigidBody &getRigidBody();
 
-    int getBlockId() const;
     int getId() const;
     ObjectType getType() const;
 
     void setSize(utils::Vector2f size);
-    const utils::Vector2f& getSize() const;
+    const utils::Vector2f &getSize() const;
 
     void setDestructionCallback(std::function<void(int, ObjectType)> callback)
     {
         m_on_destruction_callback = callback;
     }
 
-    void addChild(GameObject* child)
+    void addChild(GameObject *child)
     {
         m_children.push_back(child);
         child->m_parent = this;
     }
 
-    void removeChild(GameObject* child)
+    void removeChild(GameObject *child)
     {
         m_children.erase(std::remove(m_children.begin(), m_children.end(), child), m_children.end());
     }
 
 public:
     utils::Vector2f m_vel = {0, 0};
-    utils::Vector2f m_acc = {0,0};
+    utils::Vector2f m_acc = {0, 0};
+    float m_max_vel = 70.f;
+    float m_max_acc = 250.f;
 
-    int m_block_id;
     int m_id;
-    
+
+    std::unordered_map<ObjectType, std::function<void(GameObject&, CollisionData)>> m_collision_resolvers;
+
 protected:
     TextureHolder *m_textures;
 
@@ -146,8 +144,8 @@ protected:
 
     utils::Vector2f m_size = {1, 1};
 
-    GameObject* m_parent = nullptr;
-    std::vector<GameObject*> m_children;
+    GameObject *m_parent = nullptr;
+    std::vector<GameObject *> m_children;
 
 private:
     std::function<void(int, ObjectType)> m_on_destruction_callback = [](int, ObjectType) {};
