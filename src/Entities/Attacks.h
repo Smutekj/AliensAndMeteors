@@ -45,9 +45,8 @@ public:
     GameObject *getTarget() const;
     void setBulletType(BulletType type);
 
-    float m_max_vel = 100.f;
-    float m_max_acc = 30.f;
-
+public:
+    Sprite m_sprite;
 private:
     static std::unordered_map<BulletType, std::string> m_type2shader_id;
 
@@ -59,11 +58,8 @@ private:
     GameObject *m_target = nullptr;
     GameObject *m_shooter = nullptr;
 
-    float m_tail_timer = 0.f;
     float m_time = 0.f;
-    float m_life_time = 10.;
 
-    std::deque<utils::Vector2f> m_past_positions;
 };
 
 class Bomb : public GameObject
@@ -145,6 +141,8 @@ public:
 
     float m_length = 0.f;
     float m_width = 0.f;
+
+    ColorByte m_laser_color = {255, 255, 255, 255};
 private:
     float m_time = 0.;
 

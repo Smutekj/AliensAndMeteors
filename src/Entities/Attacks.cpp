@@ -46,24 +46,7 @@ void Bullet::update(float dt)
     m_vel += acc * dt;
     utils::truncate(m_vel, m_max_vel);
     m_pos += m_vel * dt;
-
-    m_time += dt;
-    if (m_time >= m_life_time)
-    {
-        kill();
-    }
-
-    m_tail_timer += dt;
-    //! remember past positions to draw a tail
-    if (m_tail_timer > 0.1f)
-    {
-        m_tail_timer = 0.f;
-        m_past_positions.push_front(m_pos);
-    }
-    if (m_past_positions.size() > 4)
-    {
-        m_past_positions.pop_back();
-    }
+  
 }
 
 void Bullet::onCollisionWith(GameObject &obj, CollisionData &c_data)
@@ -104,11 +87,17 @@ void Bullet::onCreation()
     CollisionComponent c_comp;
     c_comp.type = ObjectType::Bullet;
     c_comp.shape.convex_shapes.emplace_back(8);
-    m_world->m_systems.add(c_comp, getId());
+    
+    TimedEvent die_on_timeout = {10.f, [this](){kill();}, 1};
+    TimedEventComponent time_comp;
+    time_comp.addEvent(die_on_timeout);
+
+    m_world->m_systems.addEntity(getId(), c_comp, time_comp);
 }
 
 void Bullet::onDestruction()
 {
+
 }
 
 void Bullet::setBulletType(BulletType type)
@@ -121,16 +110,16 @@ void Bullet::draw(LayersHolder &layers)
 
     auto &target = layers.getCanvas("Unit");
 
-    Sprite rect;
-    rect.setTexture(*m_textures->get("Bomb"));
-    rect.setPosition(m_pos);
-    rect.setRotation(glm::radians(dir2angle(m_vel)));
-    rect.setScale(m_size / 2.f);
-    rect.m_color = {255, 0, 0, 255};
+    m_sprite.setTexture(*m_textures->get("Bomb"));
+    m_sprite.setPosition(m_pos);
+    m_sprite.setRotation(glm::radians(dir2angle(m_vel)));
+    m_sprite.setScale(m_size / 2.f);
+    m_sprite.m_color = {255, 0, 0, 255};
 
     assert(m_type2shader_id.count(m_type) > 0);
     auto shader_id = m_type2shader_id.at(m_type);
-    target.drawSprite(rect, shader_id);
+    target.drawSprite(m_sprite, shader_id);
+
 
     // int alpha = 255;
     // for (auto pos : m_past_positions)
@@ -291,6 +280,7 @@ void Laser::onCreation()
 
 void Laser::onDestruction()
 {
+    GameObject::onDestruction();
 }
 
 void Laser::draw(LayersHolder &layers)
@@ -304,7 +294,7 @@ void Laser::draw(LayersHolder &layers)
     rect.setPosition(getPosition());
     rect.setRotation(glm::radians(m_angle));
     rect.setScale(m_length / 2., m_width / 2.);
-    rect.m_color = {255, 255, 50, 255};
+    rect.m_color = m_laser_color;
     target.drawSprite(rect, "laser");
     // target.drawCricleBatched(m_pos, 2, {1,0,0,1});
     // target.drawCricleBatched(m_pos + utils::angle2dir(m_angle) * m_length/2., 2, {1,0,1,1});
