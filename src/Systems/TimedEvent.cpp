@@ -16,7 +16,10 @@ void TimedEvent::update(float dt)
     m_firing_time -= dt;
     if (m_firing_time <= 0.f)
     {
-        m_callback();
+        if(m_callback)
+        {
+            m_callback();
+        }
         m_repeats_left--;
         m_firing_time = m_event_delay;
     }
