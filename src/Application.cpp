@@ -16,6 +16,7 @@
 #include <queue>
 #include <filesystem>
 
+
 void Application::run()
 {
 
@@ -36,6 +37,9 @@ void Application::iterate()
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
+        ImGui_ImplSDL2_ProcessEvent(&event);
+
+        
         m_state_stack->handleEvent(event);
         if (event.type == SDL_WINDOWEVENT)
         {
@@ -46,15 +50,13 @@ void Application::iterate()
         }
     }
 
-    // int w, h;
-    // SDL_GL_GetDrawableSize(m_window.getHandle(), &w, &h);
-    // glViewport(0, 0, w, h);
     m_state_stack->draw();
+    m_ui->draw(m_window);
+
     Shader::m_time += m_dt;
 }
 
 static std::size_t s_frame_count = 0;
-// auto tic = std::chrono::high_resolution_clock::now();
 
 void inline gameLoop(void *mainLoopArg)
 {
@@ -156,8 +158,13 @@ static_assert(false)
     m_textures.add("Close", "UIClose.png");
     m_textures.add("Menu", "UIMenu.png");
     m_textures.add("Dot", "UIDot.png");
-    //     m_ui = std::make_unique<UI>(m_window, m_textures, m_layers, m_window_renderer);
+        m_ui = std::make_unique<ToolBoxUI>(m_window, m_textures);
+
+
+    
+
 }
+
 
 void Application::registerStates()
 {

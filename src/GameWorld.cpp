@@ -160,14 +160,12 @@ void GameWorld::destroyObject(int entity_id)
 
 void GameWorld::update(float dt)
 {
-    removeQueuedEntities();
-    addQueuedEntities();
-
+    
     m_systems.preUpdate(dt);
     m_collision_system.preUpdate(dt, m_entities);
     m_systems.update(dt);
     m_systems.postUpdate(dt);
-
+    
     for (auto &obj : m_entities.data())
     {
         obj->updateAll(dt);
@@ -177,6 +175,8 @@ void GameWorld::update(float dt)
             destroyObject(obj->getId());
         }
     }
+    addQueuedEntities();
+    removeQueuedEntities();
 }
 
 void GameWorld::draw(LayersHolder &layers)
