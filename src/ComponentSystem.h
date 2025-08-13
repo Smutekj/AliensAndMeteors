@@ -39,6 +39,12 @@ public:
         return std::get<ComponentHolder<ComponentType>>(m_components).has(entity_id);
     }
 
+    template <class ...Components>
+    void addEntityDelayed(int entity_id, Components&&... comps)
+    {
+        (addDelayed(std::forward<Components>(comps), entity_id),...);
+    }
+
     template <class ComponentType>
     void addDelayed(ComponentType comp, int entity_id)
     {
@@ -68,9 +74,9 @@ public:
     }
 
     template <class... Components>
-    void addEntity(int id, Components... comps)
+    void addEntity(int id, Components&&... comps)
     {
-        (add(comps, id), ...);
+        (add(std::forward<Components>(comps), id), ...);
     }
 
     void preUpdate(float dt)
@@ -113,4 +119,7 @@ using GameSystems = ComponentWorld<BoidComponent,
                                    TargetComponent,
                                    CollisionComponent,
                                    AnimationComponent,
-                                   TimedEventComponent>;
+                                   TimedEventComponent,
+                                   ShootPlayerAIComponent,
+                                   LaserAIComponent
+                                   >;
