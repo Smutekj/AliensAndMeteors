@@ -117,6 +117,11 @@ public:
         return id;
     }
 
+    bool contains(int entity_id) const
+    {
+        return m_data.contains(entity_id);
+    }
+
     int reserveIndexForInsertion()
     {
         int id = m_next_id;
