@@ -26,12 +26,11 @@ enum class ObjectType
     Count
 };
 
-
-
 struct BoidComponent
 {
-    utils::Vector2f target_pos;
-    utils::Vector2f pos;
+
+    utils::Vector2f target_pos = {0,0};
+    utils::Vector2f pos = {0,0};
     utils::Vector2f vel = {0,0};
     utils::Vector2f acc = {0,0}; //! resulting acceleration;
     float boid_radius = 40.f;
@@ -46,8 +45,8 @@ struct TargetComponent
 
 struct AvoidMeteorsComponent
 {
-    utils::Vector2f target_pos;
-    utils::Vector2f pos;
+    utils::Vector2f target_pos = {0,0};
+    utils::Vector2f pos = {0,0};
     utils::Vector2f vel = {0,0};
     utils::Vector2f acc = {0,0}; //! resulting acceleration;
     float radius = 50.f;
@@ -104,6 +103,7 @@ struct TimedEventComponent
         return next_id;
     }
     std::unordered_map<int, TimedEvent> events;
+    private:
     int next_id = 0; //! TODO: this is fucked up and will fix it later 
 };
 
@@ -158,4 +158,67 @@ struct AnimationComponent
     int n_repeats_left = 1;
     Rect<int> tex_rect = {0,0,0,0};
     utils::Vector2i texture_size = {1,1};
+};
+
+struct SpriteComponent
+{
+    std::string shader_id;
+    Texture* texture = nullptr;
+    utils::Vector2f pos;
+    float angle;
+    utils::Vector2f scale;
+};
+
+
+enum class ShooterAIState
+{
+    Searching,
+    FollowingPlayer,
+    Shooting,
+    Reloading,
+    Escaping,
+};
+
+
+enum class ProjectileType
+{
+    HomingFireBullet,
+    HomingElectroBullet,
+    FireBullet,
+    ElectroBullet,
+    LaserBullet,
+    Rocket,
+    HomingRocket
+};
+
+struct ShootPlayerAIComponent
+{
+    utils::Vector2f pos;
+    ShooterAIState state = ShooterAIState::Searching;
+    std::vector<TimedEvent> timers;
+    float vision_radius = 150.f;
+    float cooldown = 10.f;
+    ProjectileType projectile_type = ProjectileType::HomingFireBullet;
+    // PlayerEntity* p_player = nullptr;
+};
+
+
+
+enum class LaserType
+{
+    Basic,
+    
+};
+
+struct LaserAIComponent
+{
+    utils::Vector2f pos;
+    ShooterAIState state = ShooterAIState::Searching;
+    float vision_radius = 150.f;
+    float cooldown = 10.69f;
+    float laser_time = 3.69f;
+    float laser_range = 250.f;
+    float laser_width = 2.69f;
+    LaserType laser_type = LaserType::Basic;
+    std::vector<TimedEvent> timers;
 };
