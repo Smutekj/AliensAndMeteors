@@ -175,7 +175,7 @@ void GameWorld::update(float dt)
             destroyObject(obj->getId());
         }
     }
-
+    
     addQueuedEntities();
     removeQueuedEntities();
 }
@@ -189,6 +189,7 @@ void GameWorld::checkComponentsConsistency()
     {
         assert(m_entities.contains(id));
     }
+
 }
 
 void GameWorld::draw(LayersHolder &layers)

@@ -107,7 +107,7 @@ Game::Game(Renderer &window, KeyBindings &bindings)
         auto spawn_pos = m_player->getPosition() + randf(200, 5000) * angle2dir(randf(0, 360));
         meteor.setPosition(spawn_pos);
     }
-    for (int i = 0; i < 10; ++i)
+    for (int i = 0; i < 2000; ++i)
     {
         auto spawn_pos = m_player->getPosition() + randf(100, 6000) * angle2dir(randf(0, 360));
         m_enemy_factory->create2(EnemyType::ShooterEnemy, spawn_pos);
