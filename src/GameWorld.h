@@ -79,6 +79,11 @@ public:
         return m_collision_system;
     }
 
+    GameObject* get(int entity_id) 
+    {
+        return m_entities.at(entity_id).get();
+    }
+
     template <class EntityType>
     EntityType &addObject2();
     template <class EntityType>
@@ -128,6 +133,7 @@ private:
 public:
     GameSystems m_systems;
     PlayerEntity *m_player;
+    TextureHolder m_textures;
 
     Collisions::CollisionSystem m_collision_system;
     PostOffice *p_messenger = nullptr;
@@ -147,7 +153,6 @@ private:
     std::queue<std::shared_ptr<GameObject>> m_to_add;
     std::queue<std::shared_ptr<GameObject>> m_to_destroy;
 
-    TextureHolder m_textures;
 };
 
 template <class TriggerType, class... Args>
@@ -232,7 +237,6 @@ void GameWorld::addX(std::queue<EntityType> &to_add)
         std::shared_ptr<EntityType> entity_p(&new_entity);
         m_entities.insertAt(entity_p->getId(), entity_p);
 
-        new_entity.m_block_id = block_id;
         // new_entity.m_id = id;
 
         if (new_entity.collides())
@@ -249,6 +253,7 @@ void GameWorld::removeX(std::queue<EntityType> &to_remove)
     auto &entity_block = std::get<ComponentBlock<EntityType>>(m_entities2);
     while (!to_remove.empty())
     {
+        assert(false); //! DO NOT USe THIs!!!
         auto &entity = to_remove.front();
         entity.onDestruction();
 
@@ -259,7 +264,7 @@ void GameWorld::removeX(std::queue<EntityType> &to_remove)
             m_collision_system.removeObject(entity);
         }
 
-        entity_block.deactivate(entity.getBlockId());
+        entity_block.deactivate(entity.getId());
         m_entities.remove(entity.getId());
         to_remove.pop();
     }
