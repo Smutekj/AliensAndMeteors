@@ -49,7 +49,7 @@ void FollowAndShootAI2::update(float dt = 0.033)
 }
 
 FollowAndShootLasersAI::FollowAndShootLasersAI(PlayerEntity *player, Enemy *owner, GameWorld *world)
-    : BoidAI2(player, owner, world), orig_max_vel(owner->max_vel), orig_max_acc(owner->max_acc)
+    : BoidAI2(player, owner, world), orig_max_vel(owner->m_max_vel), orig_max_acc(owner->m_max_acc)
      {}
 
 void FollowAndShootLasersAI::update(float dt = 0.033)
@@ -89,15 +89,15 @@ void FollowAndShootLasersAI::update(float dt = 0.033)
 
     if (shooting_laser)
     {
-        p_owner->max_vel = orig_max_vel / 4.f;
-        p_owner->max_acc = orig_max_acc / 8.f;
+        p_owner->m_max_vel = orig_max_vel / 4.f;
+        p_owner->m_max_acc = orig_max_acc / 8.f;
         laser_timer += dt;
         if (laser_timer > 2.)
         {
             laser_timer = 0;
             shooting_laser = false;
-            p_owner->max_vel = orig_max_vel;
-            p_owner->max_acc = orig_max_acc;
+            p_owner->m_max_vel = orig_max_vel;
+            p_owner->m_max_acc = orig_max_acc;
         }
     }
 }
@@ -105,7 +105,7 @@ void FollowAndShootLasersAI::update(float dt = 0.033)
 BomberAI::BomberAI(PlayerEntity *player, Enemy *owner, GameWorld *world)
     : BoidAI2(player, owner, world)
 {
-    orig_max_vel = p_owner->max_vel;
+    orig_max_vel = p_owner->m_max_vel;
 }
 
 void BomberAI::update(float dt)
