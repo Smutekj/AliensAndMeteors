@@ -84,6 +84,9 @@ public:
         return m_entities.at(entity_id).get();
     }
 
+    //! checks whether components that exist have existing entities
+    void checkComponentsConsistency();
+
     template <class EntityType>
     EntityType &addObject2();
     template <class EntityType>

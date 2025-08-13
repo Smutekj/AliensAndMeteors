@@ -160,14 +160,12 @@ void GameWorld::destroyObject(int entity_id)
 
 void GameWorld::update(float dt)
 {
-    removeQueuedEntities();
-    addQueuedEntities();
-
+    
     m_systems.preUpdate(dt);
     m_collision_system.preUpdate(dt, m_entities);
     m_systems.update(dt);
     m_systems.postUpdate(dt);
-
+    
     for (auto &obj : m_entities.data())
     {
         obj->updateAll(dt);
@@ -176,6 +174,20 @@ void GameWorld::update(float dt)
         {
             destroyObject(obj->getId());
         }
+    }
+
+    addQueuedEntities();
+    removeQueuedEntities();
+}
+
+void GameWorld::checkComponentsConsistency()
+{
+    auto& t_comps = m_systems.getComponents<TargetComponent>();
+    auto& comps = t_comps.data;
+    auto& ids = t_comps.data_ind2id;
+    for(auto id : ids)
+    {
+        assert(m_entities.contains(id));
     }
 }
 
@@ -186,7 +198,9 @@ void GameWorld::draw(LayersHolder &layers)
         obj->draw(layers);
     }
 
+    
 #ifdef DEBUG
+    checkComponentsConsistency();
     m_ts->draw(layers.getCanvas("Unit"));
     m_collision_system.draw(layers.getCanvas("Unit"));
 #endif
