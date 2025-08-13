@@ -7,6 +7,12 @@
 template <class DataType, class IdType>
 struct ContiguousColony
 {
+    ContiguousColony()
+    {
+        //! TODO: DO NOT BE AN IDIOT AND FIX THIS! THE MEMORY SHOULD BE STATICALLY ALLOCATED ANYWAY
+        data.reserve(5000);
+        data_ind2id.reserve(5000);
+    }
 
     void clear()
     {
@@ -30,7 +36,7 @@ struct ContiguousColony
         id2data_ind[id] = data.size() - 1;
     }
 
-    DataType &get(IdType id)
+    DataType &get(IdType id) 
     {
         return data.at(id2data_ind.at(id));
     }
@@ -140,7 +146,7 @@ public:
         return m_data.data_ind2id;
     }
 
-    DataType &at(int index)
+    DataType &at(int index) 
     {
         return m_data.get(index);
     }
