@@ -21,14 +21,12 @@ Enemy::Enemy(GameWorld *world, TextureHolder &textures,
 {
     m_size = {16, 16};
     m_target_pos = player->getPosition();
-    // m_systems->addEntity();
 }
 
 Enemy::~Enemy() {}
 
 void Enemy::update(float dt)
 {
-    m_behaviour->update(dt);
 
     if (m_deactivated)
     {
@@ -39,13 +37,13 @@ void Enemy::update(float dt)
         }
     }
 
-    truncate(m_acc, max_acc);
+    truncate(m_acc, m_max_acc);
     if (!m_deactivated)
     {
         m_vel += m_acc * dt;
     }
 
-    truncate(m_vel, max_vel);
+    truncate(m_vel, m_max_vel);
     m_pos += (m_vel + m_impulse) * dt;
 
     m_impulse *= 0.f;
@@ -53,11 +51,14 @@ void Enemy::update(float dt)
 
     m_angle = utils::dir2angle(m_vel);
 
-    m_world->m_systems.get<AvoidMeteorsComponent>(getId()).target_pos = m_target_pos;
 }
 
 void Enemy::onCollisionWith(GameObject &obj, CollisionData &c_data)
 {
+    if(m_collision_resolvers.contains(obj.getType()))
+    {
+        m_collision_resolvers[obj.getType()](obj, c_data);
+    }
 
     switch (obj.getType())
     {
@@ -106,17 +107,18 @@ void Enemy::onCollisionWith(GameObject &obj, CollisionData &c_data)
 
 void Enemy::onCreation()
 {
-    setBehaviour();
+    // setBehaviour();
 
-    BoidComponent b_comp = {m_target_pos, m_pos, m_vel, m_acc, 30.f};
-    AvoidMeteorsComponent a_comp = {m_target_pos, m_pos, m_vel, m_acc, 50.f};
-    HealthComponent h_comp = {30., 30., 0.};
-    TargetComponent t_comp = {m_player, {0, 0}, 1000.};
+    // BoidComponent b_comp = {m_target_pos, m_pos, m_vel, m_acc, 30.f};
+    // AvoidMeteorsComponent a_comp = {m_target_pos, m_pos, m_vel, m_acc, 50.f};
+    // HealthComponent h_comp = {30., 30., 0.};
+    // TargetComponent t_comp = {m_player, {0, 0}, 1000.};
 
     Polygon shape = {4};
     CollisionComponent c_comp = {std::vector<Polygon>{shape}, ObjectType::Enemy};
+    // m_systems->addEntity(getId(), b_comp, a_comp, h_comp, t_comp, c_comp);
 
-    m_systems->addEntity(getId(), b_comp, a_comp, h_comp, t_comp, c_comp);
+    m_systems->addEntity(getId(), c_comp);
 }
 
 void Enemy::onDestruction()

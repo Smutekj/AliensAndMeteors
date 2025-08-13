@@ -43,12 +43,12 @@ public:
     bool m_deactivated = false;
     float m_deactivated_time = 1.f;
     
-    float max_vel = 60.f;
-    float max_acc = 350.f;
     float max_impulse_vel = 40.f;
     
     utils::Vector2f m_impulse = {0, 0};
     utils::Vector2f m_target_pos;
+    
+    Sprite m_sprite;
     
     private:
     GameSystems* m_systems;
@@ -57,7 +57,6 @@ public:
     
     PlayerEntity *m_player = nullptr;
     
-    Sprite m_sprite;
 };
 
 class SpaceStation : public GameObject
@@ -125,8 +124,6 @@ class Boss : public GameObject
 
 public:
     float m_orig_max_vel = 90.f;
-    float m_max_vel = 90.f;
-    float max_acc = 130.f;
     float m_vision_radius = 70.f;
 
     float m_health = 50;
@@ -187,3 +184,5 @@ private:
     float m_max_health = 100.f;
     float m_health = m_max_health;
 };
+
+
