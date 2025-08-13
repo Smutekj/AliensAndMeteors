@@ -11,11 +11,6 @@ GameObject::GameObject(GameWorld *world, TextureHolder &textures,
 
 void GameObject::updateAll(float dt)
 {
-    if (m_collision_shape)
-    {
-        m_collision_shape->setPosition(m_pos);
-        m_collision_shape->setRotation(m_angle);
-    }
 
     if(m_parent)
     {
@@ -23,7 +18,12 @@ void GameObject::updateAll(float dt)
         m_angle = m_parent->getAngle(); 
         m_vel = m_parent->m_vel; 
     }
-    // update(dt);
+
+    this->update(dt);
+}
+
+bool GameObject::isRoot() const{
+    return m_parent == nullptr;
 }
 
 void GameObject::move(utils::Vector2f by)
@@ -82,11 +82,6 @@ void GameObject::removeCollider()
     {
         m_collision_shape = nullptr;
     }
-}
-
-bool GameObject::isBloomy() const
-{
-    return m_is_bloomy;
 }
 
 void GameObject::kill()

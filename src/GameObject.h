@@ -78,7 +78,7 @@ public:
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) {};
 
     void removeCollider();
-    bool isBloomy() const;
+    bool isRoot() const;
     void kill();
     bool isDead() const;
     void updateAll(float dt);
@@ -125,6 +125,7 @@ public:
     float m_max_acc = 250.f;
 
     int m_id;
+    std::vector<GameObject *> m_children;
 
     std::unordered_map<ObjectType, std::function<void(GameObject&, CollisionData)>> m_collision_resolvers;
 
@@ -145,7 +146,6 @@ protected:
     utils::Vector2f m_size = {1, 1};
 
     GameObject *m_parent = nullptr;
-    std::vector<GameObject *> m_children;
 
 private:
     std::function<void(int, ObjectType)> m_on_destruction_callback = [](int, ObjectType) {};
