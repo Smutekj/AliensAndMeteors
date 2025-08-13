@@ -22,7 +22,7 @@ namespace Collisions
 
     void CollisionSystem::insertObject(GameObject &object)
     {
-        auto bounding_rect = m_components.get(object.getId()).shape.getBoundingRect().inflate(1.2f);
+        auto bounding_rect = m_components.get(object.getId()).shape.getBoundingRect().inflate(1.5f);
         m_object_type2tree[object.getType()].addRect(bounding_rect, object.getId());
     }
 
@@ -63,7 +63,7 @@ namespace Collisions
             if (makeUnion(fitting_rect, big_bounding_rect).volume() > big_bounding_rect.volume())
             {
                 tree.removeObject(entity_ind);
-                tree.addRect(fitting_rect.inflate(1.2f), entity_ind);
+                tree.addRect(fitting_rect.inflate(1.5f), entity_ind);
             }
         }
 
