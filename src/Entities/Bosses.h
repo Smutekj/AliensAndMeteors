@@ -66,8 +66,6 @@ private:
 
 public:
     float m_orig_max_vel = 90.f;
-    float m_max_vel = 90.f;
-    float max_acc = 130.f;
     float m_vision_radius = 70.f;
 
     float m_health = 50;
