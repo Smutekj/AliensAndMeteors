@@ -9,6 +9,7 @@
 #include "Systems/HealthSystem.h"
 #include "Systems/TargetSystem.h"
 #include "Systems/TimedEventSystem.h"
+#include "Systems/EnemyAISystems.h"
 
 GameWorld::GameWorld(PostOffice &messenger)
     : p_messenger(&messenger), m_systems(m_entities), m_collision_system(messenger, m_systems.getComponents<CollisionComponent>())
@@ -159,8 +160,8 @@ void GameWorld::destroyObject(int entity_id)
 
 void GameWorld::update(float dt)
 {
-    addQueuedEntities();
     removeQueuedEntities();
+    addQueuedEntities();
 
     m_systems.preUpdate(dt);
     m_collision_system.preUpdate(dt, m_entities);
@@ -176,7 +177,6 @@ void GameWorld::update(float dt)
             destroyObject(obj->getId());
         }
     }
-
 }
 
 void GameWorld::draw(LayersHolder &layers)
@@ -187,7 +187,7 @@ void GameWorld::draw(LayersHolder &layers)
     }
 
 #ifdef DEBUG
-// m_ts->draw(layers.getCanvas("Unit"));
+    m_ts->draw(layers.getCanvas("Unit"));
     m_collision_system.draw(layers.getCanvas("Unit"));
 #endif
 }
@@ -233,11 +233,15 @@ void GameWorld::registerSystems()
 {
 
     m_systems.registerSystem(std::make_shared<BoidSystem>(m_systems.getComponents<BoidComponent>()));
-    m_systems.registerSystem(std::make_shared<AvoidanceSystem>(m_systems.getComponents<AvoidMeteorsComponent>(), m_collision_system));
+    m_systems.registerSystem(std::make_shared<AvoidanceSystem>(m_systems.getComponents<AvoidMeteorsComponent>(),
+                                                               m_systems, m_collision_system));
     m_systems.registerSystem(std::make_shared<HealthSystem>(m_systems.getComponents<HealthComponent>(), *p_messenger));
     m_ts = std::make_shared<TargetSystem>(m_systems.getComponents<TargetComponent>(), m_entities);
     m_systems.registerSystem(m_ts);
     m_systems.registerSystem(std::make_shared<TimedEventSystem>(m_systems.getComponents<TimedEventComponent>()));
+    m_systems.registerSystem(std::make_shared<AISystem>(*this,
+                                                        m_systems.getComponents<ShootPlayerAIComponent>(),
+                                                        m_systems.getComponents<LaserAIComponent>()));
 
     std::filesystem::path animation_directory = {RESOURCES_DIR};
     animation_directory /= "Textures/Animations/";
