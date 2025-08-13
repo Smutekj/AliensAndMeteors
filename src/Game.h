@@ -10,6 +10,7 @@
 
 #include "PostOffice.h"
 #include "PostBox.h"
+#include "Entities/Factories.h"
 
 class GameWorld;
 
@@ -108,7 +109,9 @@ public:
   std::unique_ptr<UISystem> m_ui_system;
 
   std::unique_ptr<PostBox<EntityDiedEvent>> m_player_died_postbox;
-  // friend UI;
+  
+  std::unique_ptr<EnemyFactory> m_enemy_factory;
+
 };
 
 #endif // BOIDS_GAME_H

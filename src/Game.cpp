@@ -37,7 +37,7 @@ void Game::initializeLayersAndTextures()
 
     auto &unit_layer = m_layers.addLayer("Unit", 3, text_options, width, height);
     unit_layer.m_canvas.setShadersPath(shaders_directory);
-    // unit_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
+    unit_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
     unit_layer.m_canvas.addShader("Meteor", "basictex.vert", "Meteor.frag");
     // unit_layer.addEffect(std::make_unique<EdgeDetect>(width, height));
     // unit_layer.addEffect(std::make_unique<BloomFinal>(width, height));
@@ -86,6 +86,7 @@ Game::Game(Renderer &window, KeyBindings &bindings)
 
     initializeLayersAndTextures();
     m_world = std::make_unique<GameWorld>(messanger);
+    m_enemy_factory = std::make_unique<EnemyFactory>(*m_world, m_world->m_textures);
     registerCollisions();
 
     //! PLAYER NEEDS TO BE FIRST BECAUSE OTHER OBJECTS MIGHT REFERENCE IT!
@@ -106,11 +107,10 @@ Game::Game(Renderer &window, KeyBindings &bindings)
         auto spawn_pos = m_player->getPosition() + randf(200, 5000) * angle2dir(randf(0, 360));
         meteor.setPosition(spawn_pos);
     }
-    for (int i = 0; i < 0; ++i)
+    for (int i = 0; i < 10; ++i)
     {
-        auto &meteor = m_world->addObject2<Enemy>();
-        auto spawn_pos = m_player->getPosition() + randf(100, 500) * angle2dir(randf(0, 360));
-        meteor.setPosition(spawn_pos);
+        auto spawn_pos = m_player->getPosition() + randf(100, 6000) * angle2dir(randf(0, 360));
+        m_enemy_factory->create2(EnemyType::ShooterEnemy, spawn_pos);
     }
 
     spawnNextObjective();
@@ -334,12 +334,11 @@ void Game::handleEvent(const SDL_Event &event)
     {
         if (isKeyPressed(SDLK_LCTRL) && event.button.button == SDL_BUTTON_RIGHT)
         {
-            auto &new_enemy = m_world->addObject2<Enemy>();
-            new_enemy.setPosition(mouse_position);
+            auto &new_enemy = m_enemy_factory->create2(EnemyType::ShooterEnemy, mouse_position);
         }
         else if (event.button.button == SDL_BUTTON_RIGHT)
         {
-            startBossFight();
+            // startBossFight();
             // // m_camera.startMovingTo(m_window.getMouseInWorld(), 1.);
             // auto &station = m_world->addObject2<Meteor>();
             // station.setPosition(mouse_position);
