@@ -20,8 +20,7 @@ GameState::GameState(StateStack &stack, State::Context context)
     }
     catch (std::exception &e)
     {
-        std::cout << "ERROR DURING GAME CREATION: \n"
-                  << e.what() << "\n";
+        std::cout << "ERROR DURING GAME CREATION: " << e.what() << "\n";
         throw std::runtime_error("GAME CREATION FAILED");
     }
     std::cout << "Game Created!" << std::endl;
