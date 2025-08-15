@@ -1,21 +1,35 @@
 #include "UISystem.h"
 #include "Renderer.h"
 #include "Entities/Player.h"
+#include "GameWorld.h"
 
 UISystem::UISystem(Renderer &window, TextureHolder &textures,
                    PostOffice &messenger, PlayerEntity *player,
-                   Font &font, GameSystems &systems)
+                   Font &font, GameWorld &world)
     : ui(window), p_post_office(&messenger),
       p_player(player), window_canvas(window),
-      m_textures(textures), p_systems(&systems)
+      m_textures(textures), p_world(&world)
 {
-    m_boss_postbox = std::make_unique<PostBox<StartedBossFightEvent>>(messenger, [this](const auto &events)
-                                                                      {
+    auto m_boss_postbox = std::make_unique<PostBox<StartedBossFightEvent>>(messenger, [this](const auto &events)
+                                                                           {
         for(const auto&  e : events)
         {
             boss_id = e.boss_id;
             addBossBar();
         } });
+    auto m_died_postbox = std::make_unique<PostBox<EntityDiedEvent>>(messenger, [this](const auto &events)
+        {
+        for (const auto &e : events)
+        {
+            if(e.id == boss_id)
+            {
+                removeBossBar();
+                boss_id = -1;
+            }
+        };
+    });
+    m_post_boxes.push_back(std::move(m_boss_postbox));
+    m_post_boxes.push_back(std::move(m_died_postbox));
 
     auto top_bar = std::make_shared<UIElement>();
 
@@ -84,13 +98,12 @@ void UISystem::draw(Renderer &window)
     auto old_view = window.m_view;
     window.m_view = window.getDefaultView();
     window.m_view.setSize(window.m_view.getSize().x, -window.m_view.getSize().y);
-    
-    #if DEBUG
-    ui.drawBoundingBoxes(); //! TODO: WHY THE FUCK IS IT FLIPPED WHEN I PUT IT AFTER drawUI???
-    #endif
-    
-    ui.drawUI();
 
+#if DEBUG
+    ui.drawBoundingBoxes(); //! TODO: WHY THE FUCK IS IT FLIPPED WHEN I PUT IT AFTER drawUI???
+#endif
+
+    ui.drawUI();
 
     window.m_view = old_view;
 }
@@ -106,6 +119,11 @@ void UISystem::addBossBar()
     {
         el->addChild(boss_bar);
     }
+}
+void UISystem::removeBossBar()
+{
+    auto boss_bar = ui.getElementById("BossHealth");
+    boss_bar->dimensions = {Percentage(0.f), Percentage(0.f)};
 }
 
 void UISystem::update(float dt)
@@ -126,13 +144,16 @@ void UISystem::update(float dt)
     window_canvas.getShader("healthBar").use();
     window_canvas.getShader("healthBar").setUniform2("u_health_ratio", health_ratio);
 
-    if (boss_id != -1)
+    if (boss_id != -1 && p_world->contains(boss_id))
     {
-        auto &h_comp = p_systems->get<HealthComponent>(boss_id);
-        float health_ratio = h_comp.hp / h_comp.max_hp;
-
-        window_canvas.getShader("bossHealthBar").use();
-        window_canvas.getShader("bossHealthBar").setUniform2("u_health_ratio", health_ratio);
+        if( p_world->m_systems.has<HealthComponent>(boss_id))
+        {
+            auto &h_comp = p_world->m_systems.get<HealthComponent>(boss_id);
+            float health_ratio = h_comp.hp / h_comp.max_hp;
+    
+            window_canvas.getShader("bossHealthBar").use();
+            window_canvas.getShader("bossHealthBar").setUniform2("u_health_ratio", health_ratio);
+        }
     }
 
     //!

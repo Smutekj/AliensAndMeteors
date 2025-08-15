@@ -3,6 +3,7 @@
 // #include "Geometry.h"
 #include "Utils/Grid.h"
 #include "Utils/ObjectPool.h"
+#include "Utils/ContiguousColony.h"
 
 #include <unordered_map>
 #include <functional>
@@ -72,7 +73,7 @@ class GameWorld
 {
 
 public:
-    GameWorld(PostOffice &messenger);
+    GameWorld(PostOffice &messenger, TextureHolder& textures);
 
     Collisions::CollisionSystem &getCollisionSystem()
     {
@@ -82,6 +83,14 @@ public:
     GameObject* get(int entity_id) 
     {
         return m_entities.at(entity_id).get();
+    }
+    EntityRegistryT& getEntities() 
+    {
+        return m_entities;
+    }
+    bool contains(int entity_id) const
+    {
+        return m_entities.contains(entity_id);
     }
 
     //! checks whether components that exist have existing entities
@@ -127,8 +136,9 @@ public:
     void update(float dt);
     void draw(LayersHolder &window);
 
+    void removeParent(GameObject& child);
+
 private:
-    void registerSystems();
     void addQueuedEntities();
     void removeQueuedEntities();
     void loadTextures();
@@ -136,7 +146,7 @@ private:
 public:
     GameSystems m_systems;
     PlayerEntity *m_player;
-    TextureHolder m_textures;
+    TextureHolder& m_textures;
 
     Collisions::CollisionSystem m_collision_system;
     PostOffice *p_messenger = nullptr;
@@ -149,12 +159,13 @@ private:
     EntityQueue m_entities_to_remove;
 
     EntityRegistryT m_entities;
+    DynamicObjectPool2<int> m_root_entities;
 
-    std::unique_ptr<GridNeighbourSearcher> m_neighbour_searcher;
     std::shared_ptr<TargetSystem> m_ts;
 
-    std::queue<std::shared_ptr<GameObject>> m_to_add;
-    std::queue<std::shared_ptr<GameObject>> m_to_destroy;
+    std::deque<std::shared_ptr<GameObject>> m_to_add;
+    std::deque<std::shared_ptr<GameObject>> m_to_destroy;
+
 
 };
 
@@ -163,14 +174,15 @@ TriggerType &GameWorld::addTrigger(Args... args)
 {
     auto new_trigger = std::make_shared<TriggerType>(this, m_textures, args...);
     new_trigger->m_id = m_entities.reserveIndexForInsertion();
-    m_to_add.push(new_trigger);
+    m_to_add.push_back(new_trigger);
     return *new_trigger;
 }
 
 template <class EntityType>
 EntityType &GameWorld::addObject2()
 {
-    static_assert(std::is_base_of_v<GameObject, EntityType>);
+    
+    static_assert(std::is_base_of_v<GameObject, EntityType> || std::is_same_v<GameObject, EntityType>);
     // auto &queue = std::get<std::queue<EntityType>>(m_entities_to_add);
     // auto new_entity = createEntity<EntityType>();
     // queue.push(new_entity);
@@ -179,7 +191,7 @@ EntityType &GameWorld::addObject2()
 
     auto new_entity = createEntity2<EntityType>();
     new_entity->m_id = m_entities.reserveIndexForInsertion();
-    m_to_add.push(new_entity);
+    m_to_add.push_back(new_entity);
     return *new_entity;
 }
 
@@ -201,11 +213,11 @@ std::shared_ptr<EntityType> GameWorld::createEntity2()
 {
     if constexpr (std::is_same_v<EntityType, Enemy> || std::is_same_v<EntityType, SpaceStation>)
     {
-        return std::make_shared<EntityType>(this, m_textures, &m_collision_system, m_player, m_systems);
+        return std::make_shared<EntityType>(this, m_textures, m_player, m_systems);
     }
     else
     {
-        return std::make_shared<EntityType>(this, m_textures, &m_collision_system, m_player);
+        return std::make_shared<EntityType>(this, m_textures, m_player);
     }
 }
 
@@ -225,6 +237,7 @@ EntityType &GameWorld::addObjectForced()
     {
         m_collision_system.insertObject(*new_entity);
     }
+    m_root_entities.insertAt(new_id, new_id);
     return *new_entity;
 }
 
@@ -343,7 +356,8 @@ public:
 private:
 
     utils::DynamicObjectPool<EntityTreeNode, MAX_ENTITY_COUNT> m_scene;
-
+    
     EntityRegistryT &m_entities;
+
     GameWorld &m_world;
 };

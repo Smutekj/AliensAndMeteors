@@ -12,7 +12,7 @@ class UISystem
 public:
     UISystem(Renderer &window, TextureHolder &textures,
              PostOffice &messenger, PlayerEntity *player,
-             Font &font, GameSystems &systems);
+             Font &font, GameWorld &world);
 
     void draw(Renderer &window);
 
@@ -20,15 +20,16 @@ public:
 
 private:
     void addBossBar();
+    void removeBossBar();
 
 private:
     UIDocument ui;
 
-    GameSystems *p_systems;
+    GameWorld *p_world;
     PlayerEntity *p_player;
     PostOffice *p_post_office;
 
-    std::unique_ptr<PostBox<StartedBossFightEvent>> m_boss_postbox;
+    std::vector<std::unique_ptr<PostBoxI>> m_post_boxes;
 
     TextureHolder& m_textures;
     Renderer &window_canvas;
