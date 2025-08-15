@@ -81,6 +81,13 @@ struct DamageReceivedEvent
     float dmg = 0.f;
 };
 
+struct HealthChangedEvent
+{
+    int entity_id;
+    float old_hp;
+    float new_hp;
+};
+
 struct StartedBossFightEvent
 {
     int boss_id;
