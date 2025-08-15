@@ -37,7 +37,7 @@ void Application::iterate()
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
-        ImGui_ImplSDL2_ProcessEvent(&event);
+        // ImGui_ImplSDL2_ProcessEvent(&event);
 
         
         m_state_stack->handleEvent(event);
@@ -51,7 +51,7 @@ void Application::iterate()
     }
 
     m_state_stack->draw();
-    m_ui->draw(m_window);
+    // m_ui->draw(m_window);
 
     Shader::m_time += m_dt;
 }
