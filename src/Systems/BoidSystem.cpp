@@ -59,7 +59,7 @@ void BoidSystem::steer(BoidComponent &comp, int comp_id, float dt)
     utils::Vector2f align_direction = {0, 0};
     int align_neighbours_count = 0;
 
-    const float scatter_multiplier = 100;//Enemy::m_force_multipliers[Multiplier::SCATTER];
+    const float scatter_multiplier = 500;//Enemy::m_force_multipliers[Multiplier::SCATTER];
     const float align_multiplier = 10.;//Enemy::m_force_multipliers[Multiplier::ALIGN];
     const float seek_multiplier = 1.;//Enemy::m_force_multipliers[Multiplier::SEEK];
 
