@@ -69,12 +69,15 @@ public:
   GameState getState() const;
   
   void initializeLayersAndTextures();
+  void loadTextures();
   void registerCollisions();
+  void registerSystems();
 
   void spawnNextObjective();
   void spawnBossObjective();
   void addDestroyNObjective(ObjectType type, int count);
   void startBossFight();
+
 
   GameStage m_stage = GameStage::Free;
   Camera m_camera;
@@ -111,6 +114,8 @@ public:
   std::unique_ptr<PostBox<EntityDiedEvent>> m_player_died_postbox;
   
   std::unique_ptr<EnemyFactory> m_enemy_factory;
+  std::unique_ptr<PickupFactory> m_pickup_factory;
+  std::unique_ptr<LaserFactory> m_laser_factory;
 
 };
 
