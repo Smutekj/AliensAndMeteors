@@ -121,5 +121,6 @@ using GameSystems = ComponentWorld<BoidComponent,
                                    AnimationComponent,
                                    TimedEventComponent,
                                    ShootPlayerAIComponent,
-                                   LaserAIComponent
+                                   LaserAIComponent,
+                                   SpriteComponent
                                    >;
