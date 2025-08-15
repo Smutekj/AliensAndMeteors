@@ -9,7 +9,7 @@ out vec4 FragColor;
 
 uniform float u_time = 0.;
 uniform vec3 u_base_color = vec3(1.,1.9,0.1);
-uniform vec3 u_color_edge = vec3(10.,5.1,0.);
+uniform vec3 u_color_edge = vec3(10.,5.,12.);
 
 
 uniform sampler2D u_texture;
