@@ -229,9 +229,9 @@ Laser::~Laser()
 void Laser::stopAgainst(ObjectType type)
 {
     auto dir = utils::angle2dir(m_angle);
-    auto hit = m_world->getCollisionSystem().findClosestIntesection(type, m_pos - dir * m_length / 2., utils::angle2dir(m_angle), m_length);
+    auto hit = m_world->getCollisionSystem().findClosestIntesection(type, m_pos, utils::angle2dir(m_angle), m_length);
 
-    m_length = dist(hit, m_pos - dir * m_length / 2.);
+    m_length = dist(hit, m_pos);
     setSize({m_length, m_width});
     //! m_pos of laser is special, it is starting position not center so we set it manually
     // setPosition(m_pos + m_length / 2.f * utils::angle2dir(m_angle));
