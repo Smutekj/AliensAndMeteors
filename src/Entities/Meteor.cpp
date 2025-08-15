@@ -5,7 +5,7 @@
 #include "../DrawLayer.h"
 #include "../Utils/RandomTools.h"
 
-Meteor::Meteor(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
+Meteor::Meteor(GameWorld *world, TextureHolder &textures, PlayerEntity *player)
     : p_player(player), GameObject(world, textures, ObjectType::Meteor)
 {
     m_rigid_body = std::make_unique<RigidBody>();
@@ -15,6 +15,11 @@ Meteor::Meteor(GameWorld *world, TextureHolder &textures, Collisions::CollisionS
 
 void Meteor::update(float dt)
 {
+    //! retarded but will remove later
+    m_collision_shape->setPosition(m_pos);
+    m_collision_shape->setRotation(m_angle);
+    m_collision_shape->setScale(m_size/2.f);
+
     truncate(m_vel, max_vel);
     m_pos += m_vel * dt;
 
@@ -53,6 +58,7 @@ void Meteor::onCollisionWith(GameObject &obj, CollisionData &c_data)
 
 void Meteor::draw(LayersHolder &layers)
 {
+
     //! find center of mass in the base coordinates
     auto points_orig = m_collision_shape->points;
     auto n_points = points_orig.size();

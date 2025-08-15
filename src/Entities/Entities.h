@@ -30,7 +30,7 @@ public:
     void setType(AnimationId texture_id);
     // explicit Explosion(GameWorld *world, TextureHolder &textures);
     Explosion() = default;
-    Explosion(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
+    Explosion(GameWorld *world, TextureHolder &textures, PlayerEntity *player = nullptr);
     Explosion(const Explosion &e) = default;
     Explosion &operator=(Explosion &e) = default;
     Explosion &operator=(Explosion &&e) = default;
@@ -73,7 +73,7 @@ public:
     float m_max_explosion_radius = 20.f;
 
     EMP() = default;
-    EMP(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
+    EMP(GameWorld *world, TextureHolder &textures, PlayerEntity *player = nullptr);
     EMP(const EMP &e) = default;
     EMP &operator=(EMP &e) = default;
     EMP &operator=(EMP &&e) = default;
@@ -100,7 +100,6 @@ private:
     float m_time = 0.f;
     float m_life_time = 1.;
 
-    Collisions::CollisionSystem *m_collider;
 
     bool m_is_ticking = true;
 
@@ -115,7 +114,7 @@ public:
 
     ExplosionAnimation() = default;
 
-    ExplosionAnimation(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
+    ExplosionAnimation(GameWorld *world, TextureHolder &textures, PlayerEntity *player = nullptr);
     ExplosionAnimation(ExplosionAnimation &e) = default;
     ExplosionAnimation &operator=(ExplosionAnimation &e) = default;
     ExplosionAnimation &operator=(ExplosionAnimation &&e) = default;
@@ -143,6 +142,7 @@ enum class Pickup
 {
     Heart,
     Fuel,
+    Money,
     LaserAmmo,
     BombAmmo,
     TimeSlow,
@@ -155,7 +155,7 @@ class Heart : public GameObject
 
 public:
     Heart() = default;
-    Heart(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr,
+    Heart(GameWorld *world, TextureHolder &textures, PlayerEntity *player = nullptr,
           Pickup type = Pickup::Heart);
     Heart(const Heart &e) = default;
     Heart &operator=(Heart &e) = default;

@@ -27,7 +27,7 @@ class Bullet : public GameObject
 {
 public:
     Bullet() = default;
-    Bullet(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
+    Bullet(GameWorld *world, TextureHolder &textures , PlayerEntity *player = nullptr);
     Bullet(const Bullet &e) = default;
     Bullet &operator=(Bullet &e) = default;
     Bullet &operator=(Bullet &&e) = default;
@@ -51,7 +51,6 @@ private:
     static std::unordered_map<BulletType, std::string> m_type2shader_id;
 
 private:
-    utils::Vector2f m_acc;
 
     BulletType m_type = BulletType::Lightning;
 
@@ -67,7 +66,7 @@ class Bomb : public GameObject
 
 public:
     Bomb() = default;
-    Bomb(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
+    Bomb(GameWorld *world, TextureHolder &textures, PlayerEntity *player = nullptr);
     Bomb(const Bomb &e) = default;
     Bomb &operator=(Bomb &e) = default;
     Bomb &operator=(Bomb &&e) = default;
@@ -100,7 +99,7 @@ class Laser : public GameObject
 public:
     Laser() = default;
 
-    Laser(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
+    Laser(GameWorld *world, TextureHolder &textures, PlayerEntity *player = nullptr);
     Laser(const Laser &e) = default;
     Laser(Laser &&other) = default;
 
@@ -145,8 +144,6 @@ public:
     ColorByte m_laser_color = {255, 255, 255, 255};
 private:
     float m_time = 0.;
-
-    Collisions::CollisionSystem *m_neighbour_searcher;
 
     GameObject *m_owner = nullptr;
 };

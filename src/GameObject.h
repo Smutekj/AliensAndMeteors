@@ -63,7 +63,7 @@ class GameObject
 public:
     GameObject() {};
     GameObject(GameWorld *world, TextureHolder &textures,
-               ObjectType type = ObjectType::Count, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
+               ObjectType type = ObjectType::Count, PlayerEntity *player = nullptr);
     GameObject(const GameObject &other) = default;
     GameObject(GameObject &&other) = default;
     GameObject &operator=(GameObject &other) = default;
@@ -78,9 +78,12 @@ public:
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) {};
 
     void removeCollider();
+
     bool isRoot() const;
+
     void kill();
     bool isDead() const;
+
     void updateAll(float dt);
 
     const utils::Vector2f &getPosition() const;
@@ -102,32 +105,24 @@ public:
     void setSize(utils::Vector2f size);
     const utils::Vector2f &getSize() const;
 
-    void setDestructionCallback(std::function<void(int, ObjectType)> callback)
-    {
-        m_on_destruction_callback = callback;
-    }
+    void setDestructionCallback(std::function<void(int, ObjectType)> callback);
+    void addChild(GameObject* child);
+    void removeChild(GameObject* child);
 
-    void addChild(GameObject *child)
-    {
-        m_children.push_back(child);
-        child->m_parent = this;
-    }
-
-    void removeChild(GameObject *child)
-    {
-        m_children.erase(std::remove(m_children.begin(), m_children.end(), child), m_children.end());
-    }
+    bool isParentOf(GameObject* child) const;
 
 public:
     utils::Vector2f m_vel = {0, 0};
     utils::Vector2f m_acc = {0, 0};
     float m_max_vel = 70.f;
     float m_max_acc = 250.f;
-
+    
     int m_id;
-    std::vector<GameObject *> m_children;
 
-    std::unordered_map<ObjectType, std::function<void(GameObject&, CollisionData)>> m_collision_resolvers;
+    std::vector<GameObject*> m_children;
+    GameObject *m_parent = nullptr;
+
+    std::unordered_map<ObjectType, std::function<void(GameObject&, CollisionData&)>> m_collision_resolvers;
 
 protected:
     TextureHolder *m_textures;
@@ -135,18 +130,15 @@ protected:
     std::shared_ptr<Polygon> m_collision_shape = nullptr;
     std::shared_ptr<RigidBody> m_rigid_body = nullptr;
 
+    //! transform data
     utils::Vector2f m_pos;
     float m_angle = 0;
+    utils::Vector2f m_size = {1, 1};
 
     GameWorld *m_world;
 
     bool m_is_dead = false;
-    bool m_is_bloomy = false;
-
-    utils::Vector2f m_size = {1, 1};
-
-    GameObject *m_parent = nullptr;
-
+    
 private:
     std::function<void(int, ObjectType)> m_on_destruction_callback = [](int, ObjectType) {};
 

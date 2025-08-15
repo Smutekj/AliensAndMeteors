@@ -12,7 +12,7 @@
 std::unordered_map<BulletType, std::string> Bullet::m_type2shader_id = {{BulletType::Lightning, "lightningBolt"},
                                                                         {BulletType::Fire, "fireBolt"}};
 
-Bullet::Bullet(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
+Bullet::Bullet(GameWorld *world, TextureHolder &textures, PlayerEntity *player)
     : GameObject(world, textures, ObjectType::Bullet)
 {
     m_size = {2.5f};
@@ -35,22 +35,24 @@ GameObject *Bullet::getTarget() const
 
 void Bullet::update(float dt)
 {
-    utils::Vector2f acc = 0;
-    if (m_target)
-    {
-        auto dr_to_target = m_target->getPosition() - m_pos;
-        acc = m_max_vel * dr_to_target / norm(dr_to_target) - m_vel;
-    }
+    m_time += dt;
 
-    utils::truncate(acc, m_max_acc);
-    m_vel += acc * dt;
+    utils::truncate(m_acc, m_max_acc);
+    m_vel += m_acc * dt;
     utils::truncate(m_vel, m_max_vel);
     m_pos += m_vel * dt;
+
+    m_acc = {0.f};
   
 }
 
 void Bullet::onCollisionWith(GameObject &obj, CollisionData &c_data)
 {
+    if(m_collision_resolvers.contains(obj.getType()))
+    {
+        m_collision_resolvers.at(obj.getType())(obj, c_data);
+        return;
+    }
 
     switch (obj.getType())
     {
@@ -133,8 +135,8 @@ void Bullet::draw(LayersHolder &layers)
     // }
 }
 
-Bomb::Bomb(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
-    : m_neighbour_searcher(collider), GameObject(world, textures, ObjectType::Bomb)
+Bomb::Bomb(GameWorld *world, TextureHolder &textures, PlayerEntity *player)
+    : GameObject(world, textures, ObjectType::Bomb)
 {
     // m_rigid_body = std::make_unique<RigidBody>();
     // m_rigid_body->mass = 0.01f;
@@ -180,7 +182,7 @@ void Bomb::onCreation()
 void Bomb::onDestruction()
 {
 
-    auto meteors = m_neighbour_searcher->findNearestObjects(ObjectType::Meteor, m_pos, m_explosion_radius);
+    auto meteors = m_world->getCollisionSystem().findNearestObjects(ObjectType::Meteor, m_pos, m_explosion_radius);
     for (auto p_meteor : meteors)
     {
         auto dr_to_center = m_pos - p_meteor->shape.convex_shapes[0].getPosition();
@@ -214,19 +216,20 @@ void Bomb::draw(LayersHolder &layers)
     target.drawSprite(rect);
 }
 
-Laser::Laser(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
-    : m_neighbour_searcher(collider), GameObject(world, textures, ObjectType::Laser)
+Laser::Laser(GameWorld *world, TextureHolder &textures, PlayerEntity *player)
+    : GameObject(world, textures, ObjectType::Laser)
 {
-
-    m_is_bloomy = true;
 }
 
-Laser::~Laser() {}
+Laser::~Laser() 
+{
+
+}
 
 void Laser::stopAgainst(ObjectType type)
 {
     auto dir = utils::angle2dir(m_angle);
-    auto hit = m_neighbour_searcher->findClosestIntesection(type, m_pos - dir * m_length / 2., utils::angle2dir(m_angle), m_length);
+    auto hit = m_world->getCollisionSystem().findClosestIntesection(type, m_pos - dir * m_length / 2., utils::angle2dir(m_angle), m_length);
 
     m_length = dist(hit, m_pos - dir * m_length / 2.);
     setSize({m_length, m_width});
@@ -241,18 +244,18 @@ void Laser::update(float dt)
 
     m_width += m_max_width * (dt / m_life_time);
     m_length += m_max_length * (dt / m_life_time);
-    if (m_owner && m_owner->getType() != ObjectType::Boss)
+    if (m_parent && m_parent->getType() != ObjectType::Boss)
     {
         stopAgainst(ObjectType::Boss);
     }
     stopAgainst(ObjectType::Meteor);
-    if (m_owner)
+    if (m_parent)
     {
         if (m_rotates_with_owner)
         {
-            m_angle = m_owner->getAngle();
+            m_angle = m_parent->getAngle();
         }
-        m_pos = m_owner->getPosition() + m_offset + utils::angle2dir(m_angle) * m_length / 2.;
+        m_pos = m_parent->getPosition() + m_offset + utils::angle2dir(m_angle) * m_length / 2.;
     }
     setSize({m_length, m_width});
 
@@ -264,7 +267,7 @@ void Laser::update(float dt)
 
 void Laser::onCollisionWith(GameObject &obj, CollisionData &c_data)
 {
-    if (&obj != getOwner())
+    if (!obj.isParentOf(this))
     {
         DamageReceivedEvent dmg = {obj.getType(), obj.getId(), ObjectType::Laser, obj.getId(), m_max_dmg};
         m_world->p_messenger->send(dmg);
@@ -295,7 +298,7 @@ void Laser::draw(LayersHolder &layers)
     rect.setRotation(glm::radians(m_angle));
     rect.setScale(m_length / 2., m_width / 2.);
     rect.m_color = m_laser_color;
-    target.drawSprite(rect, "laser");
+    shiny_target.drawSprite(rect, "laser");
     // target.drawCricleBatched(m_pos, 2, {1,0,0,1});
     // target.drawCricleBatched(m_pos + utils::angle2dir(m_angle) * m_length/2., 2, {1,0,1,1});
 }

@@ -2,9 +2,7 @@
 
 #include "Polygon.h"
 
-GameObject::GameObject(GameWorld *world, TextureHolder &textures,
-                       ObjectType type,
-                       Collisions::CollisionSystem *collider, PlayerEntity *player)
+GameObject::GameObject(GameWorld *world, TextureHolder &textures, ObjectType type, PlayerEntity *player)
     : m_world(world), m_textures(&textures), m_type(type)
 {
 }
@@ -15,11 +13,11 @@ void GameObject::updateAll(float dt)
     if(m_parent)
     {
         m_pos = m_parent->getPosition();
-        m_angle = m_parent->getAngle(); 
+        // m_angle = m_parent->getAngle(); 
         m_vel = m_parent->m_vel; 
     }
 
-    this->update(dt);
+    update(dt);
 }
 
 bool GameObject::isRoot() const{
@@ -84,12 +82,39 @@ void GameObject::removeCollider()
     }
 }
 
+void GameObject::setDestructionCallback(std::function<void(int, ObjectType)> callback)
+{
+    m_on_destruction_callback = callback;
+}
+
+void GameObject::addChild(GameObject* child)
+{
+    m_children.push_back(child);
+    child->m_parent = this;
+}
+
+void GameObject::removeChild(GameObject* child)
+{
+    m_children.erase(std::remove(m_children.begin(), m_children.end(), child), m_children.end());
+}
+
+bool GameObject::isParentOf(GameObject* child) const
+{
+    //! walk through queried object parents, if we find ourselves we are a parent of the child
+    GameObject* curr = child->m_parent;
+    while(curr)
+    {
+        if(curr == this) 
+        {
+            return true;
+        }
+        curr = curr->m_parent;
+    }
+    return false;
+}
+
 void GameObject::kill()
 {
-    if(m_parent)
-    {
-        m_parent->removeChild(this);
-    }
     m_is_dead = true;
 }
 

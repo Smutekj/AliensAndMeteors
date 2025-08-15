@@ -7,8 +7,8 @@
 #include "Attacks.h"
 #include "../GameWorld.h"
 
-PlayerEntity::PlayerEntity(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
-    : GameObject(world, textures, ObjectType::Player, collider, player)
+PlayerEntity::PlayerEntity(GameWorld *world, TextureHolder &textures, PlayerEntity *player)
+    : GameObject(world, textures, ObjectType::Player, player)
 {
     meteor_detector.points = {{0., 0.}, {1., -0.7}, {1., 0.7}};
 }

@@ -15,9 +15,9 @@
 #include "../PostOffice.h"
 
 Enemy::Enemy(GameWorld *world, TextureHolder &textures,
-             Collisions::CollisionSystem *collider, PlayerEntity *player, GameSystems &systems)
+              PlayerEntity *player, GameSystems &systems)
     : m_player(player), m_systems(&systems),
-      GameObject(world, textures, ObjectType::Enemy, collider, player)
+      GameObject(world, textures, ObjectType::Enemy, player)
 {
     m_size = {16, 16};
     m_target_pos = player->getPosition();
@@ -198,7 +198,7 @@ void Enemy::setBehaviour()
     }
 }
 
-SpaceStation::SpaceStation(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player, GameSystems &systems)
+SpaceStation::SpaceStation(GameWorld *world, TextureHolder &textures,  PlayerEntity *player, GameSystems &systems)
     : p_systems(&systems), GameObject(world, textures, ObjectType::SpaceStation)
 {
     m_size = {10, 10};
@@ -244,11 +244,11 @@ void SpaceStation::onCollisionWith(GameObject &obj, CollisionData &c_data)
     }
     case ObjectType::Explosion:
     {
-        auto dr_to_center = m_pos - obj.getPosition();
-        auto dist_to_center = norm(dr_to_center);
-        auto impulse_dir = dr_to_center / dist_to_center;
+        // auto dr_to_center = m_pos - obj.getPosition();
+        // auto dist_to_center = norm(dr_to_center);
+        // auto impulse_dir = dr_to_center / dist_to_center;
 
-        auto alpha = 1 - dist_to_center / obj.getCollisionShape().getScale().x;
+        // auto alpha = 1 - dist_to_center / obj.getCollisionShape().getScale().x;
         // m_health -= 0.1f*alpha;
         break;
     }
@@ -310,7 +310,7 @@ void SpaceStation::draw(LayersHolder &layers)
     // target.draw(health_rect);
 }
 
-Boss::Boss(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
+Boss::Boss(GameWorld *world, TextureHolder &textures,  PlayerEntity *player)
     : m_player(player),
       GameObject(world, textures, ObjectType::Boss)
 {
@@ -595,7 +595,7 @@ void Boss::draw(LayersHolder &layers)
     target.drawSprite(health_bar, "healthBar");
 }
 
-Turret::Turret(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
+Turret::Turret(GameWorld *world, TextureHolder &textures,  PlayerEntity *player)
     : p_player(player), GameObject(world, textures, ObjectType::SpaceStation)
 {
     m_size = {10, 10};

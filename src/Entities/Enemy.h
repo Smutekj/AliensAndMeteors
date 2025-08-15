@@ -22,8 +22,7 @@ class Enemy : public GameObject
 
 public:
     Enemy() = default;
-    Enemy(GameWorld *world, TextureHolder &textures,
-          Collisions::CollisionSystem *collider, PlayerEntity *player, GameSystems& systems);
+    Enemy(GameWorld *world, TextureHolder &textures, PlayerEntity *player, GameSystems& systems);
     Enemy(const Enemy &e) = default;
     Enemy &operator=(Enemy &e) = default;
     Enemy &operator=(Enemy &&e) = default;
@@ -64,7 +63,7 @@ class SpaceStation : public GameObject
     
     public:
     SpaceStation() = default;
-    SpaceStation(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player, GameSystems& systems);
+    SpaceStation(GameWorld *world, TextureHolder &textures, PlayerEntity *player, GameSystems& systems);
     SpaceStation(const SpaceStation &e) = default;
     SpaceStation &operator=(SpaceStation &e) = default;
     SpaceStation &operator=(SpaceStation &&e) = default;
@@ -132,7 +131,7 @@ public:
     utils::Vector2f m_target_pos;
 
     Boss() = default;
-    Boss(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
+    Boss(GameWorld *world, TextureHolder &textures, PlayerEntity *player = nullptr);
     Boss(const Boss &e) = default;
     Boss &operator=(Boss &e) = default;
     Boss &operator=(Boss &&e) = default;
@@ -158,7 +157,7 @@ class Turret : public GameObject
 
 public:
     Turret() = default;
-    Turret(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
+    Turret(GameWorld *world, TextureHolder &textures, PlayerEntity *player = nullptr);
     Turret(const Turret &e) = default;
     Turret &operator=(Turret &e) = default;
     Turret &operator=(Turret &&e) = default;

@@ -22,7 +22,7 @@ struct PlayerEntity : public GameObject
 {
 public:
     PlayerEntity() = default;
-    PlayerEntity(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
+    PlayerEntity(GameWorld *world, TextureHolder &textures, PlayerEntity *player = nullptr);
     PlayerEntity(const PlayerEntity &e) = default;
     PlayerEntity &operator=(PlayerEntity &e) = default;
     PlayerEntity &operator=(PlayerEntity &&e) = default;

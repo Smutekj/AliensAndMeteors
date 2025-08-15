@@ -7,7 +7,7 @@ class Meteor : public GameObject
 
 public:
     Meteor() = default;
-    Meteor(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider = nullptr, PlayerEntity *player = nullptr);
+    Meteor(GameWorld *world, TextureHolder &textures, PlayerEntity *player = nullptr);
     Meteor(const Meteor &e) = default;
     Meteor &operator=(Meteor &e) = default;
     Meteor &operator=(Meteor &&e) = default;

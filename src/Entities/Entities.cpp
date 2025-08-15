@@ -12,7 +12,7 @@
 #include "Player.h"
 #include "Attacks.h"
 
-Explosion::Explosion(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
+Explosion::Explosion(GameWorld *world, TextureHolder &textures, PlayerEntity *player)
     : GameObject(world, textures, ObjectType::Explosion)
 {
 }
@@ -85,8 +85,8 @@ void Explosion::draw(LayersHolder &layers)
     }
 }
 
-EMP::EMP(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
-    : m_collider(collider), GameObject(world, textures, ObjectType::EMP)
+EMP::EMP(GameWorld *world, TextureHolder &textures, PlayerEntity *player)
+    : GameObject(world, textures, ObjectType::EMP)
 {
     auto texture_size = static_cast<utils::Vector2i>(m_textures->get("Bomb")->getSize());
 
@@ -110,7 +110,7 @@ void EMP::update(float dt)
         {
             m_time = 0;
             m_is_ticking = false;
-            m_collider->removeObject(*this);
+            // m_collider->removeObject(*this);
 
             auto texture_size = static_cast<utils::Vector2i>(m_textures->get("Emp")->getSize());
             m_texture_rect.setTexture(*m_textures->get("Emp"));
@@ -179,7 +179,7 @@ void EMP::draw(LayersHolder &layers)
     target.drawSprite(m_texture_rect);
 }
 
-ExplosionAnimation::ExplosionAnimation(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player)
+ExplosionAnimation::ExplosionAnimation(GameWorld *world, TextureHolder &textures, PlayerEntity *player)
     : GameObject(world, textures, ObjectType::Explosion)
 {
 
@@ -232,7 +232,7 @@ void ExplosionAnimation::draw(LayersHolder &layers)
     target.drawSprite(rect);
 }
 
-Heart::Heart(GameWorld *world, TextureHolder &textures, Collisions::CollisionSystem *collider, PlayerEntity *player, Pickup type)
+Heart::Heart(GameWorld *world, TextureHolder &textures, PlayerEntity *player, Pickup type)
     : GameObject(world, textures, ObjectType::Heart)
 {
 }
