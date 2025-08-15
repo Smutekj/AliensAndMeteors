@@ -71,17 +71,18 @@ void AISystem::initializeLaserShooterAI()
             auto &laser = m_laser_factory.create2(comp.laser_type, comp.pos, {255, 25, 0, 255});
             auto dr_to_player = m_world.m_player->getPosition() - comp.pos;
             auto shooter_entity = m_world.get(id);
-            laser.setOwner(shooter_entity);
-            // m_world.get(id)->addChild(&laser);
+
+            shooter_entity->addChild(&laser);
 
             auto old_max_vel = shooter_entity->m_max_vel;
             auto old_max_acc = shooter_entity->m_max_acc;
-            shooter_entity->m_max_vel *= 0.1;
-            shooter_entity->m_max_acc *= 0.3;
+            shooter_entity->m_max_vel *= 0.5;
+            shooter_entity->m_max_acc *= 0.01;
             laser.setDestructionCallback([shooter_entity, id, old_max_vel, old_max_acc](int laser_id, ObjectType t)
                                          {
             shooter_entity->m_max_vel = old_max_vel;
             shooter_entity->m_max_acc = old_max_acc; });
+
             laser.m_life_time = comp.laser_time;
             laser.m_max_length = comp.laser_range;
             laser.setAngle(utils::dir2angle(dr_to_player));
@@ -125,8 +126,20 @@ void AISystem::initializeShooterAI()
                                    auto &comp = m_world.m_systems.get<ShootPlayerAIComponent>(id);
                                    auto &bullet = m_bullet_factory.create2(comp.projectile_type, comp.pos);
                                    bullet.setTarget(m_world.m_player);
+                                   bullet.m_collision_resolvers[ObjectType::Enemy] =
+                                       [&bullet, this, id](GameObject &obj, CollisionData &c_data)
+                                   {
+                                       if (obj.getId() == id || bullet.getTime() < 1.f)
+                                       {
+                                           return;
+                                       }
+                                       bullet.kill();
+                                       m_world.p_messenger->send(DamageReceivedEvent{ObjectType::Bullet, bullet.getId(),
+                                                                                     ObjectType::Enemy, obj.getId(), 3.});
+                                   };
+
                                    auto dr_to_player = m_world.m_player->getPosition() - comp.pos;
-                                   bullet.m_vel = (dr_to_player) / utils::norm(dr_to_player) * 50.f;
+                                   bullet.m_vel = (dr_to_player) / utils::norm(dr_to_player) * bullet.m_max_vel;
                                },
                                1});
     };
@@ -140,7 +153,7 @@ void AISystem::initializeShooterAI()
         target_comp.p_target = nullptr;
         target_comp.target_pos = comp.pos + 269.f * utils::angle2dir(randf(0, 360));
 
-        comp.timers.push_back({10., [this,  id]()
+        comp.timers.push_back({10., [this, id]()
                                {
                                    auto &target_comp = m_world.m_systems.get<TargetComponent>(id);
                                    auto &comp = m_world.m_systems.get<ShootPlayerAIComponent>(id);
@@ -158,7 +171,7 @@ void AISystem::initializeShooterAI()
     m_change_state_callbacks[ShooterAIState::Searching] = [this](ShootPlayerAIComponent &comp, int id)
     {
         comp.timers.clear();
-        comp.timers.push_back({12.69, [this,id]()
+        comp.timers.push_back({12.69, [this, id]()
                                {
                                    auto &comp = m_world.m_systems.get<ShootPlayerAIComponent>(id);
                                    auto &target_comp = m_world.m_systems.get<TargetComponent>(id);
@@ -174,7 +187,7 @@ void AISystem::initializeShooterAI()
    {
        if(m_world.m_systems.has<ShootPlayerAIComponent>(msg.receiver_id))
        {
-           changeState(m_shooters.get(msg.receiver_id), msg.receiver_id, ShooterAIState::Escaping);
+        //    changeState(m_shooters.get(msg.receiver_id), msg.receiver_id, ShooterAIState::Escaping);
        }
    } });
 }
