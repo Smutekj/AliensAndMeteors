@@ -54,8 +54,8 @@ struct AvoidMeteorsComponent
 
 struct HealthComponent
 {
-    float hp;
     float max_hp;
+    float hp = max_hp;
     float hp_regen;
 };
 
@@ -162,11 +162,9 @@ struct AnimationComponent
 
 struct SpriteComponent
 {
-    std::string shader_id;
-    Texture* texture = nullptr;
-    utils::Vector2f pos;
-    float angle;
-    utils::Vector2f scale;
+    std::string layer_id;
+    std::string shader_id = "SpriteDefault";
+    Sprite sprite;
 };
 
 
@@ -184,6 +182,8 @@ enum class ProjectileType
 {
     HomingFireBullet,
     HomingElectroBullet,
+    EnergyBullet,
+    EnergyBall,
     FireBullet,
     ElectroBullet,
     LaserBullet,
