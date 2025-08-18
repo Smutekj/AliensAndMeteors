@@ -77,10 +77,10 @@ void BoidSystem::steer(BoidComponent &comp, int comp_id, float dt)
             align_neighbours_count++;
         }
 
-        if (dist2 < range_scatter)
+        if (dist2 < range_scatter )
         {
-            scatter_force -= scatter_multiplier * dr / dist2;
-            dr_nearest_neighbours += dr / dist2;
+            scatter_force -= scatter_multiplier * dr / (dist2+0.1);
+            dr_nearest_neighbours += dr / (dist2+0.1);
             n_neighbours++;
         }
         if (dist2 < range_scatter * 2.f)
