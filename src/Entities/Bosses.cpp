@@ -26,6 +26,9 @@ void Boss1::update(float dt)
     }
     else if (m_state == State::ShootingBigLaser)
     {
+        float motion_frequency = 2.f * 3.14f / m_motion_period;
+        float motion_amplitude = (m_size.y * 0.5f);
+        m_pos.y += dt * motion_amplitude * motion_frequency * std::cos(m_motion_time * motion_frequency);
     }
 }
 
@@ -36,6 +39,28 @@ void Boss1::changeState(State target_state)
         m_on_state_change.at(target_state)();
     }
     m_state = target_state;
+}
+
+void Boss1::deActivateShield()
+{
+    assert(shield_id != -1);
+    m_world->get(shield_id)->kill();
+    shield_id = -1;
+}
+
+void Boss1::activateShield()
+{
+    auto &shield = m_world->addObject3(ObjectType::Shield);
+    Polygon shield_collider = {32};
+    CollisionComponent c_comp;
+    c_comp.type = ObjectType::Shield;
+    c_comp.shape.convex_shapes = {shield_collider};
+    m_world->m_systems.addEntity(shield.getId(), c_comp);
+
+    shield.setSize(m_size * 0.69f);
+    shield.setAngle(90);
+    addChild(&shield);
+    shield_id = shield.getId();
 }
 
 void Boss1::onCreation()
@@ -56,8 +81,14 @@ void Boss1::onCreation()
     auto &right_weapon = m_world->addObject2<Weapon>();
     m_world->m_systems.addEntity(left_weapon.getId(), l_comp);
     m_world->m_systems.addEntity(right_weapon.getId(), r_comp);
+    left_weapon.setSize(m_size);
+    right_weapon.setSize(m_size);
+    left_weapon.setAngle(90);
+    right_weapon.setAngle(90);
     addChild(&left_weapon);
     addChild(&right_weapon);
+
+    activateShield();
 
     setAngle(90);
 
@@ -66,7 +97,7 @@ void Boss1::onCreation()
     hull.setScale(m_size / 2.);
     CollisionComponent c_comp;
     c_comp.type = ObjectType::Boss;
-    c_comp.shape.convex_shapes = {hull, left_wing, right_wing};
+    c_comp.shape.convex_shapes = {hull};
 
     HealthComponent health = {.max_hp = 400};
 
@@ -97,7 +128,6 @@ void Boss1::onCreation()
         laser.m_max_dmg = 0.5f;
     };
 
-
     auto shoot_gun_at = [this](ProjectileType type, utils::Vector2f target, utils::Vector2f from, float speed, float size)
     {
         auto &bullet = m_projectile_factory.create2(type, from);
@@ -115,17 +145,17 @@ void Boss1::onCreation()
 
     auto init_shooting_lasers = [this, shoot_laser_at]()
     {
-        auto shoot_laser_middle = [this, shoot_laser_at]()
+        auto shoot_laser_middle = [this, shoot_laser_at](float t, int count)
         {
             auto target_pos = p_player->getPosition();
             shoot_laser_at(m_pos, target_pos, {0, 0}, 20.);
         };
-        auto shoot_laser_upper = [this, shoot_laser_at]()
+        auto shoot_laser_upper = [this, shoot_laser_at](float t, int count)
         {
             auto target_pos = p_player->getPosition() + p_player->m_vel * 0.2;
             shoot_laser_at(m_pos, target_pos, {0, m_size.y * 0.3}, 4.);
         };
-        auto shoot_laser_lower = [this, shoot_laser_at]()
+        auto shoot_laser_lower = [this, shoot_laser_at](float t, int count)
         {
             auto target_pos = p_player->getPosition();
             target_pos.y = std::min(target_pos.y, m_pos.y);
@@ -137,13 +167,13 @@ void Boss1::onCreation()
         timer.addEvent({2.f, shoot_laser_lower, 3});
         timer.addEvent({5.f, shoot_laser_middle, 2});
         timer.addEvent({1.5f, shoot_laser_upper, 4});
-        timer.addEvent({10.0f, [this]()
+        timer.addEvent({10.0f, [this](float t, int count)
                         { changeState(State::ShootingGuns); }, 1});
     };
 
     auto init_big_laser = [this, shoot_laser_at]()
     {
-        auto shoot_laser_middle = [this, shoot_laser_at]()
+        auto shoot_laser_middle = [this, shoot_laser_at](float t, int count)
         {
             auto target_pos = p_player->getPosition() + p_player->m_vel * 0.2;
             shoot_laser_at(m_pos, target_pos, {0, 0}, 20.);
@@ -152,22 +182,22 @@ void Boss1::onCreation()
         m_vel = {-2, 0};
         auto &timer = m_world->m_systems.get<TimedEventComponent>(getId());
         timer.addEvent({3.f, shoot_laser_middle, 2});
-        timer.addEvent({7.f, [this]()
+        timer.addEvent({7.f, [this](float t, int count)
                         { changeState(State::ShootingGuns); }, 1});
     };
     auto init_gun_shooting = [this, shoot_gun_at]()
     {
-        auto shoot_left_gun = [this, shoot_gun_at]()
+        auto shoot_left_gun = [this, shoot_gun_at](float t, int count)
         {
             auto target_pos = p_player->getPosition() + p_player->m_vel * 1.f;
             shoot_gun_at(ProjectileType::FireBullet, target_pos, m_pos - utils::Vector2f{m_size.x * 0.2f, m_size.y * 0.4f}, 130, 5);
         };
-        auto shoot_right_gun = [this, shoot_gun_at]()
+        auto shoot_right_gun = [this, shoot_gun_at](float t, int count)
         {
             auto target_pos = p_player->getPosition() + p_player->m_vel * 0.1f;
             shoot_gun_at(ProjectileType::ElectroBullet, target_pos, m_pos + utils::Vector2f{-m_size.x * 0.2f, m_size.y * 0.4f}, 130, 5);
         };
-        auto shoot_middle_gun = [this, shoot_gun_at]()
+        auto shoot_middle_gun = [this, shoot_gun_at](float t, int count)
         {
             auto target_pos = p_player->getPosition();
             shoot_gun_at(ProjectileType::HomingFireBullet, target_pos, m_pos + utils::Vector2f{-m_size.x * 0.2f, 0.f}, 90, 10);
@@ -175,10 +205,10 @@ void Boss1::onCreation()
 
         m_vel = {0, 0};
         auto &timer = m_world->m_systems.get<TimedEventComponent>(getId());
-        timer.addEvent({0.5f, shoot_left_gun, 10});
-        timer.addEvent({0.5f, shoot_right_gun, 10});
-        timer.addEvent({0.5f, shoot_middle_gun, 20});
-        timer.addEvent({12.f, [this]()
+        timer.addEvent({2.0f, shoot_left_gun, 6});
+        timer.addEvent({2.0f, shoot_right_gun, 6});
+        timer.addEvent({1.0f, shoot_middle_gun, 12});
+        timer.addEvent({12.f, [this](float t, int count)
                         { changeState(State::SpawningShips); }, 1});
     };
     // auto init_gun_shooting2 = [this, shoot_gun_at]()
@@ -198,37 +228,47 @@ void Boss1::onCreation()
 
     auto init_spawner = [this]()
     {
-        auto spawn_enemy = [this]()
+        deActivateShield();
+
+        auto spawn_enemy = [this](float t, int count)
         {
-            auto& enemy = m_enemy_factory.create2(EnemyType::ShooterEnemy, m_pos + utils::Vector2f(-70.f, 0.f));
+            // auto &enemy = m_enemy_factory.create2(EnemyType::ShooterEnemy, m_pos + utils::Vector2f(-150.f, 0.f));
+            // utils::Vector2f dr_to_target = p_player->getPosition() - enemy.getPosition();
+            // enemy.m_vel = dr_to_target / utils::norm(dr_to_target) * enemy.m_max_vel;
             
         };
-        auto spawn_laser_enemy = [this]()
+        auto spawn_laser_enemy = [this](float t, int count)
         {
-            auto& enemy = m_enemy_factory.create2(EnemyType::LaserEnemy, m_pos + utils::Vector2f(-70.f, 0.f));
-            // auto& t_comp = m_world->m_systems.get<TargetComponent>(enemy.getId());
-            // t_comp.p_target = nullptr;
-            // TimedEventComponent timed_comp;
-            // timed_comp.addEvent(TimedEvent{0.5f, [this, id = enemy.getId(), &enemy](){
-            //     auto& t_comp = m_world->m_systems.get<TargetComponent>(id);
-            //     t_comp.target_pos = m_pos + utils::Vector2f(-300.f, 0.f);
-            //     // t_comp.p_target = p_player;
-            //     enemy.m_max_vel *= 0.f;
-            // }, 1});
-            // m_world->m_systems.addEntity(getId(), timed_comp);
+            auto &enemy = m_enemy_factory.create2(EnemyType::LaserEnemyNoTarget, m_pos + utils::Vector2f(-55.f, 0.f));
+            TargetComponent t_comp = {.p_target = nullptr, .target_pos = m_pos + utils::Vector2f(-300.f, 100.*(count - 2))};
+            
+            utils::Vector2f dr_to_target = t_comp.target_pos - enemy.getPosition();
+            enemy.m_vel = dr_to_target / utils::norm(dr_to_target) * enemy.m_max_vel;
+            TimedEventComponent timed_comp;
+            t_comp.on_reaching_target =  [this, id = enemy.getId()]()
+                                           {
+                                               auto &t_comp = m_world->m_systems.get<TargetComponent>(id);
+                                               t_comp.p_target = p_player;
+                                               m_world->get(id)->m_max_vel *= 0.01f;
+                                               m_world->m_systems.addEntity(id, LaserAIComponent{});
+                                           };
+
+            m_world->m_systems.addEntityDelayed(enemy.getId(), timed_comp, t_comp);
         };
 
         auto &timer = m_world->m_systems.get<TimedEventComponent>(getId());
         timer.addEvent({1.f, spawn_enemy, 3});
-        timer.addEvent({1.f, spawn_laser_enemy, 3});
-        timer.addEvent({8.f, [this]()
-                        { changeState(State::Exposed); }, 1});
+        timer.addEvent({1.f, spawn_laser_enemy, 5});
+        timer.addEvent({15.f, [this](float t, int count)
+                        { activateShield();
+                            changeState(State::ShootingLasers); }, 1});
     };
     auto init_exposed = [this]()
     {
         auto &timer = m_world->m_systems.get<TimedEventComponent>(getId());
-        timer.addEvent({20.f, [this]()
-                        { changeState(State::ShootingLasers); }, 1});
+        timer.addEvent({20.f, [this](float t, int count)
+                        { 
+                            activateShield();changeState(State::ShootingLasers); }, 1});
     };
 
     m_on_state_change[State::ShootingLasers] = init_shooting_lasers;
@@ -250,7 +290,7 @@ void Boss1::draw(LayersHolder &target)
     ship.setRotation(utils::to_radains * 90.f);
     ship.setTexture(*m_textures->get("Boss1"));
 
-    if (m_state != State::Exposed)
+    if (m_state != State::SpawningShips)
     {
         auto &anim_comp = m_world->m_systems.get<AnimationComponent>(getId());
 

@@ -37,10 +37,13 @@ private:
     void throwBombsAtPlayer();
     void shootLasers();
     void shootLaserAtPlayer();
+    void activateShield();
+    void deActivateShield();
 
     void changeState(State target_state);
 
 private:
+    int shield_id = -1;
     std::unordered_map<State, std::function<void()>> m_on_state_change;
 
     PlayerEntity *p_player;
