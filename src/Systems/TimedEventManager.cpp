@@ -1,13 +1,13 @@
 #include "TimedEventManager.h"
 
 
-TimedEventId TimedEventManager::addInfiniteEvent(float delay, std::function<void()> callback)
+TimedEventId TimedEventManager::addInfiniteEvent(float delay, std::function<void(float, int)> callback)
 {
     TimedEvent event = {delay, callback, TimedEventType::Infinite};
     return m_events.addObject(event);
 }
 
-TimedEventId TimedEventManager::addTimedEvent(float delay, std::function<void()> callback, int repeats_count)
+TimedEventId TimedEventManager::addTimedEvent(float delay, std::function<void(float, int)> callback, int repeats_count)
 {
     TimedEvent event = {delay, callback, repeats_count};
     return m_events.addObject(event);

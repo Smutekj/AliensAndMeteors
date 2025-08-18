@@ -10,8 +10,8 @@ enum class TimedEventType
 
 struct TimedEvent
 {
-    TimedEvent(float m_delay, std::function<void()> callback, TimedEventType type);
-    TimedEvent(float m_delay, std::function<void()> callback,int repeats_count);
+    TimedEvent(float m_delay, std::function<void(float, int)> callback, TimedEventType type);
+    TimedEvent(float m_delay, std::function<void(float, int)> callback,int repeats_count);
 
     void update(float dt);
 
@@ -30,5 +30,5 @@ private:
     int m_repeats_left = 1;
     int m_total_repeats_count = 1;
 
-    std::function<void()> m_callback = []() {};
+    std::function<void(float, int)> m_callback = [](float, int) {};
 };

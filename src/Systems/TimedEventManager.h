@@ -10,8 +10,8 @@ class TimedEventManager
 {
 public:
 
-    TimedEventId addInfiniteEvent(float delay, std::function<void()> callback);
-    TimedEventId addTimedEvent(float delay, std::function<void()> callback, int repeats_count = 1);
+    TimedEventId addInfiniteEvent(float delay, std::function<void(float, int)> callback);
+    TimedEventId addTimedEvent(float delay, std::function<void(float, int)> callback, int repeats_count = 1);
 
     void removeEvent(TimedEventId id);
 

@@ -1,10 +1,11 @@
 #include "TimedEvent.h"
 
-TimedEvent::TimedEvent(float m_delay, std::function<void()> callback, TimedEventType type)
+TimedEvent::TimedEvent(float m_delay, std::function<void(float, int)> callback, TimedEventType type)
     : m_event_delay(m_delay), m_firing_time(m_delay), m_callback(callback), m_timer_type(type)
 {
 }
-TimedEvent::TimedEvent(float m_delay, std::function<void()> callback,
+
+TimedEvent::TimedEvent(float m_delay, std::function<void(float, int)> callback,
                        int repeats_count)
     : m_event_delay(m_delay), m_firing_time(m_delay), m_callback(callback),
       m_total_repeats_count(repeats_count), m_repeats_left(repeats_count), m_timer_type(TimedEventType::Fixed)
@@ -18,7 +19,8 @@ void TimedEvent::update(float dt)
     {
         if(m_callback)
         {
-            m_callback();
+            int repeat_count = (m_total_repeats_count - m_repeats_left);
+            m_callback(m_event_delay*repeat_count, repeat_count);
         }
         m_repeats_left--;
         m_firing_time = m_event_delay;
