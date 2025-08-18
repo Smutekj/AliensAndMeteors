@@ -75,7 +75,13 @@ public:
     virtual void onCreation() {};
     virtual void onDestruction() { m_on_destruction_callback(getId(), m_type); }
     virtual void draw(LayersHolder &target) {};
-    virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) {};
+    virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) 
+    {
+        if(m_collision_resolvers.contains(obj.getType()))
+        {
+            m_collision_resolvers.at(obj.getType())(obj, c_data);
+        }
+    };
 
     void removeCollider();
 

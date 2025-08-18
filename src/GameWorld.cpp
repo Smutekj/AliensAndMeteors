@@ -88,6 +88,14 @@ void GameWorld::draw2(LayersHolder &layers, View camera_view)
                { ((drawX(ents, layers, camera_view)), ...); }, m_entities2);
 }
 
+GameObject &GameWorld::addObject3(ObjectType type)
+{
+    auto entity_p = std::make_shared<GameObject>(this, m_textures, type);
+    entity_p->m_id = m_entities.reserveIndexForInsertion();
+    m_to_add.push_back(entity_p);
+    return *entity_p;
+}
+
 GameObject &GameWorld::addObject(ObjectType type)
 {
     std::shared_ptr<GameObject> new_object;
