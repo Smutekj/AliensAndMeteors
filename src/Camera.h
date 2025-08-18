@@ -10,9 +10,9 @@ struct Camera
 {
   enum class MoveState
   {
-    FOLLOWING_PLAYER,
-    FIXED,
-    MOVING_TO_POSITION,
+    FollowingPlayer,
+    Fixed,
+    MovingToPosition,
   };
   enum class SizeState
   {
@@ -41,7 +41,7 @@ private:
   void followPlayer(float dt, PlayerEntity *p_player);
 
 public:
-  MoveState m_view_state = MoveState::FOLLOWING_PLAYER;
+  MoveState m_view_state = MoveState::FollowingPlayer;
   SizeState m_view_size_state = SizeState::FollowingPlayer;
 
 private:

@@ -6,7 +6,7 @@ void Camera::startMovingTo(utils::Vector2f target, float duration, std::function
 {
     m_on_reaching_target_callback = callback;
 
-    m_view_state = MoveState::MOVING_TO_POSITION;
+    m_view_state = MoveState::MovingToPosition;
     m_move_view_duration = duration;
     m_move_view_time = 0.f;
     m_view_target = target;
@@ -55,7 +55,7 @@ void Camera::moveToTarget(float dt)
 
     if (dist_to_target > 20)
     {
-        view_speed = 100.f;
+        view_speed = 50.f;
     }
     else if (dist_to_target > 10)
     {
@@ -63,13 +63,13 @@ void Camera::moveToTarget(float dt)
     }
     else
     {
-        m_view_state = MoveState::FOLLOWING_PLAYER; //! by default start Following Player if neede can be overriden in callback
+        m_view_state = MoveState::FollowingPlayer; //! by default start Following Player if neede can be overriden in callback
         m_on_reaching_target_callback(*this);
         view_speed = 0.;
         m_view_velocity = {0};
     }
 
-    m_view_velocity += dr_to_target / dist_to_target * view_speed * dt;
+    m_view_velocity = dr_to_target / dist_to_target * view_speed ;
     utils::truncate(m_view_velocity, m_max_view_speed);
 
     m_view.setCenter(m_view.getCenter() + m_view_velocity * dt);
@@ -77,11 +77,11 @@ void Camera::moveToTarget(float dt)
 
 void Camera::update(float dt, PlayerEntity *player)
 {
-    if (m_view_state == MoveState::FOLLOWING_PLAYER && m_view_size_state == SizeState::FollowingPlayer)
+    if (m_view_state == MoveState::FollowingPlayer && m_view_size_state == SizeState::FollowingPlayer)
     {
         followPlayer(dt, player);
     }
-    else if (m_view_state == MoveState::MOVING_TO_POSITION)
+    else if (m_view_state == MoveState::MovingToPosition)
     {
         moveToTarget(dt);
     }
