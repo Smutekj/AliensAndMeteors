@@ -10,6 +10,7 @@ class GameObject;
 enum class ObjectType
 {
     Enemy,
+    Shield,
     Bullet,
     Missile,
     Bomb,
@@ -41,6 +42,7 @@ struct TargetComponent
     GameObject* p_target = nullptr;
     utils::Vector2f target_pos;
     float targetting_strength = 1.f;
+    std::function<void()> on_reaching_target = [](){};
 };
 
 struct AvoidMeteorsComponent
