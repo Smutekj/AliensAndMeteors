@@ -39,7 +39,6 @@ public:
     friend void gameLoop(void *);
 
 private:
-    std::unique_ptr<ToolBoxUI> m_ui;
     std::unique_ptr<StateStack> m_state_stack; //! state stack for menu navigation
 
     TextureHolder m_textures;

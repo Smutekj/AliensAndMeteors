@@ -16,7 +16,6 @@
 #include <queue>
 #include <filesystem>
 
-
 void Application::run()
 {
 
@@ -37,9 +36,7 @@ void Application::iterate()
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
-        // ImGui_ImplSDL2_ProcessEvent(&event);
 
-        
         m_state_stack->handleEvent(event);
         if (event.type == SDL_WINDOWEVENT)
         {
@@ -51,7 +48,6 @@ void Application::iterate()
     }
 
     m_state_stack->draw();
-    // m_ui->draw(m_window);
 
     Shader::m_time += m_dt;
 }
@@ -86,7 +82,7 @@ void inline gameLoop(void *mainLoopArg)
     s_frame_count++;
     if (s_frame_count > 200)
     {
-        std::cout << "frame time " <<  dt << " ms" << std::endl;
+        std::cout << "frame time " << dt << " ms" << std::endl;
         std::cout << "avg frame time: " << p_app->m_avg_frame_time.getAverage() << " ms" << std::endl;
         std::cout << "max frame time: " << p_app->m_avg_frame_time.getMax() << " ms" << std::endl;
         p_app->m_avg_frame_time.averaging_interval = 200;
@@ -103,9 +99,9 @@ void inline gameLoop(void *mainLoopArg)
 #else
         // SDL_Delay(33. - dt);
         dt2 = std::chrono::duration_cast<std::chrono::microseconds>(
-                         std::chrono::high_resolution_clock::now() - tic)
-                         .count() /
-                     1e3;
+                  std::chrono::high_resolution_clock::now() - tic)
+                  .count() /
+              1e3;
 #endif
     }
 
@@ -158,13 +154,7 @@ static_assert(false)
     m_textures.add("Close", "UIClose.png");
     m_textures.add("Menu", "UIMenu.png");
     m_textures.add("Dot", "UIDot.png");
-        m_ui = std::make_unique<ToolBoxUI>(m_window, m_textures);
-
-
-    
-
 }
-
 
 void Application::registerStates()
 {
