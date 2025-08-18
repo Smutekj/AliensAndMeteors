@@ -14,6 +14,8 @@
 #include "Systems/EnemyAISystems.h"
 #include "Systems/SpriteSystem.h"
 
+#include <imgui_impl_sdl2.h>
+
 void Game::initializeLayersAndTextures()
 {
     m_textures.setBaseDirectory(std::string(RESOURCES_DIR) + "/Textures/");
@@ -81,11 +83,37 @@ using namespace utils;
 constexpr utils::Vector2f PLAYER_START_POS = {500, 500};
 constexpr float START_VIEW_SIZE = 200.f;
 
+GameObject &Game::createQuestGiver(std::shared_ptr<Quest> quest)
+{
+    GameObject &quest_giver = m_world->addObject3(ObjectType::SpaceStation);
+    quest_giver.setSize({50, 50});
+
+    CollisionComponent c_comp;
+    Polygon shape = {32};
+    c_comp.type = ObjectType::SpaceStation;
+    c_comp.shape.convex_shapes = {shape};
+
+    SpriteComponent s_comp = {.layer_id = "Unit", .sprite = {*m_textures.get("QuestGiver")}};
+
+    m_world->m_systems.addEntityDelayed(quest_giver.getId(), c_comp, s_comp);
+
+    quest_giver.m_collision_resolvers[ObjectType::Player] = [quest, this](auto &obj, auto &c_data)
+    {
+        if (!m_objective_system->contains(quest))
+        {
+            m_objective_system->add(quest);
+        }
+    };
+
+    return quest_giver;
+}
+
 Game::Game(Renderer &window, KeyBindings &bindings)
     : m_window(window), m_key_binding(bindings),
       m_scene_pixels(window.getTargetSize().x, window.getTargetSize().y),
       m_scene_canvas(m_scene_pixels),
-      m_camera(PLAYER_START_POS, {START_VIEW_SIZE, START_VIEW_SIZE * window.getTargetSize().y / window.getTargetSize().x})
+      m_camera(PLAYER_START_POS, {START_VIEW_SIZE, START_VIEW_SIZE * window.getTargetSize().y / window.getTargetSize().x}),
+      m_ui(static_cast<Window &>(window.getTarget()), m_textures)
 {
     messanger.registerEvents<EntityDiedEvent,
                              QuestCompletedEvent,
@@ -108,19 +136,20 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     m_world->m_player = m_player;
     m_player->setDestructionCallback([this](int id, ObjectType type)
                                      { m_state = GameState::PLAYER_DIED; });
+    m_ui.initWorld(*m_world);
 
     m_objective_system = std::make_unique<ObjectiveSystem>(messanger);
     m_ui_system = std::make_unique<UISystem>(window, m_textures, messanger, m_player, *m_font, *m_world);
 
     m_background = std::make_unique<Texture>(std::string(RESOURCES_DIR) + "/Textures/background.png");
 
-    for (int i = 0; i < 200; ++i)
+    for (int i = 0; i < 2; ++i)
     {
         auto &meteor = m_world->addObject2<Meteor>();
         auto spawn_pos = m_player->getPosition() + randf(200, 5000) * angle2dir(randf(0, 360));
         meteor.setPosition(spawn_pos);
     }
-    for (int i = 0; i < 25; ++i)
+    for (int i = 0; i < 0; ++i)
     {
         auto spawn_pos = m_player->getPosition() + randf(100, 6000) * angle2dir(randf(0, 360));
         m_enemy_factory->create2(EnemyType::ShooterEnemy, spawn_pos);
@@ -129,13 +158,13 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     spawnNextObjective();
     // addDestroyNObjective(ObjectType::SpaceStation, 2);
 
-    auto &heart_spawner = m_world->addTrigger<Timer>();
-    heart_spawner.setCallback(
-        [this]()
-        {
-            auto spawn_pos = m_player->getPosition() + randf(20, 200) * angle2dir(randf(0, 360));
-            auto &heart = m_pickup_factory->create2(Pickup::Heart, spawn_pos);
-        });
+    // auto &heart_spawner = m_world->addTrigger<Timer>();
+    // heart_spawner.setCallback(
+    //     [this]()
+    //     {
+    //         auto spawn_pos = m_player->getPosition() + randf(20, 200) * angle2dir(randf(0, 360));
+    //         auto &heart = m_pickup_factory->create2(Pickup::Heart, spawn_pos);
+    //     });
 
     // auto &enemy_spawner = m_world->addTrigger<Timer>();
     // enemy_spawner.m_cooldown = 5.f;
@@ -168,6 +197,9 @@ void Game::addDestroyNObjective(ObjectType type, int count)
     {
         addDestroyNObjective(type, count + 2);
     };
+
+    auto &qg = createQuestGiver(quest);
+    qg.setPosition(m_player->getPosition() + utils::Vector2f{500, 0});
 }
 
 void Game::startBossFight()
@@ -180,7 +212,7 @@ void Game::startBossFight()
     boss.setPosition(boss_pos);
     m_camera.startMovingTo(boss_pos - utils::Vector2f{150, 0}, 1., [](auto &camera)
                            {
-        camera.m_view_state = Camera::MoveState::FIXED;
+        camera.m_view_state = Camera::MoveState::Fixed;
         camera.startChangingSize({400, 300}, 2., [](auto& camera){camera.m_view_size_state = Camera::SizeState::Fixed;}); });
 
     messanger.send(StartedBossFightEvent{boss.getId()});
@@ -274,15 +306,23 @@ void Game::spawnNextObjective()
         star_effect.setPosition(new_pos);
         star_effect.setLifeTime(2.f);
     };
-    m_objective_system->add(quest);
-
     spot1.attach(objective);
     spot2.attach(objective2);
+
+    auto &quest_giver = createQuestGiver(quest);
+    quest_giver.setPosition(m_player->getPosition() + Vec2{500, 0});
 }
 
 void Game::handleEvent(const SDL_Event &event)
 {
     auto mouse_position = m_window.getMouseInWorld();
+
+    ImGui_ImplSDL2_ProcessEvent(&event);
+    if (ImGui::GetIO().WantCaptureMouse)
+    {
+        m_ui.handleEvent(event);
+        return;
+    }
 
     if (event.type == SDL_KEYDOWN)
     {
@@ -304,8 +344,10 @@ void Game::handleEvent(const SDL_Event &event)
         auto dir = utils::angle2dir(m_player->getAngle());
         if (event.key.keysym.sym == m_key_binding[PlayerControl::SHOOT_LASER])
         {
-            auto &laser = m_laser_factory->create2(LaserType::Basic, m_player->getPosition(), {0,125, 255, 255});
+            auto &laser = m_laser_factory->create2(LaserType::Basic, m_player->getPosition(), {0, 125, 255, 255});
             m_player->addChild(&laser);
+            laser.m_stopping_types.push_back(ObjectType::Shield);
+            laser.m_stopping_types.push_back(ObjectType::Boss);
             laser.m_rotates_with_owner = true;
             laser.m_max_dmg = 0.2;
             laser.m_life_time = 3.;
@@ -350,7 +392,6 @@ void Game::handleEvent(const SDL_Event &event)
         else if (event.button.button == SDL_BUTTON_LEFT)
         {
             startBossFight();
-            m_camera.startMovingTo(m_window.getMouseInWorld(), 1.);
         }
     }
 
@@ -464,7 +505,7 @@ void Game::draw(Renderer &window)
 
     m_objective_system->draw(window, m_textures);
     m_window.drawAll();
-    // m_ui.draw(window);
+    m_ui.draw();
 }
 
 Game::GameState Game::getState() const
@@ -490,6 +531,8 @@ void Game::registerCollisions()
                                { Collisions::bounce(obj1, obj2, c_data); });
     colllider.registerResolver(ObjectType::Meteor, ObjectType::Bullet);
 
+    colllider.registerResolver(ObjectType::Player, ObjectType::SpaceStation);
+    
     colllider.registerResolver(ObjectType::Player, ObjectType::Meteor);
     colllider.registerResolver(ObjectType::Player, ObjectType::Bullet);
     colllider.registerResolver(ObjectType::Player, ObjectType::Laser);
@@ -541,6 +584,7 @@ void Game::loadTextures()
     m_textures.setBaseDirectory(std::string(RESOURCES_DIR) + "/Textures/");
     m_textures.add("Bomb", "bomb.png");
     m_textures.add("EnemyShip", "EnemyShip.png");
+    m_textures.add("QuestGiver", "Buildings/QuestGiver.png");
     m_textures.add("Boss1", "Ships/Boss1.png");
     m_textures.add("EnemyLaser", "EnemyLaser.png");
     m_textures.add("EnemyBomber", "EnemyBomber.png");
@@ -561,7 +605,7 @@ void Game::loadTextures()
     m_textures.add("Arrow", "arrow.png");
     m_textures.add("EnergyBullet", "EnergyBullet1.png");
     m_textures.add("EnergyBall", "EnergyBall.png");
-    
+
     m_textures.add("LongShield", "Animations/LongShield.png");
 
     m_textures.add("Arrow", "arrow.png");

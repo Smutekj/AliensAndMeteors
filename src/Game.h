@@ -12,6 +12,8 @@
 #include "PostBox.h"
 #include "Entities/Factories.h"
 
+#include "ToolBoxUI.h"
+
 class GameWorld;
 
 class BossFight : public GameObject
@@ -73,6 +75,8 @@ public:
   void registerCollisions();
   void registerSystems();
 
+  GameObject& createQuestGiver(std::shared_ptr<Quest> quest);
+
   void spawnNextObjective();
   void spawnBossObjective();
   void addDestroyNObjective(ObjectType type, int count);
@@ -116,6 +120,8 @@ public:
   std::unique_ptr<EnemyFactory> m_enemy_factory;
   std::unique_ptr<PickupFactory> m_pickup_factory;
   std::unique_ptr<LaserFactory> m_laser_factory;
+
+  ToolBoxUI m_ui;
 
 };
 
