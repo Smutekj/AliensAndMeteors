@@ -10,6 +10,9 @@ UISystem::UISystem(Renderer &window, TextureHolder &textures,
       p_player(player), window_canvas(window),
       m_textures(textures), p_world(&world)
 {
+    // lorem_ipsum.setFont(&font);
+    // lorem_ipsum.setText("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla id malesuada justo. Nunc aliquam accumsan lorem in facilisis. Maecenas a porttitor sem, in consectetur lacus. Donec eleifend a eros non mattis. Vivamus massa arcu, porttitor non massa sit amet, auctor imperdiet augue. Vestibulum commodo magna at turpis suscipit porta. Vestibulum a tellus vel diam luctus auctor. Integer tristique facilisis risus, a blandit ex lacinia ut.");
+
     auto m_boss_postbox = std::make_unique<PostBox<StartedBossFightEvent>>(messenger, [this](const auto &events)
                                                                            {
         for(const auto&  e : events)
@@ -18,7 +21,7 @@ UISystem::UISystem(Renderer &window, TextureHolder &textures,
             addBossBar();
         } });
     auto m_died_postbox = std::make_unique<PostBox<EntityDiedEvent>>(messenger, [this](const auto &events)
-        {
+                                                                     {
         for (const auto &e : events)
         {
             if(e.id == boss_id)
@@ -26,8 +29,7 @@ UISystem::UISystem(Renderer &window, TextureHolder &textures,
                 removeBossBar();
                 boss_id = -1;
             }
-        };
-    });
+        }; });
     m_post_boxes.push_back(std::move(m_boss_postbox));
     m_post_boxes.push_back(std::move(m_died_postbox));
 
@@ -105,6 +107,8 @@ void UISystem::draw(Renderer &window)
 
     ui.drawUI();
 
+    window.drawAll();
+
     window.m_view = old_view;
 }
 
@@ -146,11 +150,11 @@ void UISystem::update(float dt)
 
     if (boss_id != -1 && p_world->contains(boss_id))
     {
-        if( p_world->m_systems.has<HealthComponent>(boss_id))
+        if (p_world->m_systems.has<HealthComponent>(boss_id))
         {
             auto &h_comp = p_world->m_systems.get<HealthComponent>(boss_id);
             float health_ratio = h_comp.hp / h_comp.max_hp;
-    
+
             window_canvas.getShader("bossHealthBar").use();
             window_canvas.getShader("bossHealthBar").setUniform2("u_health_ratio", health_ratio);
         }

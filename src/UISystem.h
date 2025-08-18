@@ -35,4 +35,6 @@ private:
     Renderer &window_canvas;
 
     int boss_id = -1;
+
+    // MultiLineText lorem_ipsum;
 };
