@@ -5,6 +5,7 @@
 enum class EnemyType
 {
     LaserEnemy,
+    LaserEnemyNoTarget,
     BombEnemy,
     ShooterEnemy,
     EnergyShooter,
@@ -54,7 +55,15 @@ public:
     }
     virtual void registerCreators(TextureHolder &textures) override
     {
-        auto laser_creator = [this, textures](Enemy &enemy) -> Enemy &
+        auto laser_wtf_creator = [this, &textures](Enemy &enemy) -> Enemy &
+        {
+            HealthComponent h_comp = {.max_hp = 40.};
+            m_world.m_systems.addEntityDelayed(enemy.getId(), h_comp);
+            enemy.m_sprite.setTexture(*textures.get("EnemyLaser"));
+            enemy.m_max_vel = 100;
+            return enemy;
+        };
+        auto laser_creator = [this, &textures](Enemy &enemy) -> Enemy &
         {
             HealthComponent h_comp = {.max_hp = 40.};
             TargetComponent t_comp = {.p_target = m_world.m_player, .targetting_strength = 200.f};
@@ -64,7 +73,7 @@ public:
             enemy.m_max_vel = 50;
             return enemy;
         };
-        auto shooter_creator = [this, textures](Enemy &enemy) -> Enemy &
+        auto shooter_creator = [this, &textures](Enemy &enemy) -> Enemy &
         {
             HealthComponent h_comp = { .max_hp = 20.};
             TargetComponent t_comp = {.p_target = m_world.m_player, .targetting_strength = 1000.};
@@ -75,7 +84,7 @@ public:
             // enemy.m_sprite.setTexture(*textures.get("EnemyShip"));
             return enemy;
         };
-        auto energy_shooter_creator = [this, textures](Enemy &enemy) -> Enemy &
+        auto energy_shooter_creator = [this, &textures](Enemy &enemy) -> Enemy &
         {
             HealthComponent h_comp = {.max_hp = 40.};
             TargetComponent t_comp = {.p_target = m_world.m_player, .targetting_strength = 1000.};
@@ -87,6 +96,7 @@ public:
             return enemy;
         };
 
+        m_creators[EnemyType::LaserEnemyNoTarget] = laser_wtf_creator;
         m_creators[EnemyType::LaserEnemy] = laser_creator;
         m_creators[EnemyType::ShooterEnemy] = shooter_creator;
         m_creators[EnemyType::EnergyShooter] = energy_shooter_creator;

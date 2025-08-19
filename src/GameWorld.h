@@ -27,6 +27,8 @@
 
 #include "PostOffice.h"
 
+class ToolBoxUI;
+
 struct PlayerEntity;
 
 // Poor man's MPL vector.
@@ -95,7 +97,7 @@ public:
 
     //! checks whether components that exist have existing entities
     void checkComponentsConsistency();
-
+    
     template <class EntityType>
     EntityType &addObject2();
     template <class EntityType>
@@ -112,19 +114,20 @@ public:
     void removeX(std::queue<EntityType> &to_remove);
     template <class EntityType>
     void drawX(ComponentBlock<EntityType> &entity_block, LayersHolder &layers, View camera_view);
-
+    
     void addQueuedEntities2();
     void removeQueuedEntities2();
     void update2(float dt);
     void draw2(LayersHolder &layers, View camera_view);
-
+    
     ///!!!
     void destroyObject(int entity_id);
     GameObject &addObject(ObjectType type);
+    GameObject &addObject3(ObjectType type);
     VisualEffect &addVisualEffect(EffectType type);
     template <class TriggerType, class... Args>
     TriggerType &addTrigger(Args... args);
-
+    
     std::size_t getNActiveEntities(ObjectType type);
 
     template <class EntityType>
@@ -188,6 +191,13 @@ EntityType &GameWorld::addObject2()
     // queue.push(new_entity);
     // EntityType &thing = queue.back();
     // return thing;
+
+    if constexpr (std::is_same_v<GameObject, EntityType>)
+    {
+
+    }else{
+
+    }
 
     auto new_entity = createEntity2<EntityType>();
     new_entity->m_id = m_entities.reserveIndexForInsertion();
@@ -354,6 +364,8 @@ public:
 
 
 private:
+
+    friend ToolBoxUI;
 
     utils::DynamicObjectPool<EntityTreeNode, MAX_ENTITY_COUNT> m_scene;
     

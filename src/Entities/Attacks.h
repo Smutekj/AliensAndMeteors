@@ -141,6 +141,8 @@ public:
     float m_length = 0.f;
     float m_width = 0.f;
 
+    std::vector<ObjectType> m_stopping_types = {ObjectType::Meteor};
+
     ColorByte m_laser_color = {255, 255, 255, 255};
 private:
     float m_time = 0.;

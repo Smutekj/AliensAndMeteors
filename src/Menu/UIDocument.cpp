@@ -522,6 +522,22 @@ void UIDocument::drawUI()
     root->drawX(document);
 }
 
+
+MultiLineUIElement::MultiLineUIElement(Font &font, std::string text)
+{
+    m_text.setFont(&font);
+    m_text.setText(text);
+}
+
+void MultiLineUIElement::draw(Renderer &canvas)
+{
+    m_text.setPosition({bounding_box.pos_x, bounding_box.pos_y});
+    m_text.setPadding(padding);
+    m_text.setPageWidth(bounding_box.width);
+
+    m_text.drawInto(canvas);
+}
+
 TextUIELement::TextUIELement(Font &font, std::string text)
     : m_text(text)
 {

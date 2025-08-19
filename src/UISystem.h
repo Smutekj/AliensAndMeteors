@@ -18,6 +18,8 @@ public:
 
     void update(float dt);
 
+    TextUIELement* getTextElement(std::string id);
+
 private:
     void addBossBar();
     void removeBossBar();

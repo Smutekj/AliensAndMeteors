@@ -65,7 +65,7 @@ void AISystem::initializeLaserShooterAI()
     {
         comp.timers.clear();
         //! DO NOT USE REFERENCES TO COMPONENTS FOR THE LOVE OF GOD!!!! THEY GET INVALIDATED
-        auto shoot_laser = [this, id]()
+        auto shoot_laser = [this, id](float t, int count)
         {
             auto &comp = m_world.m_systems.get<LaserAIComponent>(id);
             auto &laser = m_laser_factory.create2(comp.laser_type, comp.pos, {255, 25, 0, 255});
@@ -94,7 +94,7 @@ void AISystem::initializeLaserShooterAI()
     m_change_state_callbacks_laser[ShooterAIState::Shooting] = [this](LaserAIComponent &comp, int id)
     {
         comp.timers.clear();
-        comp.timers.push_back({comp.laser_time, [this, id]()
+        comp.timers.push_back({comp.laser_time, [this, id](float t, int count)
                                {
                                    auto &comp = m_world.m_systems.get<LaserAIComponent>(id);
                                    changeState(comp, id, ShooterAIState::Searching);
@@ -105,7 +105,7 @@ void AISystem::initializeLaserShooterAI()
     m_change_state_callbacks_laser[ShooterAIState::Searching] = [this](LaserAIComponent &comp, int id)
     {
         comp.timers.clear();
-        comp.timers.push_back({12.69, [this, id]()
+        comp.timers.push_back({12.69, [this, id](float t, int count)
                                {
                                    auto &comp = m_world.m_systems.get<LaserAIComponent>(id);
                                    auto &target_comp = m_world.m_systems.get<TargetComponent>(id);
@@ -121,7 +121,7 @@ void AISystem::initializeShooterAI()
     m_change_state_callbacks[ShooterAIState::FollowingPlayer] = [this](ShootPlayerAIComponent &comp, int id)
     {
         comp.timers.clear();
-        comp.timers.push_back({comp.cooldown, [this, id]()
+        comp.timers.push_back({comp.cooldown, [this, id](float t, int count)
                                {
                                    auto &comp = m_world.m_systems.get<ShootPlayerAIComponent>(id);
                                    auto &bullet = m_bullet_factory.create2(comp.projectile_type, comp.pos);
@@ -153,7 +153,7 @@ void AISystem::initializeShooterAI()
         target_comp.p_target = nullptr;
         target_comp.target_pos = comp.pos + 269.f * utils::angle2dir(randf(0, 360));
 
-        comp.timers.push_back({10., [this, id]()
+        comp.timers.push_back({10., [this, id](float t, int count)
                                {
                                    auto &target_comp = m_world.m_systems.get<TargetComponent>(id);
                                    auto &comp = m_world.m_systems.get<ShootPlayerAIComponent>(id);
@@ -161,7 +161,7 @@ void AISystem::initializeShooterAI()
                                },
                                2});
 
-        comp.timers.push_back({30., [this, id, &comp, &target_comp]()
+        comp.timers.push_back({30., [this, id, &comp, &target_comp](float t, int count)
                                {
                                    target_comp.p_target = m_world.m_player;
                                    changeState(comp, id, ShooterAIState::FollowingPlayer);
@@ -171,7 +171,7 @@ void AISystem::initializeShooterAI()
     m_change_state_callbacks[ShooterAIState::Searching] = [this](ShootPlayerAIComponent &comp, int id)
     {
         comp.timers.clear();
-        comp.timers.push_back({12.69, [this, id]()
+        comp.timers.push_back({12.69, [this, id](float t, int count)
                                {
                                    auto &comp = m_world.m_systems.get<ShootPlayerAIComponent>(id);
                                    auto &target_comp = m_world.m_systems.get<TargetComponent>(id);

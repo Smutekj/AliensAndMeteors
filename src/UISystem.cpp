@@ -80,19 +80,45 @@ UISystem::UISystem(Renderer &window, TextureHolder &textures,
     bottom_bar->content_align_y = Alignement::Center;
     bottom_bar->addChildren(fuel_bars, money, health_bars);
 
-    top_bar->dimensions = {Percentage{0.8f}, Percentage{0.1f}};
+    auto text_bars = std::make_shared<UIElement>();
+    text_bars->id = "TextBars";
+    text_bars->dimensions =  {Percentage{1.f}, Percentage{1.f}};
+
+    top_bar->dimensions = {Percentage{0.8f}, Percentage{0.2f}};
     top_bar->id = "TopBar";
     top_bar->layout = Layout::Y;
     top_bar->align_y = Alignement::Top;
     top_bar->align_x = Alignement::Center;
     top_bar->content_align_y = Alignement::Center;
-    top_bar->addChildren();
+    top_bar->addChildren(text_bars);
+    
+    auto time_bar = std::make_shared<TextUIELement>(font, "00:00");
+    time_bar->id = "TimerBar";
+    time_bar->dimensions = {Percentage{0.2f}, Percentage{0.5f}};
+    time_bar->layout = Layout::Y;
+    time_bar->align_x = Alignement::Left;
+    time_bar->align_y = Alignement::CenterY;
+    auto task_bar = std::make_shared<MultiLineUIElement>(font, "Go and touch some penises you raging gaylord. There is nothing wrong with that! You should also try sucking a penis or two just for the sake of trying it. It might even become your new hobby, who knows. You can't know until you try. The penis is your destiny!");
+    task_bar->id = "TaskBar";
+    task_bar->m_text.setScale(0.5);
+    task_bar->dimensions = {Percentage{0.3f}, Percentage{1.f}};
+    task_bar->align_x = Alignement::Right;
+    task_bar->align_y = Alignement::CenterY;
+    text_bars->addChildren(time_bar, task_bar);
 
     ui.root->dimensions = {Pixels{(float)window.getTargetSize().x}, Pixels{(float)window.getTargetSize().y}};
     ui.root->addChildren(top_bar, bottom_bar);
     ui.root->content_align_y = Alignement::Bottom;
     ui.root->content_align_x = Alignement::CenterX;
     ui.root->layout = Layout::Y;
+
+
+}
+
+TextUIELement* UISystem::getTextElement(std::string id)
+{
+    auto* item = ui.getElementById(id);
+    return dynamic_cast<TextUIELement*>(item);
 }
 
 void UISystem::draw(Renderer &window)

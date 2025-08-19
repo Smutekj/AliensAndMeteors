@@ -90,7 +90,7 @@ void Bullet::onCreation()
     c_comp.type = ObjectType::Bullet;
     c_comp.shape.convex_shapes.emplace_back(8);
     
-    TimedEvent die_on_timeout = {10.f, [this](){kill();}, 1};
+    TimedEvent die_on_timeout = {10.f, [this](float t, int count){kill();}, 1};
     TimedEventComponent time_comp;
     time_comp.addEvent(die_on_timeout);
 
@@ -244,11 +244,11 @@ void Laser::update(float dt)
 
     m_width += m_max_width * (dt / m_life_time);
     m_length += m_max_length * (dt / m_life_time);
-    if (m_parent && m_parent->getType() != ObjectType::Boss)
+    
+    for(auto& stop_type : m_stopping_types)
     {
-        stopAgainst(ObjectType::Boss);
+        stopAgainst(stop_type);
     }
-    stopAgainst(ObjectType::Meteor);
     if (m_parent)
     {
         if (m_rotates_with_owner)

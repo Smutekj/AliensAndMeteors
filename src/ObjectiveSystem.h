@@ -206,6 +206,7 @@ public:
     }
 
 public:
+    std::function<void()> m_on_failure = []() {};
     std::function<void()> m_on_completion = []() {};
 
 private:
@@ -304,6 +305,10 @@ public:
 
     void add(std::shared_ptr<Quest> quest);
     void remove(int id);
+    bool contains(std::shared_ptr<Quest> quest) const
+    {
+        return m_quests.contains(quest);
+    }
     void draw(Renderer &window, const TextureHolder &textures);
     void update();
     bool allFinished() const;

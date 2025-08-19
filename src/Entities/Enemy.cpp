@@ -130,7 +130,7 @@ void Enemy::onDestruction()
 
     TimedEventComponent timer;
     timer.addEvent(TimedEvent{1.f,
-                              [&new_explosion]()
+                              [&new_explosion](float t, int count)
                               { new_explosion.kill(); },
                               1});
 
@@ -260,7 +260,7 @@ void SpaceStation::onCollisionWith(GameObject &obj, CollisionData &c_data)
 
 void SpaceStation::onCreation()
 {
-    auto spawn_enemy = [this]()
+    auto spawn_enemy = [this](float t, int)
     {
         if (m_produced_ships.size() <= 3)
         {

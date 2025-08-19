@@ -143,7 +143,7 @@ Game::Game(Renderer &window, KeyBindings &bindings)
 
     m_background = std::make_unique<Texture>(std::string(RESOURCES_DIR) + "/Textures/background.png");
 
-    for (int i = 0; i < 2; ++i)
+    for (int i = 0; i < 200; ++i)
     {
         auto &meteor = m_world->addObject2<Meteor>();
         auto spawn_pos = m_player->getPosition() + randf(200, 5000) * angle2dir(randf(0, 360));
@@ -155,7 +155,7 @@ Game::Game(Renderer &window, KeyBindings &bindings)
         m_enemy_factory->create2(EnemyType::ShooterEnemy, spawn_pos);
     }
 
-    spawnNextObjective();
+    // spawnNextObjective();
     // addDestroyNObjective(ObjectType::SpaceStation, 2);
 
     // auto &heart_spawner = m_world->addTrigger<Timer>();
@@ -216,6 +216,79 @@ void Game::startBossFight()
         camera.startChangingSize({400, 300}, 2., [](auto& camera){camera.m_view_size_state = Camera::SizeState::Fixed;}); });
 
     messanger.send(StartedBossFightEvent{boss.getId()});
+}
+
+void Game::startTimeRace()
+{
+    m_stage = GameStage::TimeRace;
+
+    std::shared_ptr<Quest> quest = std::make_shared<Quest>(messanger);
+
+    auto player_pos = m_player->getPosition();
+
+    //! update timer in UI preiodically
+    m_timerace_timer = 90.;
+    auto timer_id = m_timers.addTimedEvent(0.1f, [this](float t, float repeat)
+                                           {
+        auto el = m_ui_system->getTextElement("TimerBar");
+        if(el)
+        {
+            int seconds_left = (int)std::floor(m_timerace_timer - t);
+            int minutes_left = seconds_left/60;
+            std::string minutes_string = minutes_left < 10 ? "0" + std::to_string(minutes_left) : std::to_string(minutes_left);
+            std::string seconds_string = seconds_left%60 < 10 ? "0" + std::to_string(seconds_left%60) : std::to_string(seconds_left%60);
+            el->m_text.setText(minutes_string + ":" + seconds_string);
+        } }, (int)(m_timerace_timer / 0.1f));
+
+    int objective_count = 4;
+    //! set first spot relative to player
+    auto &spot1 = m_world->addTrigger<ReachPlace>();
+    spot1.setPosition(m_player->getPosition() + 400.f * angle2dir(randf(0, 150)));
+    auto prev_objective = std::make_shared<ReachSpotTask>(spot1, *m_font, messanger, quest.get());
+    spot1.attach(prev_objective);
+    quest->addTask(prev_objective);
+    spot1.activate();
+
+
+    //! others are relative to previous spots
+    for (int i = 0; i < objective_count - 1; ++i)
+    {
+        auto &spot = m_world->addTrigger<ReachPlace>();
+        spot.setSize({10});
+        spot.setPosition(m_player->getPosition() + 1000.f * angle2dir(randf(60, 150)));
+
+        auto objective = std::make_shared<ReachSpotTask>(spot, *m_font, messanger, quest.get());
+        spot.attach(objective);
+
+        quest->addTask(objective, prev_objective.get());
+        prev_objective->m_on_completion_callback = [&spot]()
+        {
+            spot.activate();
+        };
+        prev_objective = objective;
+    }
+    auto spawn_enemies = [this](utils::Vector2f pos)
+    {
+        for (int i = 0; i < 10; ++i)
+        {
+            auto &enemy = m_enemy_factory->create2(EnemyType::ShooterEnemy, pos + randf(100, 200) * angle2dir(randf(0, 360)));
+        }
+    };
+
+    quest->m_on_completion = [this, spawn_enemies, timer_id]
+    {
+        spawn_enemies(m_player->getPosition());
+        auto &star_effect = m_world->addVisualEffect(EffectType::ParticleEmiter);
+        star_effect.setPosition(m_player->getPosition());
+        star_effect.setLifeTime(2.f);
+
+        m_timers.removeEvent(timer_id);
+    };
+
+    auto &quest_giver = createQuestGiver(quest);
+    quest_giver.setPosition(m_player->getPosition() + Vec2{500, 0});
+
+    // messanger.send(StartedTimeRaceEvent{});
 }
 
 void Game::spawnBossObjective()
@@ -391,7 +464,7 @@ void Game::handleEvent(const SDL_Event &event)
         }
         else if (event.button.button == SDL_BUTTON_LEFT)
         {
-            startBossFight();
+            startTimeRace();
         }
     }
 
@@ -438,6 +511,8 @@ void Game::update(const float dt, Renderer &window)
 
     m_world->update2(dt);
     m_world->update(dt);
+
+    m_timers.update(dt);
 
     messanger.distributeMessages();
 
@@ -532,7 +607,7 @@ void Game::registerCollisions()
     colllider.registerResolver(ObjectType::Meteor, ObjectType::Bullet);
 
     colllider.registerResolver(ObjectType::Player, ObjectType::SpaceStation);
-    
+
     colllider.registerResolver(ObjectType::Player, ObjectType::Meteor);
     colllider.registerResolver(ObjectType::Player, ObjectType::Bullet);
     colllider.registerResolver(ObjectType::Player, ObjectType::Laser);

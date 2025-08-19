@@ -49,13 +49,16 @@ void ReachPlace::update(float dt) {}
 
 void ReachPlace::draw(LayersHolder &layers)
 {
-    auto& target = layers.getCanvas("Unit");
-    target.drawCricleBatched(m_pos, 10.f, {0.5, 0.5, 0, 0.5});
+    if(m_active)
+    {
+        auto& target = layers.getCanvas("Unit");
+        target.drawCricleBatched(m_pos, 10.f, {0.5, 0.5, 0, 0.5});
+    }
 }
 
 void ReachPlace::onCollisionWith(GameObject &obj, CollisionData &c_data)
 {
-    if (obj.getType() == ObjectType::Player)
+    if (obj.getType() == ObjectType::Player && m_active)
     {
         callback();
     }

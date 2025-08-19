@@ -52,24 +52,27 @@ struct CollisionTriggerComponent
 class Trigger : public GameObject, public Subject<Trigger>
 {
 
-protected:
-    std::function<void()> m_callback = []() {};
-
-public:
+    
+    public:
     
     Trigger(GameWorld *world, TextureHolder &textures);
-
+    
     virtual void update(float dt) = 0;
     virtual void onCreation() = 0;
     virtual void onDestruction() = 0;
     virtual void draw(LayersHolder &target) = 0;
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) = 0;
-
+    
+    void activate()
+    {
+        m_active = true;
+    }
+    
     void setCallback(std::function<void()> new_callback)
     {
         m_callback = new_callback;
     }
-
+    
     void callback()
     {
         m_callback();
@@ -80,6 +83,10 @@ public:
     {
         return m_callback;
     }
+    
+    protected:
+    bool m_active = false;
+    std::function<void()> m_callback = []() {};
 };
 
 struct Timer : public Trigger

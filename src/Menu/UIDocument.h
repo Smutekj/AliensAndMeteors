@@ -242,6 +242,16 @@ public:
     Renderer &document;
 };
 
+struct MultiLineUIElement : UIElement
+{
+    MultiLineUIElement(Font &font, std::string text);
+
+    virtual void draw(Renderer &canvas) override;
+    
+    // void setFont(Font &font);
+    MultiLineText m_text;
+};
+
 struct TextUIELement : UIElement
 {
     TextUIELement(Font &font, std::string text);

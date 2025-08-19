@@ -1,0 +1,6 @@
+{
+    "TargetComponent": {"target": "GameObject*", "target_pos": "Vector2f"},
+    "CollisionComponent": {},
+    "HealthComponent": {"max_hp": "float", "hp_regen": "float"},
+    "SpriteComponent": {"Texture": "string", "shader_id": "string", "layer_id": "string"}
+}

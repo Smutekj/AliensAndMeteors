@@ -160,7 +160,6 @@ void ObjectiveSystem::add(std::shared_ptr<Quest> quest)
 {
     m_quests.insert(quest);
     quest->start();
-    // m_objectives.
     // m_quests.at(objective_id)->m_id = objective_id;
 }
 
@@ -289,6 +288,7 @@ void Task::activate()
 void Task::complete()
 {
     assert(m_active);
+    m_on_completion_callback();
     m_parent->onTaskCompletion(this);
 };
 void Task::fail() {

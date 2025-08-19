@@ -11,6 +11,7 @@
 #include "PostOffice.h"
 #include "PostBox.h"
 #include "Entities/Factories.h"
+#include "Systems/TimedEventManager.h"
 
 #include "ToolBoxUI.h"
 
@@ -81,6 +82,9 @@ public:
   void spawnBossObjective();
   void addDestroyNObjective(ObjectType type, int count);
   void startBossFight();
+  void startTimeRace();
+
+  float m_timerace_timer;
 
 
   GameStage m_stage = GameStage::Free;
@@ -120,6 +124,8 @@ public:
   std::unique_ptr<EnemyFactory> m_enemy_factory;
   std::unique_ptr<PickupFactory> m_pickup_factory;
   std::unique_ptr<LaserFactory> m_laser_factory;
+
+  TimedEventManager m_timers;
 
   ToolBoxUI m_ui;
 
