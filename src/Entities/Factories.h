@@ -92,7 +92,7 @@ public:
             SpriteComponent sprite_comp = {.layer_id = "Unit", .sprite = Sprite{*textures.get("EnemyBomber")}};
             m_world.m_systems.addEntityDelayed(enemy.getId(), BoidComponent{}, AvoidMeteorsComponent{},
                                                h_comp, t_comp, s_comp, sprite_comp);
-            enemy.m_max_vel = 50; //! make him slower, lol
+            enemy.m_max_vel = 80.f; 
             return enemy;
         };
 
@@ -140,11 +140,14 @@ public:
             bullet.setBulletType(BulletType::Fire);
             bullet.setSize({4});
             bullet.m_max_vel = 200.f;
-            bullet.m_collision_resolvers[ObjectType::Player] = [](GameObject& obj, CollisionData& c_data)
+            bullet.m_collision_resolvers[ObjectType::Player] = [&bullet](GameObject& obj, CollisionData& c_data)
             {
                 auto* player = dynamic_cast<PlayerEntity*>(&obj);
                 assert(player);
                 player->m_fuel -= 5.;
+                player->speed *= 0.95f;
+                bullet.kill();
+                // player->booster = BoosterState::Disabled;
             };
             SpriteComponent s_comp = {.layer_id = "Unit", .sprite = Sprite{*textures.get("EnergyBullet")}};
             m_world.m_systems.addEntityDelayed(bullet.getId(), s_comp);
