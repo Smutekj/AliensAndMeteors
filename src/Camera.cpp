@@ -101,7 +101,7 @@ void Camera::followPlayer(float dt, PlayerEntity *m_player)
 
     //! look from higher distance when boosting
     float booster_ratio = m_player->speed / m_player->max_speed;
-    m_view.setSize(m_default_view.getSize() * (1 + booster_ratio / 2.f));
+    m_view.setSize(m_default_view.getSize() * (1.f + booster_ratio ));
 
     auto threshold = m_view.getSize() / 2.f - m_view.getSize() / 3.f;
     auto dx = m_player->getPosition().x - m_view.getCenter().x;
