@@ -120,26 +120,30 @@ Game::Game(Renderer &window, KeyBindings &bindings)
                              CollisionEvent,
                              DamageReceivedEvent,
                              HealthChangedEvent,
-                             StartedBossFightEvent>();
+                             StartedBossFightEvent,
+                             StartedTimerEvent>();
 
     initializeLayersAndTextures();
     m_world = std::make_unique<GameWorld>(messanger, m_textures);
-    m_enemy_factory = std::make_unique<EnemyFactory>(*m_world, m_textures);
-    m_pickup_factory = std::make_unique<PickupFactory>(*m_world, m_textures);
-    m_laser_factory = std::make_unique<LaserFactory>(*m_world, m_textures);
-    registerCollisions();
-    registerSystems();
-
     //! PLAYER NEEDS TO BE FIRST BECAUSE OTHER OBJECTS MIGHT REFERENCE IT!
     m_player = &m_world->addObjectForced<PlayerEntity>();
     m_player->setPosition({500, 500});
     m_world->m_player = m_player;
     m_player->setDestructionCallback([this](int id, ObjectType type)
-                                     { m_state = GameState::PLAYER_DIED; });
+    { m_state = GameState::PLAYER_DIED; });
+    
+    m_ui_system = std::make_unique<UISystem>(window, m_textures, messanger, m_player, *m_font, *m_world);
     m_ui.initWorld(*m_world);
+    
+    m_enemy_factory = std::make_unique<EnemyFactory>(*m_world, m_textures);
+    m_pickup_factory = std::make_unique<PickupFactory>(*m_world, m_textures);
+    m_laser_factory = std::make_unique<LaserFactory>(*m_world, m_textures);
+    m_quest_factory = std::make_unique<QuestFactory>(*m_objective_system, messanger, *m_ui_system, *m_world, m_textures);
+    registerCollisions();
+    registerSystems();
+
 
     m_objective_system = std::make_unique<ObjectiveSystem>(messanger);
-    m_ui_system = std::make_unique<UISystem>(window, m_textures, messanger, m_player, *m_font, *m_world);
 
     m_background = std::make_unique<Texture>(std::string(RESOURCES_DIR) + "/Textures/background.png");
 
@@ -218,76 +222,16 @@ void Game::startBossFight()
     messanger.send(StartedBossFightEvent{boss.getId()});
 }
 
+void Game::startTimer()
+{
+}
+
 void Game::startTimeRace()
 {
     m_stage = GameStage::TimeRace;
 
-    std::shared_ptr<Quest> quest = std::make_shared<Quest>(messanger);
-
-    auto player_pos = m_player->getPosition();
-
-    //! update timer in UI preiodically
-    m_timerace_timer = 90.;
-    auto timer_id = m_timers.addTimedEvent(0.1f, [this](float t, float repeat)
-                                           {
-        auto el = m_ui_system->getTextElement("TimerBar");
-        if(el)
-        {
-            int seconds_left = (int)std::floor(m_timerace_timer - t);
-            int minutes_left = seconds_left/60;
-            std::string minutes_string = minutes_left < 10 ? "0" + std::to_string(minutes_left) : std::to_string(minutes_left);
-            std::string seconds_string = seconds_left%60 < 10 ? "0" + std::to_string(seconds_left%60) : std::to_string(seconds_left%60);
-            el->m_text.setText(minutes_string + ":" + seconds_string);
-        } }, (int)(m_timerace_timer / 0.1f));
-
-    int objective_count = 4;
-    //! set first spot relative to player
-    auto &spot1 = m_world->addTrigger<ReachPlace>();
-    spot1.setPosition(m_player->getPosition() + 400.f * angle2dir(randf(0, 150)));
-    auto prev_objective = std::make_shared<ReachSpotTask>(spot1, *m_font, messanger, quest.get());
-    spot1.attach(prev_objective);
-    quest->addTask(prev_objective);
-    spot1.activate();
-
-
-    //! others are relative to previous spots
-    for (int i = 0; i < objective_count - 1; ++i)
-    {
-        auto &spot = m_world->addTrigger<ReachPlace>();
-        spot.setSize({10});
-        spot.setPosition(m_player->getPosition() + 1000.f * angle2dir(randf(60, 150)));
-
-        auto objective = std::make_shared<ReachSpotTask>(spot, *m_font, messanger, quest.get());
-        spot.attach(objective);
-
-        quest->addTask(objective, prev_objective.get());
-        prev_objective->m_on_completion_callback = [&spot]()
-        {
-            spot.activate();
-        };
-        prev_objective = objective;
-    }
-    auto spawn_enemies = [this](utils::Vector2f pos)
-    {
-        for (int i = 0; i < 10; ++i)
-        {
-            auto &enemy = m_enemy_factory->create2(EnemyType::ShooterEnemy, pos + randf(100, 200) * angle2dir(randf(0, 360)));
-        }
-    };
-
-    quest->m_on_completion = [this, spawn_enemies, timer_id]
-    {
-        spawn_enemies(m_player->getPosition());
-        auto &star_effect = m_world->addVisualEffect(EffectType::ParticleEmiter);
-        star_effect.setPosition(m_player->getPosition());
-        star_effect.setLifeTime(2.f);
-
-        m_timers.removeEvent(timer_id);
-    };
-
-    auto &quest_giver = createQuestGiver(quest);
+    auto &quest_giver = createQuestGiver(m_quest_factory->create(QuestType::TimeRace1));
     quest_giver.setPosition(m_player->getPosition() + Vec2{500, 0});
-
     // messanger.send(StartedTimeRaceEvent{});
 }
 
@@ -382,8 +326,8 @@ void Game::spawnNextObjective()
     spot1.attach(objective);
     spot2.attach(objective2);
 
-    auto &quest_giver = createQuestGiver(quest);
-    quest_giver.setPosition(m_player->getPosition() + Vec2{500, 0});
+    // auto &quest_giver = createQuestGiver(quest);
+    // quest_giver.setPosition(m_player->getPosition() + Vec2{500, 0});
 }
 
 void Game::handleEvent(const SDL_Event &event)
@@ -516,7 +460,7 @@ void Game::update(const float dt, Renderer &window)
 
     messanger.distributeMessages();
 
-    m_objective_system->update();
+    m_objective_system->update(dt);
 };
 
 void Game::draw(Renderer &window)

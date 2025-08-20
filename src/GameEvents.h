@@ -93,5 +93,10 @@ struct StartedBossFightEvent
     int boss_id;
     int boss_fight_id = -1; ///???
 };
+struct StartedTimerEvent
+{
+    int id;
+    float time;
+};
 
 

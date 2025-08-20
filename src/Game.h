@@ -14,6 +14,8 @@
 #include "Systems/TimedEventManager.h"
 
 #include "ToolBoxUI.h"
+#include "QuestFactory.h"
+
 
 class GameWorld;
 
@@ -83,6 +85,7 @@ public:
   void addDestroyNObjective(ObjectType type, int count);
   void startBossFight();
   void startTimeRace();
+  void startTimer();
 
   float m_timerace_timer;
 
@@ -124,6 +127,7 @@ public:
   std::unique_ptr<EnemyFactory> m_enemy_factory;
   std::unique_ptr<PickupFactory> m_pickup_factory;
   std::unique_ptr<LaserFactory> m_laser_factory;
+  std::unique_ptr<QuestFactory> m_quest_factory;
 
   TimedEventManager m_timers;
 
