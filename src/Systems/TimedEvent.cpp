@@ -34,7 +34,7 @@ bool TimedEvent::isInfinite() const
 
 float TimedEvent::getTimeLeft() const
 {
-    return m_firing_time;
+    return m_firing_time + m_event_delay * (m_repeats_left-1);
 }
 int TimedEvent::getRepeatsLeft() const
 {
