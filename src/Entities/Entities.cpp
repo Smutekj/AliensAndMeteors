@@ -2,7 +2,6 @@
 
 #include "../DrawLayer.h"
 #include "../CollisionSystem.h"
-#include "../BehaviourBase.h"
 #include "../GameWorld.h"
 #include "../Animation.h"
 #include "../Polygon.h"
