@@ -3,7 +3,6 @@
 #include "../DrawLayer.h"
 #include "../CollisionSystem.h"
 #include "../GridNeighbourSearcher.h"
-#include "../BehaviourBase.h"
 // #include "../ResourceManager.h"
 #include "../Utils/RandomTools.h"
 #include "../GameWorld.h"
@@ -13,6 +12,8 @@
 #include "Attacks.h"
 #include "Player.h"
 #include "../PostOffice.h"
+#include "Factories.h"
+
 
 Enemy::Enemy(GameWorld *world, TextureHolder &textures,
               PlayerEntity *player, GameSystems &systems)
@@ -178,25 +179,6 @@ void Enemy::draw(LayersHolder &layers)
 //     {Multiplier::SCATTER, 30.f},
 //     {Multiplier::SEEK, 10.f}};
 
-void Enemy::setBehaviour()
-{
-    auto dice_roll = rand() % 6;
-    if (dice_roll < 2)
-    {
-        m_behaviour = std::make_unique<FollowAndShootAI2>(m_player, this, m_world);
-        m_sprite.setTexture(*m_textures->get("EnemyShip"));
-    }
-    else if (dice_roll <= 3)
-    {
-        m_behaviour = std::make_unique<BomberAI>(m_player, this, m_world);
-        m_sprite.setTexture(*m_textures->get("EnemyBomber"));
-    }
-    else
-    {
-        m_behaviour = std::make_unique<FollowAndShootLasersAI>(m_player, this, m_world);
-        m_sprite.setTexture(*m_textures->get("EnemyLaser"));
-    }
-}
 
 SpaceStation::SpaceStation(GameWorld *world, TextureHolder &textures,  PlayerEntity *player, GameSystems &systems)
     : p_systems(&systems), GameObject(world, textures, ObjectType::SpaceStation)
@@ -596,7 +578,7 @@ void Boss::draw(LayersHolder &layers)
 }
 
 Turret::Turret(GameWorld *world, TextureHolder &textures,  PlayerEntity *player)
-    : p_player(player), GameObject(world, textures, ObjectType::SpaceStation)
+    : p_player(player), m_factory(std::make_unique<ProjectileFactory>(*world, textures)), GameObject(world, textures, ObjectType::SpaceStation)
 {
     m_size = {10, 10};
     m_rigid_body = std::make_unique<RigidBody>();
@@ -609,22 +591,12 @@ Turret::~Turret() {}
 
 void Turret::update(float dt)
 {
-    m_time += dt;
 
     auto dr_to_player = p_player->getPosition() - m_pos;
     float dist_to_player = utils::norm(dr_to_player);
+    //! turn towards player if close by
     if (dist_to_player < m_shooting_range)
     {
-        if (m_time > m_spawn_timer)
-        {
-            m_time = 0.f;
-            auto &bullet = m_world->addObject2<Bullet>();
-            bullet.setBulletType(BulletType::Fire);
-            bullet.m_vel = dr_to_player;
-            bullet.setSize({2, 2});
-            bullet.setPosition(m_pos + dr_to_player / dist_to_player * m_size.x);
-        }
-
         auto my_dir = utils::angle2dir(m_angle);
         auto cos_angle_diff = utils::dot(dr_to_player / dist_to_player, my_dir);
         //! if the angle difference is large enough turn by speed, otherwise set angle to player
@@ -690,6 +662,19 @@ void Turret::onCollisionWith(GameObject &obj, CollisionData &c_data)
 
 void Turret::onCreation()
 {
+    TimedEventComponent t_comp;
+
+    t_comp.addEvent({m_spawn_timer, [this](float t, int count){
+        auto dr_to_player = p_player->getPosition() - m_pos;
+        float dist_to_player = utils::norm(dr_to_player);
+        if (dist_to_player < m_shooting_range)
+        {
+            auto& bullet = m_factory->create2(ProjectileType::ElectroBullet, m_pos);
+            bullet.m_vel = dr_to_player/utils::norm(dr_to_player) * bullet.m_max_vel;
+        }        
+    }, TimedEventType::Infinite});
+
+    m_world->m_systems.addEntity(getId(), t_comp);
 }
 
 void Turret::onDestruction()

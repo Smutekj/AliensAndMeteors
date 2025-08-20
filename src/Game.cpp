@@ -453,7 +453,6 @@ void Game::update(const float dt, Renderer &window)
 
     parseInput(window, dt);
 
-    m_world->update2(dt);
     m_world->update(dt);
 
     m_timers.update(dt);
@@ -487,7 +486,7 @@ void Game::draw(Renderer &window)
     m_layers.clearAllLayers();
     // m_player->draw(m_layers);
     m_world->draw(m_layers);
-    m_world->draw2(m_layers, window.m_view);
+    // m_world->draw2(m_layers, window.m_view);
     // Enemy::m_neighbour_searcher.drawGrid(*m_layers.getLayer("Unit"));
 
     // auto &test_canvas = m_layers.getCanvas("Bloom");

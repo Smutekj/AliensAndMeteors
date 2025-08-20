@@ -31,45 +31,45 @@ class ToolBoxUI;
 
 struct PlayerEntity;
 
-// Poor man's MPL vector.
-template <class... Ts>
-struct TypeList
-{
-    static const int size = sizeof...(Ts);
-};
+// // Poor man's MPL vector.
+// template <class... Ts>
+// struct TypeList
+// {
+//     static const int size = sizeof...(Ts);
+// };
 
-template <class TList, class Element>
-struct push_back_impl;
+// template <class TList, class Element>
+// struct push_back_impl;
 
-template <template <class...> class TList, class... Ts, class Element>
-struct push_back_impl<TList<Ts...>, Element>
-{
-    using type = TList<Ts..., Element>;
-};
-template <class TList, class Element>
-using push_back_t = typename push_back_impl<TList, Element>::type;
+// template <template <class...> class TList, class... Ts, class Element>
+// struct push_back_impl<TList<Ts...>, Element>
+// {
+//     using type = TList<Ts..., Element>;
+// };
+// template <class TList, class Element>
+// using push_back_t = typename push_back_impl<TList, Element>::type;
 
-template <class A, template <class...> class B, template <class> class Outer>
-struct rebind_;
+// template <class A, template <class...> class B, template <class> class Outer>
+// struct rebind_;
 
-template <template <class...> class A, class... T, template <class...> class B, template <class> class Outer>
-struct rebind_<A<T...>, B, Outer>
-{
-    using type = B<Outer<T>...>;
-};
-template <class A, template <class...> class B, template <class> class Outer>
-using rebind = typename rebind_<A, B, Outer>::type;
+// template <template <class...> class A, class... T, template <class...> class B, template <class> class Outer>
+// struct rebind_<A<T...>, B, Outer>
+// {
+//     using type = B<Outer<T>...>;
+// };
+// template <class A, template <class...> class B, template <class> class Outer>
+// using rebind = typename rebind_<A, B, Outer>::type;
 
-#include <tuple>
-#include <typeinfo>
-#include "Utils/Colony.h"
+// #include <tuple>
+// #include <typeinfo>
+// #include "Utils/Colony.h"
 
-using EntityTypes = TypeList<Enemy, Turret, Meteor, SpaceStation, Boss, Bullet,
-                             Laser, Bomb, Explosion, PlayerEntity, Heart, EMP>;
+// using EntityTypes = TypeList<Enemy, Turret, Meteor, SpaceStation, Boss, Bullet,
+//                              Laser, Bomb, Explosion, PlayerEntity, Heart, EMP>;
 // using EntityTypes = TypeList<Enemy>;
 
-using EntityTuple = rebind<EntityTypes, std::tuple, ComponentBlock>;
-using EntityQueue = rebind<EntityTypes, std::tuple, std::queue>;
+// using EntityTuple = rebind<EntityTypes, std::tuple, ComponentBlock>;
+// using EntityQueue = rebind<EntityTypes, std::tuple, std::queue>;
 
 class GameWorld
 {
@@ -106,19 +106,19 @@ public:
     std::shared_ptr<EntityType> createEntity2();
     template <class EntityType>
     EntityType &addObjectForced();
-    template <class EntityType>
-    void addX(std::queue<EntityType> &to_add);
-    template <class EntityType>
-    void updateX(ComponentBlock<EntityType> &entity_block, float dt);
-    template <class EntityType>
-    void removeX(std::queue<EntityType> &to_remove);
-    template <class EntityType>
-    void drawX(ComponentBlock<EntityType> &entity_block, LayersHolder &layers, View camera_view);
+    // template <class EntityType>
+    // void addX(std::queue<EntityType> &to_add);
+    // template <class EntityType>
+    // void updateX(ComponentBlock<EntityType> &entity_block, float dt);
+    // template <class EntityType>
+    // void removeX(std::queue<EntityType> &to_remove);
+    // template <class EntityType>
+    // void drawX(ComponentBlock<EntityType> &entity_block, LayersHolder &layers, View camera_view);
     
-    void addQueuedEntities2();
-    void removeQueuedEntities2();
-    void update2(float dt);
-    void draw2(LayersHolder &layers, View camera_view);
+    // void addQueuedEntities2();
+    // void removeQueuedEntities2();
+    // void update2(float dt);
+    // void draw2(LayersHolder &layers, View camera_view);
     
     ///!!!
     void destroyObject(int entity_id);
@@ -130,11 +130,11 @@ public:
     
     std::size_t getNActiveEntities(ObjectType type);
 
-    template <class EntityType>
-    std::size_t getActiveCount()
-    {
-        return std::get<ComponentBlock<EntityType>>(m_entities2).activeCount();
-    }
+    // template <class EntityType>
+    // std::size_t getActiveCount()
+    // {
+    //     return std::get<ComponentBlock<EntityType>>(m_entities2).activeCount();
+    // }
 
     void update(float dt);
     void draw(LayersHolder &window);
@@ -157,9 +157,9 @@ public:
 private:
     std::unordered_map<EffectType, std::function<std::shared_ptr<VisualEffect>()>> m_effect_factories;
 
-    EntityTuple m_entities2;
-    EntityQueue m_entities_to_add;
-    EntityQueue m_entities_to_remove;
+    // EntityTuple m_entities2;
+    // EntityQueue m_entities_to_add;
+    // EntityQueue m_entities_to_remove;
 
     EntityRegistryT m_entities;
     DynamicObjectPool2<int> m_root_entities;
@@ -251,50 +251,50 @@ EntityType &GameWorld::addObjectForced()
     return *new_entity;
 }
 
-template <class EntityType>
-void GameWorld::addX(std::queue<EntityType> &to_add)
-{
-    while (!to_add.empty())
-    {
-        auto &entity_block = std::get<ComponentBlock<EntityType>>(m_entities2);
-        int block_id = entity_block.insert(to_add.front());
-        auto &new_entity = entity_block.get(block_id);
+// template <class EntityType>
+// void GameWorld::addX(std::queue<EntityType> &to_add)
+// {
+//     while (!to_add.empty())
+//     {
+//         auto &entity_block = std::get<ComponentBlock<EntityType>>(m_entities2);
+//         int block_id = entity_block.insert(to_add.front());
+//         auto &new_entity = entity_block.get(block_id);
 
-        std::shared_ptr<EntityType> entity_p(&new_entity);
-        m_entities.insertAt(entity_p->getId(), entity_p);
+//         std::shared_ptr<EntityType> entity_p(&new_entity);
+//         m_entities.insertAt(entity_p->getId(), entity_p);
 
-        // new_entity.m_id = id;
+//         // new_entity.m_id = id;
 
-        if (new_entity.collides())
-        {
-            m_collision_system.insertObject(new_entity);
-        }
-        new_entity.onCreation();
-        to_add.pop();
-    }
-}
-template <class EntityType>
-void GameWorld::removeX(std::queue<EntityType> &to_remove)
-{
-    auto &entity_block = std::get<ComponentBlock<EntityType>>(m_entities2);
-    while (!to_remove.empty())
-    {
-        assert(false); //! DO NOT USe THIs!!!
-        auto &entity = to_remove.front();
-        entity.onDestruction();
+//         if (new_entity.collides())
+//         {
+//             m_collision_system.insertObject(new_entity);
+//         }
+//         new_entity.onCreation();
+//         to_add.pop();
+//     }
+// }
+// template <class EntityType>
+// void GameWorld::removeX(std::queue<EntityType> &to_remove)
+// {
+//     auto &entity_block = std::get<ComponentBlock<EntityType>>(m_entities2);
+//     while (!to_remove.empty())
+//     {
+//         assert(false); //! DO NOT USe THIs!!!
+//         auto &entity = to_remove.front();
+//         entity.onDestruction();
 
-        p_messenger->send(EntityDiedEvent{entity.getType(), entity.getId(), entity.getPosition()});
+//         p_messenger->send(EntityDiedEvent{entity.getType(), entity.getId(), entity.getPosition()});
 
-        if (entity.collides())
-        {
-            m_collision_system.removeObject(entity);
-        }
+//         if (entity.collides())
+//         {
+//             m_collision_system.removeObject(entity);
+//         }
 
-        entity_block.deactivate(entity.getId());
-        m_entities.remove(entity.getId());
-        to_remove.pop();
-    }
-}
+//         entity_block.deactivate(entity.getId());
+//         m_entities.remove(entity.getId());
+//         to_remove.pop();
+//     }
+// }
 
 struct EntityTreeNode
 {

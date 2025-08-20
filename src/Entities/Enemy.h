@@ -22,48 +22,42 @@ class Enemy : public GameObject
 
 public:
     Enemy() = default;
-    Enemy(GameWorld *world, TextureHolder &textures, PlayerEntity *player, GameSystems& systems);
+    Enemy(GameWorld *world, TextureHolder &textures, PlayerEntity *player, GameSystems &systems);
     Enemy(const Enemy &e) = default;
     Enemy &operator=(Enemy &e) = default;
     Enemy &operator=(Enemy &&e) = default;
 
     virtual ~Enemy() override;
-    
+
     virtual void update(float dt) override;
     virtual void onCreation() override;
     virtual void onDestruction() override;
     virtual void draw(LayersHolder &target) override;
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
-    
-    void setBehaviour();
-    
-    public:
-    
+
+public:
     bool m_deactivated = false;
     float m_deactivated_time = 1.f;
-    
+
     float max_impulse_vel = 40.f;
-    
+
     utils::Vector2f m_impulse = {0, 0};
     utils::Vector2f m_target_pos;
-    
+
     Sprite m_sprite;
-    
-    private:
-    GameSystems* m_systems;
-    
-    std::shared_ptr<BoidAI2> m_behaviour;
-    
+
+private:
+    GameSystems *m_systems;
+
     PlayerEntity *m_player = nullptr;
-    
 };
 
 class SpaceStation : public GameObject
 {
-    
-    public:
+
+public:
     SpaceStation() = default;
-    SpaceStation(GameWorld *world, TextureHolder &textures, PlayerEntity *player, GameSystems& systems);
+    SpaceStation(GameWorld *world, TextureHolder &textures, PlayerEntity *player, GameSystems &systems);
     SpaceStation(const SpaceStation &e) = default;
     SpaceStation &operator=(SpaceStation &e) = default;
     SpaceStation &operator=(SpaceStation &&e) = default;
@@ -76,9 +70,9 @@ class SpaceStation : public GameObject
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
 
 private:
-    GameSystems* p_systems;
     std::vector<int> m_produced_ships;
-    float m_time = 0.f;
+
+    GameSystems *p_systems;
     float m_spawn_timer = 2.f;
 
     float m_max_health = 100.f;
@@ -151,6 +145,7 @@ private:
     void shootLaserAtPlayer();
 };
 
+class ProjectileFactory;
 
 class Turret : public GameObject
 {
@@ -170,18 +165,18 @@ public:
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
 
 private:
-    PlayerEntity* p_player = nullptr;
+    float m_time;
+
+    std::unique_ptr<ProjectileFactory> m_factory;
+
+    PlayerEntity *p_player = nullptr;
 
     float m_shooting_range = 169.;
 
     float m_turn_speed = 49; //! degrees per second;
 
-    std::vector<Enemy *> m_produced_ships;
-    float m_time = 0.f;
     float m_spawn_timer = 2.f;
 
     float m_max_health = 100.f;
     float m_health = m_max_health;
 };
-
-

@@ -22,7 +22,7 @@ Quest::Quest(PostOffice &messenger)
 {
 }
 
-void Quest::addTask(std::shared_ptr<Task> task, Task *precondition = nullptr)
+void Quest::addTask(std::shared_ptr<Task> task, Task *precondition)
 {
     assert(task);
 

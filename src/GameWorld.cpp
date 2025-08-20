@@ -23,70 +23,70 @@ std::size_t GameWorld::getNActiveEntities(ObjectType type)
     return n_enemies;
 }
 
-void GameWorld::addQueuedEntities2()
-{
-    std::apply([this](auto &...entity_queue)
-               { ((addX(entity_queue)), ...); }, m_entities_to_add);
-}
-void GameWorld::removeQueuedEntities2()
-{
-    std::apply([this](auto &...entity_queue)
-               { ((removeX(entity_queue)), ...); }, m_entities_to_remove);
-}
-template <class EntityType>
-void GameWorld::updateX(ComponentBlock<EntityType> &entity_block, float dt)
-{
-    static_assert(std::is_base_of_v<GameObject, EntityType>);
+// void GameWorld::addQueuedEntities2()
+// {
+//     std::apply([this](auto &...entity_queue)
+//                { ((addX(entity_queue)), ...); }, m_entities_to_add);
+// }
+// void GameWorld::removeQueuedEntities2()
+// {
+//     std::apply([this](auto &...entity_queue)
+//                { ((removeX(entity_queue)), ...); }, m_entities_to_remove);
+// }
+// template <class EntityType>
+// void GameWorld::updateX(ComponentBlock<EntityType> &entity_block, float dt)
+// {
+//     static_assert(std::is_base_of_v<GameObject, EntityType>);
 
-    auto &block = entity_block.getData();
-    int first_ind = block.at(0).next;
-    for (int ind = first_ind; ind <= 750; ind += block.at(ind).next) // block[ind].next)
-    {
-        auto &entity = block.at(ind).comp;
-        entity.updateAll(dt);
-        entity.update(dt);
-        if (block.at(ind).comp.isDead())
-        {
-            std::get<std::queue<EntityType>>(m_entities_to_remove).push(entity);
-        }
-    }
-}
+//     auto &block = entity_block.getData();
+//     int first_ind = block.at(0).next;
+//     for (int ind = first_ind; ind <= 750; ind += block.at(ind).next) // block[ind].next)
+//     {
+//         auto &entity = block.at(ind).comp;
+//         entity.updateAll(dt);
+//         entity.update(dt);
+//         if (block.at(ind).comp.isDead())
+//         {
+//             std::get<std::queue<EntityType>>(m_entities_to_remove).push(entity);
+//         }
+//     }
+// }
 
-void GameWorld::update2(float dt)
-{
-    // m_collision_system.update();
+// void GameWorld::update2(float dt)
+// {
+//     // m_collision_system.update();
 
-    std::apply([this, dt](auto &...entity_queue)
-               { ((updateX(entity_queue, dt)), ...); }, m_entities2);
+//     std::apply([this, dt](auto &...entity_queue)
+//                { ((updateX(entity_queue, dt)), ...); }, m_entities2);
 
-    addQueuedEntities2();
-    removeQueuedEntities2();
-}
-template <class EntityType>
-void GameWorld::drawX(ComponentBlock<EntityType> &entity_block, LayersHolder &layers, View camera_view)
-{
-    camera_view.setSize(camera_view.getSize() * 1.2); //! draw also a little bit beyond the camera
+//     addQueuedEntities2();
+//     removeQueuedEntities2();
+// }
+// template <class EntityType>
+// void GameWorld::drawX(ComponentBlock<EntityType> &entity_block, LayersHolder &layers, View camera_view)
+// {
+//     camera_view.setSize(camera_view.getSize() * 1.2); //! draw also a little bit beyond the camera
 
-    auto &block = entity_block.getData();
-    int first_ind = block.at(0).next;
-    for (int ind = first_ind; ind <= 750; ind += block[ind].next) // block[ind].next)
-    {
-        auto &drawable = block.at(ind).comp;
+//     auto &block = entity_block.getData();
+//     int first_ind = block.at(0).next;
+//     for (int ind = first_ind; ind <= 750; ind += block[ind].next) // block[ind].next)
+//     {
+//         auto &drawable = block.at(ind).comp;
 
-        Rectf bounding_rect = {drawable.getPosition().x, drawable.getPosition().y,
-                               drawable.getSize().x, drawable.getSize().y};
+//         Rectf bounding_rect = {drawable.getPosition().x, drawable.getPosition().y,
+//                                drawable.getSize().x, drawable.getSize().y};
 
-        if (camera_view.intersects(bounding_rect))
-        {
-            drawable.draw(layers);
-        }
-    }
-}
-void GameWorld::draw2(LayersHolder &layers, View camera_view)
-{
-    std::apply([this, &layers, camera_view](auto &&...ents)
-               { ((drawX(ents, layers, camera_view)), ...); }, m_entities2);
-}
+//         if (camera_view.intersects(bounding_rect))
+//         {
+//             drawable.draw(layers);
+//         }
+//     }
+// }
+// void GameWorld::draw2(LayersHolder &layers, View camera_view)
+// {
+//     std::apply([this, &layers, camera_view](auto &&...ents)
+//                { ((drawX(ents, layers, camera_view)), ...); }, m_entities2);
+// }
 
 GameObject &GameWorld::addObject3(ObjectType type)
 {
