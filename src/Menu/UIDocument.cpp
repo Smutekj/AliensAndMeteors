@@ -67,7 +67,8 @@ void UIElement::calculateBoundingBoxSize()
         } }, dimensions.y);
 }
 
-void UIElement::draw(Renderer &canvas) {
+void UIElement::draw(Renderer &canvas)
+{
     drawBoundingBox(canvas);
 };
 
@@ -487,9 +488,41 @@ UIElement *UIElement::getElementById(const std::string &id)
     }
     return nullptr;
 }
+
+bool UIElement::removeElementById(const std::string &id)
+{
+    std::deque<std::pair<int, UIElement *>> to_visit;
+    to_visit.push_back({0, this});
+
+    while (!to_visit.empty())
+    {
+        auto curr = to_visit.front().second;
+        int child_id = to_visit.front().first;
+        to_visit.pop_front();
+
+        int i = 0;
+        for (auto &child : curr->children)
+        {
+            if (child->id == id)
+            {
+                curr->children.erase(children.begin() + i);
+                return true;
+            }
+            to_visit.push_back({i, child.get()});
+            i++;
+        }
+    }
+    //! element with id does not exist
+    return false;
+}
+
 UIElement *UIDocument::getElementById(const std::string &id) const
 {
     return root->getElementById(id);
+}
+bool UIDocument::removeElementById(const std::string &id) const
+{
+    return root->removeElementById(id);
 }
 
 void UIDocument::forEach(std::function<void(UIElement::UIElementP)> callback)
@@ -512,16 +545,14 @@ void UIDocument::forEach(std::function<void(UIElement::UIElementP)> callback)
 
 void UIDocument::drawBoundingBoxes()
 {
-    forEach([this](auto el_p){
-        el_p->drawBoundingBox(document);
-    });
+    forEach([this](auto el_p)
+            { el_p->drawBoundingBox(document); });
 }
 
 void UIDocument::drawUI()
 {
     root->drawX(document);
 }
-
 
 MultiLineUIElement::MultiLineUIElement(Font &font, std::string text)
 {

@@ -86,6 +86,7 @@ struct UIElement
 
     utils::Vector2<SizeVariant> dimensions = {Viewport{0}, Viewport{0}};
 
+    bool m_hidden = false;
     Rect<int> bounding_box;
     UIElement *parent = nullptr;
     UIElement *prev_sibling = nullptr;
@@ -134,7 +135,9 @@ public:
     void addChildAfter(UIElementP child_el, UIElementP after_who);
     
     UIElement *getElementById(const std::string &id);
-    
+    bool removeElementById(const std::string &id);
+
+
     void drawX(Renderer &canvas);
     
     int widthContent() const;
@@ -231,6 +234,7 @@ public:
     void handleEvent(UIEvent event);
 
     UIElement *getElementById(const std::string &id) const;
+    bool removeElementById(const std::string &id) const;
 
     void forEach(std::function<void(UIElement::UIElementP)> callback);
 
