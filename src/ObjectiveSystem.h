@@ -15,39 +15,25 @@
 #include "PostBox.h"
 #include "GameEvents.h"
 
-class Objective
+#include "Menu/UIDocument.h"
+
+class UIDrawerVisitor
 {
-
 public:
-    Objective(PostOffice &messenger)
-        : m_post_office(&messenger) {}
+    UIDrawerVisitor(UIDocument &ui)
+        : m_ui(ui) {}
 
-    virtual void update(float dt) {};
-    virtual void draw(Renderer &window, const TextureHolder &textures) = 0;
-    void complete()
-    {
-        // m_post_office->send(ObjectiveFinishedEvent{m_id, ObjectiveEndCause::Completed});
-        m_on_completion_callback();
-    };
-    void fail()
-    {
-        // m_post_office->send(ObjectiveFinishedEvent{m_id, ObjectiveEndCause::Failed});
-        m_on_failure_callback();
-    };
-    virtual ~Objective() = default;
-    bool isFinished() const;
+    // void visit(ReachSpotTask& task)
+    // {
+    //     auto task_bar = m_ui.getElementById("TaskBlock");
+    //     if(task_bar)
+    //     {
 
-public:
-    PostOffice *m_post_office = nullptr;
+    //     }
+    // }
 
-    int m_id;
-    float m_text_y_pos;
-    std::function<void()> m_on_completion_callback = []() {};
-    std::function<void()> m_on_failure_callback = []() {};
-
-protected:
-    Font *m_font = nullptr;
-    bool m_is_finished = false;
+private:
+    UIDocument &m_ui;
 };
 
 class Quest;
@@ -66,7 +52,13 @@ public:
     Task &operator=(const Task &other) = default;
     Task &operator=(Task &&other) = default;
 
-    virtual void update(float dt) {};
+    virtual void update(float dt)
+    {
+        if (m_timer_component)
+        {
+            m_timer_component->update(dt);
+        }
+    };
     virtual void draw(Renderer &window, const TextureHolder &textures) = 0;
 
     void activate();
@@ -75,12 +67,16 @@ public:
 
     bool isFinished() const;
 
+    // virtual void accept(UIDrawerVisitor &visitor) = 0;
+
 public:
     std::function<void()> m_on_completion_callback = []() {};
     std::function<void()> m_on_failure_callback = []() {};
+    std::function<void()> m_on_activation = []() {};
 
     int m_id;
-    float m_text_y_pos = 100.f;
+
+    std::unique_ptr<TimedEvent> m_timer_component;
 
 protected:
     PostOffice *m_post_office = nullptr;
@@ -91,42 +87,17 @@ protected:
     bool m_active = false;
 };
 
-class CompositeObjective : public Objective
+class CompositeTask : public Task
 {
 
 public:
-    CompositeObjective(PostOffice &messenger, std::vector<std::unique_ptr<Task>> &tasks) : Objective(messenger)
-    {
-        for (auto &task : tasks)
-        {
-            addTask(std::move(task));
-        }
-    }
-    void onTaskCompletion(Task *completed_task)
-    {
-        m_tasks_count_to_complete--;
-        if (m_tasks_count_to_complete == 0)
-        {
-            m_is_finished = true;
-            complete();
-        }
-    }
+    CompositeTask(PostOffice &messenger, std::vector<std::unique_ptr<Task>> &tasks, Quest *parent);
 
-    void addTask(std::unique_ptr<Task> sub_task)
-    {
-        m_tasks_count_to_complete++;
+    void onTaskCompletion(Task *completed_task);
+    void addTask(std::unique_ptr<Task> sub_task);
+    virtual void draw(Renderer &window, const TextureHolder &textures) override;
 
-        sub_tasks.push_back(std::move(sub_task));
-    }
-
-    virtual void draw(Renderer &window, const TextureHolder &textures)
-    {
-        for (auto &task : sub_tasks)
-        {
-            task->draw(window, textures);
-        }
-    }
-
+private:
     int m_tasks_count_to_complete = 0;
     std::vector<std::unique_ptr<Task>> sub_tasks;
 };
@@ -145,69 +116,19 @@ class Quest
 public:
     float m_text_y_pos; //! TODO: will create some draw compotent some time
 
-    Quest(PostOffice &messenger)
-        : p_post_office(&messenger)
-    {
-    }
+    Quest(PostOffice &messenger);
 
     void draw(Renderer &window, const TextureHolder &textures);
-
-    void addTask(std::shared_ptr<Task> task, Task *precondition = nullptr)
-    {
-        assert(task);
-
-        int task_internal_id = sub_tasks.size();
-        task->m_id = task_internal_id;
-        sub_tasks.emplace_back(task, precondition, std::vector<Task *>{});
-
-        if (precondition)
-        {
-            sub_tasks.at(precondition->m_id).children.push_back(task.get());
-        }
-        else
-        {
-            //! if there is no precondition, the task must be active
-            active_tasks_ids.insert(task_internal_id);
-        }
-    }
-
-    void onTaskCompletion(Task *completed_task)
-    {
-        assert(active_tasks_ids.contains(completed_task->m_id));
-
-        active_tasks_ids.erase(completed_task->m_id);
-
-        for (auto child : sub_tasks.at(completed_task->m_id).children)
-        {
-            child->activate();
-            active_tasks_ids.insert(child->m_id);
-        }
-
-        if (active_tasks_ids.empty())
-        {
-            completeQuest();
-        }
-    }
-
-    void completeQuest()
-    {
-        m_on_completion();
-        m_state = QuestState::Completed;
-        p_post_office->send(QuestCompletedEvent{m_id});
-    }
-
-    void start()
-    {
-        assert(sub_tasks.size() > 0);
-        for (auto active_id : active_tasks_ids)
-        {
-            sub_tasks.at(active_id).task->activate();
-        }
-    }
+    void addTask(std::shared_ptr<Task> task, Task *precondition = nullptr);
+    void onTaskCompletion(Task *completed_task);
+    void update(float dt);
+    void completeQuest();
+    void start();
 
 public:
     std::function<void()> m_on_failure = []() {};
     std::function<void()> m_on_completion = []() {};
+    std::function<void(Quest &)> m_on_start = [](Quest &) {};
 
 private:
     struct TaskGraphNode
@@ -221,7 +142,7 @@ private:
 
     int root_task_id = 0;
     std::vector<TaskGraphNode> sub_tasks;
-    std::unordered_set<int> active_tasks_ids;
+    std::unordered_set<int> m_active_tasks_ids;
 
     int m_id = 0;
 
@@ -310,7 +231,7 @@ public:
         return m_quests.contains(quest);
     }
     void draw(Renderer &window, const TextureHolder &textures);
-    void update();
+    void update(float dt);
     bool allFinished() const;
     void entityDestroyed(ObjectType type, int id);
 
@@ -318,7 +239,6 @@ public:
 
 private:
     // std::deque<std::shared_ptr<Objective>> m_objectives;
-    utils::ObjectPool<std::shared_ptr<Objective>, 10> m_objectives;
 
     std::unordered_set<std::shared_ptr<Quest>> m_quests;
 
