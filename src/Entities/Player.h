@@ -60,8 +60,8 @@ private:
     
 public:
     float speed = 0.f;
-    float boost_max_speed = 80.f;
-    float max_speed = 50.f;
+    float boost_max_speed = 150.f;
+    float max_speed = 100.f;
     BoosterState booster = BoosterState::Ready;
 
     int m_money = 100;

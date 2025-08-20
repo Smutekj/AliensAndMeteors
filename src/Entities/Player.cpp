@@ -49,7 +49,7 @@ void PlayerEntity::update(float dt)
     auto acc = acceleration + 2 * acceleration * is_boosting;
     speed += acc * dt;
     m_vel = (speed)*utils::angle2dir(m_angle);
-    // utils::truncate(m_vel, max_speed + is_boosting * max_speed);
+    // utilss::truncate(m_vel, (!is_boosting) * max_speed + is_boosting * boost_max_speed);
     if (m_deactivated_time > 0)
     {
         m_deactivated_time -= dt;
@@ -58,9 +58,13 @@ void PlayerEntity::update(float dt)
     }
     m_pos += m_vel * dt;
     //! speed fallout
-    if (speed > boost_max_speed)
+    if (booster != BoosterState::Boosting && speed > max_speed)
     {
         speed -= speed * 1.1 * slowing_factor * dt;
+    }
+    if(booster == BoosterState::Boosting && speed > boost_max_speed)
+    {
+        speed -= speed * 0.5 * slowing_factor * dt;
     }
     else
     {
