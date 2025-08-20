@@ -18,9 +18,12 @@ public:
 
     void update(float dt);
 
-    TextUIELement* getTextElement(std::string id);
+    TextUIELement *getTextElement(std::string id);
 
+    void addTimeBar();
+    void removeTimeBar();
 private:
+
     void addBossBar();
     void removeBossBar();
 
@@ -33,10 +36,10 @@ private:
 
     std::vector<std::unique_ptr<PostBoxI>> m_post_boxes;
 
-    TextureHolder& m_textures;
+    TextureHolder &m_textures;
     Renderer &window_canvas;
 
-    int boss_id = -1;
+    Font &m_font;
 
-    // MultiLineText lorem_ipsum;
+        int boss_id = -1;
 };

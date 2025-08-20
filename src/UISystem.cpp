@@ -8,7 +8,7 @@ UISystem::UISystem(Renderer &window, TextureHolder &textures,
                    Font &font, GameWorld &world)
     : ui(window), p_post_office(&messenger),
       p_player(player), window_canvas(window),
-      m_textures(textures), p_world(&world)
+      m_textures(textures), p_world(&world),  m_font(font)
 {
     // lorem_ipsum.setFont(&font);
     // lorem_ipsum.setText("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla id malesuada justo. Nunc aliquam accumsan lorem in facilisis. Maecenas a porttitor sem, in consectetur lacus. Donec eleifend a eros non mattis. Vivamus massa arcu, porttitor non massa sit amet, auctor imperdiet augue. Vestibulum commodo magna at turpis suscipit porta. Vestibulum a tellus vel diam luctus auctor. Integer tristique facilisis risus, a blandit ex lacinia ut.");
@@ -20,6 +20,13 @@ UISystem::UISystem(Renderer &window, TextureHolder &textures,
             boss_id = e.boss_id;
             addBossBar();
         } });
+    auto m_timer_postbox = std::make_unique<PostBox<StartedTimerEvent>>(messenger, [this](const auto &events)
+                                                                           {
+        for(const auto&  e : events)
+        {
+            addTimeBar();
+        } });
+        
     auto m_died_postbox = std::make_unique<PostBox<EntityDiedEvent>>(messenger, [this](const auto &events)
                                                                      {
         for (const auto &e : events)
@@ -92,19 +99,13 @@ UISystem::UISystem(Renderer &window, TextureHolder &textures,
     top_bar->content_align_y = Alignement::Center;
     top_bar->addChildren(text_bars);
     
-    auto time_bar = std::make_shared<TextUIELement>(font, "00:00");
-    time_bar->id = "TimerBar";
-    time_bar->dimensions = {Percentage{0.2f}, Percentage{0.5f}};
-    time_bar->layout = Layout::Y;
-    time_bar->align_x = Alignement::Left;
-    time_bar->align_y = Alignement::CenterY;
     auto task_bar = std::make_shared<MultiLineUIElement>(font, "Go and touch some penises you raging gaylord. There is nothing wrong with that! You should also try sucking a penis or two just for the sake of trying it. It might even become your new hobby, who knows. You can't know until you try. The penis is your destiny!");
     task_bar->id = "TaskBar";
     task_bar->m_text.setScale(0.5);
     task_bar->dimensions = {Percentage{0.3f}, Percentage{1.f}};
     task_bar->align_x = Alignement::Right;
     task_bar->align_y = Alignement::CenterY;
-    text_bars->addChildren(time_bar, task_bar);
+    text_bars->addChildren(task_bar);
 
     ui.root->dimensions = {Pixels{(float)window.getTargetSize().x}, Pixels{(float)window.getTargetSize().y}};
     ui.root->addChildren(top_bar, bottom_bar);
@@ -138,6 +139,26 @@ void UISystem::draw(Renderer &window)
     window.m_view = old_view;
 }
 
+void UISystem::addTimeBar()
+{
+    auto time_bar = std::make_shared<TextUIELement>(m_font, "00:00");
+    time_bar->id = "TimerBar";
+    time_bar->dimensions = {Percentage{0.2f}, Percentage{0.5f}};
+    time_bar->layout = Layout::Y;
+    time_bar->align_x = Alignement::Left;
+    time_bar->align_y = Alignement::CenterY;
+
+    if (auto el = ui.getElementById("TextBars"))
+    {
+        el->addChild(time_bar);
+    }
+}
+
+void UISystem::removeTimeBar()
+{
+    ui.removeElementById("TimerBar");
+}
+
 void UISystem::addBossBar()
 {
     auto boss_bar = std::make_shared<SpriteUIELement>("healthBar", m_textures.get("FireNoise").get());
@@ -152,8 +173,9 @@ void UISystem::addBossBar()
 }
 void UISystem::removeBossBar()
 {
-    auto boss_bar = ui.getElementById("BossHealth");
-    boss_bar->dimensions = {Percentage(0.f), Percentage(0.f)};
+    // auto boss_bar = ui.getElementById("BossHealth");
+    ui.removeElementById("BossHealth");
+    // boss_bar->dimensions = {Percentage(0.f), Percentage(0.f)};
 }
 
 void UISystem::update(float dt)
