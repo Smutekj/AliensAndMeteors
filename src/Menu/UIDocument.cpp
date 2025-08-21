@@ -505,7 +505,7 @@ bool UIElement::removeElementById(const std::string &id)
         {
             if (child->id == id)
             {
-                curr->children.erase(children.begin() + i);
+                curr->children.erase(curr->children.begin() + i);
                 return true;
             }
             to_visit.push_back({i, child.get()});

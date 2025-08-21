@@ -16,6 +16,7 @@ enum class ObjectType
     Bomb,
     Laser,
     Meteor,
+    Wall,
     Heart,
     SpaceStation,
     Explosion,

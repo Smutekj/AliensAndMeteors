@@ -180,19 +180,18 @@ private:
     GameObject &m_surveyed;
 };
 
-class DestroyEntityTask : public Task, public Observer<Trigger>
+class DestroyEntityTask : public Task
 {
 
 public:
     DestroyEntityTask(GameObject &target, Font &font, PostOffice &messenger, Quest *parent);
     virtual ~DestroyEntityTask() = default;
 
-    virtual void onObservation(Trigger *trig) override;
-
     virtual void draw(Renderer &window, const TextureHolder &textures) override;
 
 private:
     GameObject &m_target;
+    std::unique_ptr<PostBox<EntityDiedEvent>> m_postbox;
 };
 
 class DestroyNOfTypeTask : public Task

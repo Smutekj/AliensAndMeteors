@@ -217,12 +217,17 @@ DestroyEntityTask::DestroyEntityTask(GameObject &target, Font &font, PostOffice 
 
     target.setDestructionCallback([this](int id, ObjectType type)
                                   { m_is_finished = true; });
-}
 
-void DestroyEntityTask::onObservation(Trigger *trig)
-{
-    m_is_finished = true;
-    trig->kill();
+    m_postbox = std::make_unique<PostBox<EntityDiedEvent>>(messenger, [target_id = target.getId(), this](const auto& events){
+        for(const auto& e : events)
+        {
+            if(e.id == target_id)
+            {
+                complete();
+            }
+        }
+    });
+
 }
 
 void DestroyEntityTask::draw(Renderer &window, const TextureHolder &textures)
@@ -370,6 +375,7 @@ void Task::activate()
 void Task::complete()
 {
     assert(m_active);
+    m_is_finished = true;
     m_on_completion_callback();
     m_parent->onTaskCompletion(this);
 };

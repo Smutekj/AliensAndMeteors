@@ -130,18 +130,17 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     m_player->setPosition({500, 500});
     m_world->m_player = m_player;
     m_player->setDestructionCallback([this](int id, ObjectType type)
-    { m_state = GameState::PLAYER_DIED; });
-    
+                                     { m_state = GameState::PLAYER_DIED; });
+
     m_ui_system = std::make_unique<UISystem>(window, m_textures, messanger, m_player, *m_font, *m_world);
     m_ui.initWorld(*m_world);
-    
+
     m_enemy_factory = std::make_unique<EnemyFactory>(*m_world, m_textures);
     m_pickup_factory = std::make_unique<PickupFactory>(*m_world, m_textures);
     m_laser_factory = std::make_unique<LaserFactory>(*m_world, m_textures);
-    m_quest_factory = std::make_unique<QuestFactory>(*m_objective_system, messanger, *m_ui_system, *m_world, m_textures);
+    m_quest_factory = std::make_unique<QuestFactory>(*m_objective_system, messanger, *m_ui_system, *m_world, m_textures, m_camera, *m_font);
     registerCollisions();
     registerSystems();
-
 
     m_objective_system = std::make_unique<ObjectiveSystem>(messanger);
 
@@ -208,18 +207,8 @@ void Game::addDestroyNObjective(ObjectType type, int count)
 
 void Game::startBossFight()
 {
-    m_stage = GameStage::BossFight;
-
-    auto &boss = m_world->addObject2<Boss1>();
-    auto player_pos = m_player->getPosition();
-    auto boss_pos = m_player->getPosition() + utils::Vector2f{100, 0};
-    boss.setPosition(boss_pos);
-    m_camera.startMovingTo(boss_pos - utils::Vector2f{150, 0}, 1., [](auto &camera)
-                           {
-        camera.m_view_state = Camera::MoveState::Fixed;
-        camera.startChangingSize({400, 300}, 2., [](auto& camera){camera.m_view_size_state = Camera::SizeState::Fixed;}); });
-
-    messanger.send(StartedBossFightEvent{boss.getId()});
+   auto& quest_giver = createQuestGiver(m_quest_factory->create(QuestType::BossFight1));
+   quest_giver.setPosition(m_player->getPosition() + utils::Vector2f{300, 0});
 }
 
 void Game::startTimer()
@@ -408,7 +397,8 @@ void Game::handleEvent(const SDL_Event &event)
         }
         else if (event.button.button == SDL_BUTTON_LEFT)
         {
-            startTimeRace();
+            // startTimeRace();
+            startBossFight();
         }
     }
 
@@ -489,11 +479,11 @@ void Game::draw(Renderer &window)
     // m_world->draw2(m_layers, window.m_view);
     // Enemy::m_neighbour_searcher.drawGrid(*m_layers.getLayer("Unit"));
 
-    // auto &test_canvas = m_layers.getCanvas("Bloom");
-    // Sprite fire_sprite(*m_textures.get("FireNoise"));
-    // fire_sprite.setPosition(m_player->getPosition());
-    // fire_sprite.setScale(utils::Vector2f{m_player->m_radius * 5.});
-    // test_canvas.drawSprite(fire_sprite, "fireEffect");
+    auto &test_canvas = m_layers.getCanvas("Bloom");
+    Sprite fire_sprite(*m_textures.get("FireNoise"));
+    fire_sprite.setPosition(m_player->getPosition());
+    fire_sprite.setScale(utils::Vector2f{m_player->getSize().x});
+    test_canvas.drawSprite(fire_sprite, "fireEffect");
 
     //! clear and draw into scene
     // m_scene_canvas.clear({0, 0, 0, 0});
@@ -547,6 +537,25 @@ void Game::registerCollisions()
 
     colllider.registerResolver(ObjectType::Meteor, ObjectType::Meteor, [](GameObject &obj1, GameObject &obj2, CollisionData c_data)
                                { Collisions::bounce(obj1, obj2, c_data); });
+    colllider.registerResolver(ObjectType::Meteor, ObjectType::Wall, [](GameObject &obj1, GameObject &obj2, CollisionData c_data)
+                               { 
+                                //! bounce meteor off the wall
+                                auto mvt = c_data.separation_axis;
+                                if (dot(mvt, obj1.m_vel) > 0.f)
+                                {
+                                    obj1.m_vel -= 2.f * dot(mvt, obj1.m_vel) * mvt;
+                                } });
+    colllider.registerResolver(ObjectType::Player, ObjectType::Wall, [](GameObject &obj1, GameObject &obj2, CollisionData c_data)
+                               { 
+                                //! bounce meteor off the wall
+                                auto mvt = -c_data.separation_axis;
+                                if (dot(mvt, obj1.m_vel) < 0.f)
+                                {
+                                    obj1.m_vel -= 2.f * dot(mvt, obj1.m_vel) * mvt;
+                                    obj1.setAngle(utils::dir2angle(obj1.m_vel));
+
+                                } });
+
     colllider.registerResolver(ObjectType::Meteor, ObjectType::Bullet);
 
     colllider.registerResolver(ObjectType::Player, ObjectType::SpaceStation);
