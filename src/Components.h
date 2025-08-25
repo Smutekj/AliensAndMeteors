@@ -25,6 +25,7 @@ enum class ObjectType
     Boss,
     Trigger,
     EMP,
+    Visual,
     Count
 };
 
@@ -146,6 +147,8 @@ struct CollisionComponent
 enum class AnimationId
 {
     Shield,
+    FrontShield,
+    FrontShield2,
     BlueExplosion,
     PurpleExplosion,
     GreenBeam,
@@ -170,6 +173,14 @@ struct SpriteComponent
     Sprite sprite;
 };
 
+#include "Particles.h"
+
+struct ParticleComponent
+{
+    std::string layer_id;
+    std::string shader_id;
+    std::unique_ptr<Particles> particles;
+};
 
 enum class ShooterAIState
 {
@@ -199,9 +210,9 @@ struct ShootPlayerAIComponent
     utils::Vector2f pos;
     ShooterAIState state = ShooterAIState::Searching;
     std::vector<TimedEvent> timers;
-    float vision_radius = 150.f;
+    float vision_radius = 250.f;
     float cooldown = 10.f;
-    ProjectileType projectile_type = ProjectileType::HomingFireBullet;
+    ProjectileType projectile_type = ProjectileType::LaserBullet;
     // PlayerEntity* p_player = nullptr;
 };
 
