@@ -14,6 +14,7 @@ layout(location = 5) in vec2 a_tex_dim;
 layout(location = 6) in vec4 a_color;
 
 out vec2 v_tex_coord;      
+out vec2 v_resolution;
 out vec4 v_color;      
 
 uniform mat4 u_view_projection;
@@ -33,4 +34,5 @@ void main()
     float iy = 1.-mod(id_f, 2.);
     v_tex_coord = vec2(a_tex_coord.x + a_tex_dim.x*ix, a_tex_coord.y - a_tex_dim.y*iy) ;
     v_color     = a_color;      
+    v_resolution= a_scale * 2.;      
 }                                             
