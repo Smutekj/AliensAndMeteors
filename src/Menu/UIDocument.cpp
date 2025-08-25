@@ -5,7 +5,6 @@
 #include <Renderer.h>
 #include <Font.h>
 
-#include "tinyxml2.h"
 
 void UIElement::update() {}
 
@@ -385,7 +384,6 @@ int UIElement::center() const
 UIDocument::UIDocument(Renderer &window_canvas)
     : document(window_canvas)
 {
-    using namespace tinyxml2;
 
     // XMLDocument doc;
     // doc.LoadFile( "../../ui.xml" );
