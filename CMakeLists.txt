@@ -29,8 +29,8 @@ include_directories(SYSTEM external)
 include_directories("${PROJECT_BINARY_DIR}" ${IMGUI_DIR} ${IMGUI_DIR}/backends )
 add_executable(${CMAKE_PROJECT_NAME} ${SRC} )
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE 
-                                             SDL2::SDL2main SDL2::SDL2-static
-                                            renderer tinyxml2 nlohmann_json::nlohmann_json)
+                                             SDL2::SDL2main SDL2::SDL2
+                                            renderer  nlohmann_json::nlohmann_json)
 
 if( ${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
      target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE RESOURCES_DIR="/Resources") ### add correct resources path here                        
@@ -47,6 +47,7 @@ if( ${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
      set(CMAKE_EXECUTABLE_SUFFIX .html)
      target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
      "-sUSE_SDL=2"
+     "-sUSE_SDL_MIXER=2"
      "-sFULL_ES3=1"
      "-sWASM=1"
      "-sUSE_WEBGL2=1"
@@ -63,6 +64,7 @@ if( ${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
      --embed-file=${CMAKE_CURRENT_SOURCE_DIR}/external/lygia@../external/lygia
      --embed-file=${CMAKE_CURRENT_SOURCE_DIR}/Resources/Textures@../Resources/Textures
      --embed-file=${CMAKE_CURRENT_SOURCE_DIR}/Resources/Shaders@../Resources/Shaders
+     --embed-file=${CMAKE_CURRENT_SOURCE_DIR}/Resources/Sounds@../Resources/Sounds
      )
 
 endif()
