@@ -16,6 +16,21 @@
 
 #include <imgui_impl_sdl2.h>
 
+#include "SoundSystem.h"
+
+void Game::initializeSounds()
+{
+    std::filesystem::path sounds_path = std::string(RESOURCES_DIR) + "/Sounds";
+    SoundSystem::registerSound(SoundID::Explosion1, sounds_path / "Explode.wav");
+    SoundSystem::registerSound(SoundID::Laser1, sounds_path / "Lasers/Laser_09.wav");
+    SoundSystem::registerSound(SoundID::Laser2, sounds_path / "Lasers/Laser_01.wav");
+    SoundSystem::registerSound(SoundID::Laser3, sounds_path / "Lasers/Laser_04.wav");
+    SoundSystem::registerSound(SoundID::Electro, sounds_path / "Electro/Laser_03.wav");
+    SoundSystem::registerSound(SoundID::Rocket1, sounds_path / "Rockets/Rocket_1.wav");
+    SoundSystem::registerSound(SoundID::Rocket2, sounds_path / "Rockets/Rocket_2.wav");
+    SoundSystem::registerSound(SoundID::Rocket3, sounds_path / "Rockets/Rocket_3.wav");
+    SoundSystem::registerSound(SoundID::Rocket4, sounds_path / "Rockets/Rocket_4.wav");
+};
 void Game::initializeLayersAndTextures()
 {
     m_textures.setBaseDirectory(std::string(RESOURCES_DIR) + "/Textures/");
@@ -52,11 +67,15 @@ void Game::initializeLayersAndTextures()
     auto &shiny_layer = m_layers.addLayer("Bloom", 2, options, width, height);
     shiny_layer.m_canvas.setShadersPath(shaders_directory);
     shiny_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
-    shiny_layer.addEffect(std::make_unique<BloomFinal>(width, height));
+    shiny_layer.addEffect(std::make_unique<Bloom>(width/2, height/2));
+    // auto &laser_layer = m_layers.addLayer("LaserBloom",1, options, width, height);
+    // laser_layer.m_canvas.setShadersPath(shaders_directory);
+    // laser_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
+    // laser_layer.addEffect(std::make_unique<Bloom>(width, height));
 
-    auto &base_layer = m_ui_layers.addLayer("Base", 0, options, width, height);
+    auto &base_layer = m_ui_layers.addLayer("Base", -1, options, width, height);
     base_layer.m_canvas.setShadersPath(shaders_directory);
-    auto &bloom_layer = m_ui_layers.addLayer("Bloom", 1, options, width, height);
+    auto &bloom_layer = m_ui_layers.addLayer("Bloom", 0, options, width, height);
     bloom_layer.m_canvas.setShadersPath(shaders_directory);
     bloom_layer.m_canvas.addShader("boostBar2", "basicinstanced.vert", "boostBar2.frag");
     bloom_layer.m_canvas.addShader("fuelBar", "basicinstanced.vert", "fuelBar.frag");
@@ -81,7 +100,7 @@ void Game::initializeLayersAndTextures()
 using namespace utils;
 
 constexpr utils::Vector2f PLAYER_START_POS = {500, 500};
-constexpr float START_VIEW_SIZE = 200.f;
+constexpr float START_VIEW_SIZE = 300.f;
 
 GameObject &Game::createQuestGiver(std::shared_ptr<Quest> quest)
 {
@@ -123,6 +142,7 @@ Game::Game(Renderer &window, KeyBindings &bindings)
                              StartedBossFightEvent,
                              StartedTimerEvent>();
 
+    initializeSounds();
     initializeLayersAndTextures();
     m_world = std::make_unique<GameWorld>(messanger, m_textures);
     //! PLAYER NEEDS TO BE FIRST BECAUSE OTHER OBJECTS MIGHT REFERENCE IT!
@@ -138,7 +158,8 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     m_enemy_factory = std::make_unique<EnemyFactory>(*m_world, m_textures);
     m_pickup_factory = std::make_unique<PickupFactory>(*m_world, m_textures);
     m_laser_factory = std::make_unique<LaserFactory>(*m_world, m_textures);
-    m_quest_factory = std::make_unique<QuestFactory>(*m_objective_system, messanger, *m_ui_system, *m_world, m_textures, m_camera, *m_font);
+    m_bullet_factory = std::make_unique<ProjectileFactory>(*m_world, m_textures);
+    m_quest_factory = std::make_unique<QuestFactory>(*m_objective_system, messanger, *m_ui_system, *m_world, m_textures, m_camera, *m_font, m_timers);
     registerCollisions();
     registerSystems();
 
@@ -146,28 +167,31 @@ Game::Game(Renderer &window, KeyBindings &bindings)
 
     m_background = std::make_unique<Texture>(std::string(RESOURCES_DIR) + "/Textures/background.png");
 
-    for (int i = 0; i < 200; ++i)
+    for (int i = 0; i < 300; ++i)
     {
         auto &meteor = m_world->addObject2<Meteor>();
-        auto spawn_pos = m_player->getPosition() + randf(200, 5000) * angle2dir(randf(0, 360));
+        auto spawn_pos = m_player->getPosition() + randf(200, 3000) * angle2dir(randf(0, 360));
         meteor.setPosition(spawn_pos);
     }
     for (int i = 0; i < 0; ++i)
     {
-        auto spawn_pos = m_player->getPosition() + randf(100, 6000) * angle2dir(randf(0, 360));
+        auto spawn_pos = m_player->getPosition() + randf(100, 2000) * angle2dir(randf(0, 360));
         m_enemy_factory->create2(EnemyType::ShooterEnemy, spawn_pos);
     }
+
+    // auto& bul = m_bullet_factory->create2(ProjectileType::LaserBullet, m_window.getMouseInWorld(), {255,0,0,255}); 
+    // b = &bul;
 
     // spawnNextObjective();
     // addDestroyNObjective(ObjectType::SpaceStation, 2);
 
-    // auto &heart_spawner = m_world->addTrigger<Timer>();
-    // heart_spawner.setCallback(
-    //     [this]()
-    //     {
-    //         auto spawn_pos = m_player->getPosition() + randf(20, 200) * angle2dir(randf(0, 360));
-    //         auto &heart = m_pickup_factory->create2(Pickup::Heart, spawn_pos);
-    //     });
+    auto &heart_spawner = m_world->addTrigger<Timer>();
+    heart_spawner.setCallback(
+        [this]()
+        {
+            auto spawn_pos = m_player->getPosition() + randf(20, 200) * angle2dir(randf(0, 360));
+            auto &heart = m_pickup_factory->create2(Pickup::Shield, spawn_pos);
+        });
 
     // auto &enemy_spawner = m_world->addTrigger<Timer>();
     // enemy_spawner.m_cooldown = 5.f;
@@ -205,16 +229,93 @@ void Game::addDestroyNObjective(ObjectType type, int count)
     qg.setPosition(m_player->getPosition() + utils::Vector2f{500, 0});
 }
 
+
+
 void Game::startBossFight()
 {
-   auto& quest_giver = createQuestGiver(m_quest_factory->create(QuestType::BossFight1));
-   quest_giver.setPosition(m_player->getPosition() + utils::Vector2f{300, 0});
+    auto build_the_wall = [this](utils::Vector2f center)
+    {
+        //! create walls
+        auto &wall_up = m_world->addObject3(ObjectType::Wall);
+        auto &wall_down = m_world->addObject3(ObjectType::Wall);
+        auto &wall_left = m_world->addObject3(ObjectType::Wall);
+        auto &wall_right = m_world->addObject3(ObjectType::Wall);
+
+        CollisionComponent c_comp_left;
+        CollisionComponent c_comp_right;
+        CollisionComponent c_comp_up;
+        CollisionComponent c_comp_down;
+        c_comp_left.type = ObjectType::Wall;
+        c_comp_right.type = ObjectType::Wall;
+        c_comp_up.type = ObjectType::Wall;
+        c_comp_down.type = ObjectType::Wall;
+
+        c_comp_left.shape.convex_shapes = {4};
+        c_comp_right.shape.convex_shapes = {4};
+        c_comp_up.shape.convex_shapes = {4};
+        c_comp_down.shape.convex_shapes = {4};
+
+        wall_right.setPosition(center + utils::Vector2f{400, 0});
+        wall_left.setPosition(center - utils::Vector2f{390, 0});
+        wall_up.setPosition(center + utils::Vector2f{0, 290});
+        wall_down.setPosition(center - utils::Vector2f{0, 290});
+
+        wall_right.setSize({400, 300});
+        wall_left.setSize({400, 300});
+        wall_up.setSize({400, 300});
+        wall_down.setSize({400, 300});
+
+        SpriteComponent s_compl = {.layer_id = "Unit", .shader_id = "fuelBar", .sprite = Sprite(*m_textures.get("FireNoise"))};
+        SpriteComponent s_compr = {.layer_id = "Unit", .shader_id = "fuelBar", .sprite = Sprite(*m_textures.get("FireNoise"))};
+        SpriteComponent s_compu = {.layer_id = "Unit", .shader_id = "fuelBar", .sprite = Sprite(*m_textures.get("FireNoise"))};
+        SpriteComponent s_compd = {.layer_id = "Unit", .shader_id = "fuelBar", .sprite = Sprite(*m_textures.get("FireNoise"))};
+
+        m_world->m_systems.addEntityDelayed(wall_up.getId(), c_comp_up, s_compl);
+        m_world->m_systems.addEntityDelayed(wall_left.getId(), c_comp_left, s_compr);
+        m_world->m_systems.addEntityDelayed(wall_down.getId(), c_comp_down, s_compd);
+        m_world->m_systems.addEntityDelayed(wall_right.getId(), c_comp_right, s_compu);
+    };
+
+    auto &boss = m_world->addObject2<Boss2>();
+    auto player_pos = m_player->getPosition();
+    auto boss_pos = player_pos + utils::Vector2f{0, 150};
+
+    boss.setPosition(boss_pos);
+    build_the_wall(player_pos);
+
+    m_camera.startMovingTo(player_pos, 1., [](auto &camera)
+                           {
+        camera.m_view_state = Camera::MoveState::Fixed;
+        
+        camera.startChangingSize({410, 310}, 2., [](auto& camera){camera.m_view_size_state = Camera::SizeState::Fixed;}); });
+
+    messanger.send(StartedBossFightEvent{boss.getId()});
+    // auto kill_task = std::make_shared<DestroyEntityTask>(boss, *m_font, messanger, &q);
+    // q.addTask(kill_task);
+
+    auto& entities = m_world->getEntities();
+    for(auto obj : entities.data())
+    {
+        if(obj->getType() == ObjectType::Meteor)
+        {
+            obj->kill();
+        }
+    }
+//    auto& quest_giver = createQuestGiver(m_quest_factory->create(QuestType::BossFight1));
+//    quest_giver.setPosition(m_player->getPosition() + utils::Vector2f{300, 0});
+//    auto& quest_giver = createQuestGiver(m_quest_factory->create(QuestType::BossFight2));
+//    quest_giver.setPosition(m_player->getPosition() + utils::Vector2f{0, 300});
 }
 
 void Game::startTimer()
 {
 }
 
+void Game::startSurvival()
+{
+    auto &quest_giver = createQuestGiver(m_quest_factory->create(QuestType::Survival1));
+    quest_giver.setPosition(m_player->getPosition() + Vec2{500, 0});
+}
 void Game::startTimeRace()
 {
     m_stage = GameStage::TimeRace;
@@ -348,18 +449,33 @@ void Game::handleEvent(const SDL_Event &event)
     if (event.type == SDL_KEYUP)
     {
         auto dir = utils::angle2dir(m_player->getAngle());
+        if (event.key.keysym.sym == SDL_KeyCode::SDLK_r)
+        {
+            if(!m_player->shield_active)
+            {
+                m_player->activateShield();
+            }
+        }
         if (event.key.keysym.sym == m_key_binding[PlayerControl::SHOOT_LASER])
         {
-            auto &laser = m_laser_factory->create2(LaserType::Basic, m_player->getPosition(), {0, 125, 255, 255});
-            m_player->addChild(&laser);
-            laser.m_stopping_types.push_back(ObjectType::Shield);
-            laser.m_stopping_types.push_back(ObjectType::Boss);
-            laser.m_rotates_with_owner = true;
-            laser.m_max_dmg = 0.2;
-            laser.m_life_time = 3.;
-            laser.m_max_length = 400.;
-            m_player->m_is_shooting_laser = true;
-            m_player->m_laser_timer = laser.m_life_time;
+            auto& bullet = m_bullet_factory->create2(ProjectileType::Rocket, m_player->getPosition(), ColorByte{});
+            bullet.m_max_vel = m_player->speed;
+            bullet.m_vel = utils::angle2dir(m_player->getAngle()) * bullet.m_max_vel;
+            bullet.setAngle(utils::dir2angle(bullet.m_vel));
+            bullet.m_collision_resolvers[ObjectType::Player] = [](auto& obj, auto& c_data)
+            {
+                return;
+            };
+            // auto &laser = m_laser_factory->create2(LaserType::Basic, m_player->getPosition(), {0, 125, 255, 255});
+            // m_player->addChild(&laser);
+            // laser.m_stopping_types.push_back(ObjectType::Shield);
+            // laser.m_stopping_types.push_back(ObjectType::Boss);
+            // laser.m_rotates_with_owner = true;
+            // laser.m_max_dmg = 0.2;
+            // laser.m_life_time = 3.;
+            // laser.m_max_length = 400.;
+            // m_player->m_is_shooting_laser = true;
+            // m_player->m_laser_timer = laser.m_life_time;
         }
         if (event.key.keysym.sym == m_key_binding[PlayerControl::THROW_BOMB])
         {
@@ -397,8 +513,9 @@ void Game::handleEvent(const SDL_Event &event)
         }
         else if (event.button.button == SDL_BUTTON_LEFT)
         {
+            startSurvival();
             // startTimeRace();
-            startBossFight();
+            // startBossFight();
         }
     }
 
@@ -438,6 +555,7 @@ void Game::parseInput(Renderer &window, float dt)
 
 void Game::update(const float dt, Renderer &window)
 {
+
     m_camera.update(dt, m_player);
     window.m_view = m_camera.getView();
 
@@ -474,9 +592,7 @@ void Game::draw(Renderer &window)
     window.m_view = old_view;
 
     m_layers.clearAllLayers();
-    // m_player->draw(m_layers);
-    m_world->draw(m_layers);
-    // m_world->draw2(m_layers, window.m_view);
+    m_world->draw(m_layers, m_camera.getView());
     // Enemy::m_neighbour_searcher.drawGrid(*m_layers.getLayer("Unit"));
 
     auto &test_canvas = m_layers.getCanvas("Bloom");
@@ -556,6 +672,8 @@ void Game::registerCollisions()
 
                                 } });
 
+    colllider.registerResolver(ObjectType::Shield, ObjectType::Meteor);
+    colllider.registerResolver(ObjectType::Shield, ObjectType::Bullet);
     colllider.registerResolver(ObjectType::Meteor, ObjectType::Bullet);
 
     colllider.registerResolver(ObjectType::Player, ObjectType::SpaceStation);
@@ -591,6 +709,8 @@ void Game::registerSystems()
                                                       systems.getComponents<LaserAIComponent>()));
     systems.registerSystem(std::make_shared<SpriteSystem>(systems.getComponents<SpriteComponent>(),
                                                           m_layers));
+    systems.registerSystem(std::make_shared<ParticleSystem>(systems.getComponents<ParticleComponent>(),
+                                                          m_layers));
 
     std::filesystem::path animation_directory = {RESOURCES_DIR};
     animation_directory /= "Textures/Animations/";
@@ -602,6 +722,8 @@ void Game::registerSystems()
     animation_system->registerAnimation("BlueExplosion.png", AnimationId::BlueExplosion, "BlueExplosion.json");
     animation_system->registerAnimation("PurpleExplosion.png", AnimationId::PurpleExplosion, "PurpleExplosion.json");
     animation_system->registerAnimation("GreenBeam.png", AnimationId::GreenBeam, "GreenBeam.json");
+    animation_system->registerAnimation("FrontShield.png", AnimationId::FrontShield, "FrontShield.json");
+    animation_system->registerAnimation("FrontShield2.png", AnimationId::FrontShield2, "FrontShield2.json");
 
     systems.registerSystem(animation_system);
 }
@@ -613,6 +735,7 @@ void Game::loadTextures()
     m_textures.add("EnemyShip", "EnemyShip.png");
     m_textures.add("QuestGiver", "Buildings/QuestGiver.png");
     m_textures.add("Boss1", "Ships/Boss1.png");
+    m_textures.add("Boss2", "Ships/Boss2.png");
     m_textures.add("EnemyLaser", "EnemyLaser.png");
     m_textures.add("EnemyBomber", "EnemyBomber.png");
     m_textures.add("Meteor", "Meteor.png");
@@ -621,7 +744,9 @@ void Game::loadTextures()
     m_textures.add("Explosion", "explosion.png");
     m_textures.add("PlayerShip", "playerShip.png");
     m_textures.add("Heart", "Heart.png");
+    m_textures.add("ShieldPickup", "ShieldPickup.png");
     m_textures.add("Station", "Station.png");
+    m_textures.add("Missile", "Missile.png");
     m_textures.add("BoosterYellow", "effectYellow.png");
     m_textures.add("BoosterPurple", "effectPurple.png");
     m_textures.add("Arrow", "arrow.png");

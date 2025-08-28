@@ -74,6 +74,7 @@ public:
   GameState getState() const;
   
   void initializeLayersAndTextures();
+  void initializeSounds();
   void loadTextures();
   void registerCollisions();
   void registerSystems();
@@ -84,6 +85,7 @@ public:
   void spawnBossObjective();
   void addDestroyNObjective(ObjectType type, int count);
   void startBossFight();
+  void startSurvival();
   void startTimeRace();
   void startTimer();
 
@@ -127,9 +129,12 @@ public:
   std::unique_ptr<EnemyFactory> m_enemy_factory;
   std::unique_ptr<PickupFactory> m_pickup_factory;
   std::unique_ptr<LaserFactory> m_laser_factory;
+  std::unique_ptr<ProjectileFactory> m_bullet_factory;
   std::unique_ptr<QuestFactory> m_quest_factory;
 
   TimedEventManager m_timers;
+
+  // Bullet* b;
 
   ToolBoxUI m_ui;
 
