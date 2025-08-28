@@ -20,6 +20,7 @@ using SubscribersT = std::unordered_map<SubscriptionId, Callback<T>>;
 class MessageHolderI
 {
 public:
+    virtual ~MessageHolderI(){};
     virtual void distribute() = 0;
 };
 
@@ -27,6 +28,8 @@ template <class MessageType>
 class MessageHolder : public MessageHolderI
 {
 public:
+    virtual ~MessageHolder() override{}
+
     void sendNow(MessageType message)
     {
         assert(false); //! TODO will implement
