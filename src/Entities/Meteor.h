@@ -19,6 +19,8 @@ public:
     virtual void draw(LayersHolder &target) override;
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
 
+    public:
+    utils::Vector2f m_impulse_vel = {0.f};
 private:
     void initializeRandomMeteor();
 
@@ -26,8 +28,10 @@ private:
 
     float max_dist_from_player = 1000;
     GameObject* p_player = nullptr;
-    float max_vel = 40.f;
-    float max_impulse_vel = 10.f;
+    
+    float m_max_impulse_vel = 100.f;
+    float m_impulse_decay = 1.5f;
+    
     float m_angle_vel = 0.;
 
     utils::Vector2f m_center_tex;

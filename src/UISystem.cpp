@@ -50,6 +50,7 @@ UISystem::UISystem(Renderer &window, TextureHolder &textures,
     auto shield_bar = std::make_shared<SpriteUIELement>("healthBar");
     health_bar->dimensions = {Percentage{1.f}, Percentage{0.4f}};
     health_bar->id = "HealthBar";
+    health_bar->margin.y = 10;
     shield_bar->dimensions = {Percentage{1.f}, Percentage{0.4f}};
     auto money = std::make_shared<TextUIELement>(font, std::to_string(p_player->m_money) + " $");
     money->id = "Money";
@@ -99,7 +100,8 @@ UISystem::UISystem(Renderer &window, TextureHolder &textures,
     top_bar->content_align_y = Alignement::Center;
     top_bar->addChildren(text_bars);
     
-    auto task_bar = std::make_shared<MultiLineUIElement>(font, "Go and touch some penises you raging gaylord. There is nothing wrong with that! You should also try sucking a penis or two just for the sake of trying it. It might even become your new hobby, who knows. You can't know until you try. The penis is your destiny!");
+    // auto task_bar = std::make_shared<MultiLineUIElement>(font, "Go and touch some penises you raging gaylord. There is nothing wrong with that! You should also try sucking a penis or two just for the sake of trying it. It might even become your new hobby, who knows. You can't know until you try. The penis is your destiny!");
+    auto task_bar = std::make_shared<MultiLineUIElement>(font, "");
     task_bar->id = "TaskBar";
     task_bar->m_text.setScale(0.5);
     task_bar->dimensions = {Percentage{0.3f}, Percentage{1.f}};

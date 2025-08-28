@@ -118,13 +118,15 @@ void AISystem::initializeLaserShooterAI()
 
 void AISystem::initializeShooterAI()
 {
+    
     m_change_state_callbacks[ShooterAIState::FollowingPlayer] = [this](ShootPlayerAIComponent &comp, int id)
     {
         comp.timers.clear();
         comp.timers.push_back({comp.cooldown, [this, id](float t, int count)
-                               {
+            {
+                                   std::vector<ColorByte> proj_colors = {ColorByte{255,20,0,255}, ColorByte{20,255,0,255}, ColorByte{255,0,255,255}, ColorByte{20,20,255,255}};
                                    auto &comp = m_world.m_systems.get<ShootPlayerAIComponent>(id);
-                                   auto &bullet = m_bullet_factory.create2(comp.projectile_type, comp.pos);
+                                   auto &bullet = m_bullet_factory.create2(comp.projectile_type, comp.pos, proj_colors.at(rand()%proj_colors.size()));
                                    bullet.setTarget(m_world.m_player);
                                    bullet.m_collision_resolvers[ObjectType::Enemy] =
                                        [&bullet, this, id](GameObject &obj, CollisionData &c_data)
@@ -139,6 +141,7 @@ void AISystem::initializeShooterAI()
                                    };
 
                                    auto dr_to_player = m_world.m_player->getPosition() - comp.pos;
+                                   bullet.setAngle(utils::dir2angle(dr_to_player));
                                    bullet.m_vel = (dr_to_player) / utils::norm(dr_to_player) * bullet.m_max_vel;
                                },
                                1});

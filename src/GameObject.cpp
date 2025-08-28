@@ -13,7 +13,7 @@ void GameObject::updateAll(float dt)
     if(m_parent)
     {
         m_pos = m_parent->getPosition();
-        // m_angle = m_parent->getAngle(); 
+        m_angle = m_parent->getAngle(); 
         m_vel = m_parent->m_vel; 
     }
 
@@ -40,6 +40,10 @@ bool GameObject::collides() const
 
 const utils::Vector2f &GameObject::getPosition() const
 {
+    if(m_parent)
+    {
+        // return m_pos + m_parent->m_pos;
+    }
     return m_pos;
 }
 
