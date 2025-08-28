@@ -10,7 +10,7 @@ Meteor::Meteor(GameWorld *world, TextureHolder &textures, PlayerEntity *player)
 {
     m_rigid_body = std::make_unique<RigidBody>();
     initializeRandomMeteor();
-
+    m_max_vel = 200.f;
 }
 
 void Meteor::update(float dt)
@@ -20,10 +20,12 @@ void Meteor::update(float dt)
     m_collision_shape->setRotation(m_angle);
     m_collision_shape->setScale(m_size/2.f);
 
-    truncate(m_vel, max_vel);
-    m_pos += m_vel * dt;
-
+    truncate(m_vel, m_max_vel);
+    truncate(m_impulse_vel, m_max_impulse_vel);
+    m_pos += (m_vel +  m_impulse_vel)* dt;
     setAngle(m_angle + m_rigid_body->angle_vel * dt);
+    
+    m_impulse_vel -=  m_impulse_vel * m_impulse_decay * dt;
 
     auto player_pos = p_player->getPosition();
     auto player_vel = p_player->m_vel;
@@ -47,7 +49,7 @@ void Meteor::onCreation()
 }
 void Meteor::onDestruction()
 {
-    const auto &new_meteor = m_world->addObject2<Meteor>();
+    // const auto &new_meteor = m_world->addObject2<Meteor>();
     // new_meteor.setPosition(randomPosInBox({0,0}, {Geometry::Box[0], Geometry::Box[1]}));
 }
 
