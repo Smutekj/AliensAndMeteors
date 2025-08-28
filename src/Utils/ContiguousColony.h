@@ -27,9 +27,9 @@ struct ContiguousColony
         data_ind2id.reserve(new_size);
     }
 
-    void insert(IdType id, DataType datum)
+    void insert(IdType id, auto&& datum)
     {
-        data.push_back(datum);
+        data.emplace_back(std::move(datum));
         data_ind2id.push_back(id);
 
         assert(id2data_ind.count(id) == 0);
@@ -49,7 +49,7 @@ struct ContiguousColony
         IdType swapped_id = data_ind2id.at(data.size() - 1);
         id2data_ind.at(swapped_id) = data_ind; //! swapped points to erased
 
-        data.at(data_ind) = data.back();               //! swap
+        data.at(data_ind) = std::move(data.back());    //! swap
         data.pop_back();                               //! and pop
         data_ind2id.at(data_ind) = data_ind2id.back(); //! swap
         data_ind2id.pop_back();                        //! and pop
@@ -110,7 +110,7 @@ template <typename DataType>
 class DynamicObjectPool2
 {
 public:
-    int insert(DataType data)
+    int insert(auto&& data)
     {
         int id = reserveIndexForInsertion();
         m_data.insert(id, data);
@@ -136,7 +136,7 @@ public:
         return id;
     }
 
-    void insertAt(int index, DataType datum)
+    void insertAt(int index, auto&& datum)
     {
         assert(!m_data.contains(index));
         m_data.insert(index, datum);

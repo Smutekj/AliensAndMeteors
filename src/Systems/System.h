@@ -37,9 +37,9 @@ public:
         return m_components.contains(entity_id);
     }
 
-    void addToQueue(ComponentType comp, int entity_id)
+    void addToQueue(ComponentType&& comp, int entity_id)
     {
-        m_to_add.push({comp, entity_id});
+        m_to_add.push({std::move(comp), entity_id});
     }
 
     void addWaiting()
@@ -47,14 +47,14 @@ public:
         while(!m_to_add.empty())
         {
             auto& [comp, id] = m_to_add.front();
-            add(comp, id);
+            add(std::move(comp), id);
             m_to_add.pop();
         }
     }
 
-    void add(ComponentType comp, int entity_id)
+    void add(ComponentType&& comp, int entity_id)
     {
-        m_components.insert(entity_id, comp);
+        m_components.insert(entity_id, std::move(comp));
     }
 
     void erase(int entity_id)
