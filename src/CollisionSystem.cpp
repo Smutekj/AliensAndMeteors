@@ -6,8 +6,7 @@
 namespace Collisions
 {
 
-
-    std::vector<std::tuple<GameObject*, GameObject*, CollisionData>> collisions; //! for debugging
+    std::vector<std::tuple<GameObject *, GameObject *, CollisionData>> collisions; //! for debugging
 
     CollisionSystem::CollisionSystem(PostOffice &messenger, ContiguousColony<CollisionComponent, int> &comps)
         : p_post_office(&messenger), m_components(comps)
@@ -26,7 +25,6 @@ namespace Collisions
         m_object_type2tree[object.getType()].addRect(bounding_rect, object.getId());
     }
 
-
     void CollisionSystem::removeObject(GameObject &object)
     {
         m_object_type2tree.at(object.getType()).removeObject(object.getId());
@@ -43,7 +41,7 @@ namespace Collisions
             for (auto &shape : comp.shape.convex_shapes)
             {
                 shape.setPosition(entities.at(comp_ids.at(comp_id))->getPosition());
-                shape.setScale(entities.at(comp_ids.at(comp_id))->getSize()/2.);
+                shape.setScale(entities.at(comp_ids.at(comp_id))->getSize() / 2.);
                 shape.setRotation(entities.at(comp_ids.at(comp_id))->getAngle());
             }
         }
@@ -89,6 +87,29 @@ namespace Collisions
         m_collided2.clear();
     }
 
+    void CollisionSystem::shapesCollide(const std::vector<Polygon>& shape1, const std::vector<Polygon>& shape2,
+                    GameObject& obj1, GameObject& obj2, CollisionCallbackT &callback)
+    {
+        for (auto &sub_shape1 : shape1)
+        {
+            for (auto &sub_shape2 : shape2)
+            {
+
+                CollisionData collision_data = getCollisionData(sub_shape1, sub_shape2);
+
+                if (collision_data.minimum_translation > 0) //! there is a collision
+                {
+
+                    collisions.push_back({&obj1, &obj2, collision_data});
+
+                    p_post_office->send(CollisionEvent{obj1.getId(), obj2.getId()});
+                    callback(obj1, obj2, collision_data);
+                    //! Fuck this shit, do not collide with multiple subshapes?
+                    return;
+                }
+            }
+        }
+    }
     void CollisionSystem::narrowPhase2(const std::vector<std::pair<int, int>> &colliding_pairs,
                                        EntityRegistryT &entities, CollisionCallbackT &callback)
     {
@@ -100,27 +121,13 @@ namespace Collisions
             auto &obj2 = *entities.at(i2);
             m_collided2.insert({i1, i2});
 
-            CollisionData collision_data;
-            collision_data = getCollisionData(m_components.get(i1).shape.convex_shapes.at(0),
-                                              m_components.get(i2).shape.convex_shapes.at(0));
-
-            if (collision_data.minimum_translation > 0) //! there is a collision
-            {
-                if (obj1.doesPhysics() && obj2.doesPhysics()) //! if both objects have rigid bodies we do physics
-                {
-                    // bounce(obj1, obj2, collision_data);
-                }
-
-
-                collisions.push_back({&obj1, &obj2, collision_data});
-    
-                p_post_office->send(CollisionEvent{obj1.getId(), obj2.getId()});
-                callback(obj1, obj2, collision_data);
-            }
+            auto &shape1 = m_components.get(i1).shape.convex_shapes;
+            auto &shape2 = m_components.get(i2).shape.convex_shapes;
+            shapesCollide(shape1, shape2, obj1, obj2, callback);
         }
     }
 
-    CollisionData CollisionSystem::getCollisionData(Polygon &pa, Polygon &pb) const
+    CollisionData CollisionSystem::getCollisionData(const Polygon &pa, const Polygon &pb) const
     {
         auto points_a = pa.getPointsInWorld();
         auto points_b = pb.getPointsInWorld();
@@ -165,17 +172,17 @@ namespace Collisions
         return tree.findIntersectingLeaves(collision_rect);
     }
 
-    std::vector<CollisionComponent*> CollisionSystem::findIntersections(ObjectType type, Polygon collision_body)
+    std::vector<CollisionComponent *> CollisionSystem::findIntersections(ObjectType type, Polygon collision_body)
     {
         auto nearest_inds = m_object_type2tree.at(type).findIntersectingLeaves(collision_body.getBoundingRect());
         auto points = collision_body.getPointsInWorld();
-        
-        std::vector<CollisionComponent*> collision_ids;
+
+        std::vector<CollisionComponent *> collision_ids;
         for (auto ind : nearest_inds)
         {
-            auto& collision_comp = m_components.get(ind);
-            
-            for(auto& shape : collision_comp.shape.convex_shapes)
+            auto &collision_comp = m_components.get(ind);
+
+            for (auto &shape : collision_comp.shape.convex_shapes)
             {
                 auto points_other = shape.getPointsInWorld();
                 auto c_data = calcCollisionData(points, points_other);
@@ -186,20 +193,18 @@ namespace Collisions
             }
         }
         return collision_ids;
-    } 
+    }
 
-
-
-    std::vector<CollisionComponent*> CollisionSystem::findNearestObjects(ObjectType type, utils::Vector2f center, float radius) const
+    std::vector<CollisionComponent *> CollisionSystem::findNearestObjects(ObjectType type, utils::Vector2f center, float radius) const
     {
         auto &tree = m_object_type2tree.at(type);
 
         AABB collision_rect({center - utils::Vector2f{radius, radius}, center + utils::Vector2f{radius, radius}});
         auto nearest_inds = tree.findIntersectingLeaves(collision_rect);
-        std::vector<CollisionComponent*> objects;
+        std::vector<CollisionComponent *> objects;
         for (auto ind : nearest_inds)
         {
-            auto& collision_comp = m_components.get(ind);
+            auto &collision_comp = m_components.get(ind);
             auto mvt = collision_comp.shape.convex_shapes[0].getMVTOfSphere(center, radius);
             if (norm2(mvt) > 0.001f)
             {
@@ -473,7 +478,6 @@ namespace Collisions
         return cp;
     }
 
-
     void bounce(GameObject &obj1, GameObject &obj2, CollisionData c_data)
     {
         auto &rigid1 = obj1.getRigidBody();
@@ -537,23 +541,24 @@ namespace Collisions
         }
 
         //! draw physics collisions
-        for(auto& [obj1, obj2, c_data] : collisions)
+        for (auto &[obj1, obj2, c_data] : collisions)
         {
-            canvas.drawCricleBatched(obj1->getPosition(), 2., {1,0,0,1});
-            canvas.drawCricleBatched(obj2->getPosition(), 2., {0,1,1,1});
-            
+            canvas.drawCricleBatched(obj1->getPosition(), 2., {1, 0, 0, 1});
+            canvas.drawCricleBatched(obj2->getPosition(), 2., {0, 1, 1, 1});
+
             //! separation axis
-            canvas.drawLineBatched(c_data.contact_point, c_data.contact_point + 10.*c_data.separation_axis, 0.2, {0,0,1,1});
+            canvas.drawLineBatched(c_data.contact_point, c_data.contact_point + 10. * c_data.separation_axis, 0.2, {0, 0, 1, 1});
         }
         collisions.clear();
     }
 
     void CollisionSystem::registerResolver(ObjectType type_a, ObjectType type_b, CollisionCallbackT callback)
     {
-        if(!callback)
+        if (!callback)
         {
             //! let objects deal with collisions themselves by deafult
-            callback = [type_a, type_b](GameObject& obj_a, GameObject& obj_b, CollisionData c_data){
+            callback = [type_a, type_b](GameObject &obj_a, GameObject &obj_b, CollisionData c_data)
+            {
                 assert(obj_a.getType() == type_a && obj_b.getType() == type_b);
 
                 obj_a.onCollisionWith(obj_b, c_data);
