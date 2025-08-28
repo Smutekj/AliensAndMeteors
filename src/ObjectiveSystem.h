@@ -54,9 +54,10 @@ public:
 
     virtual void update(float dt)
     {
-        if (m_timer_component)
+        for(auto& t_comp : m_timer_component)
         {
-            m_timer_component->update(dt);
+            t_comp.update(dt);
+
         }
     };
     virtual void draw(Renderer &window, const TextureHolder &textures) = 0;
@@ -76,13 +77,15 @@ public:
 
     int m_id;
 
-    std::unique_ptr<TimedEvent> m_timer_component;
+    std::vector<TimedEvent> m_timer_component;
 
 protected:
     PostOffice *m_post_office = nullptr;
     Quest *m_parent = nullptr;
     Font *m_font = nullptr;
 
+    std::vector<std::unique_ptr<PostBoxI>> m_listeners;
+    
     bool m_is_finished = false;
     bool m_active = false;
 };
@@ -163,6 +166,18 @@ public:
 
 private:
     utils::Vector2f m_location;
+};
+class SurviveTask : public Task
+{
+
+public:
+SurviveTask(GameObject &entity, PostOffice &messenger, Quest *parent);
+    virtual ~SurviveTask() = default;
+
+    virtual void draw(Renderer &window, const TextureHolder &textures) override;
+
+private:
+    std::unique_ptr<PostBox<EntityDiedEvent>> m_death_postbox;
 };
 
 class SurveySpotTask : public Task, public Observer<Trigger>

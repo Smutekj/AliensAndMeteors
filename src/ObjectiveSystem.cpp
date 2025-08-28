@@ -218,16 +218,15 @@ DestroyEntityTask::DestroyEntityTask(GameObject &target, Font &font, PostOffice 
     target.setDestructionCallback([this](int id, ObjectType type)
                                   { m_is_finished = true; });
 
-    m_postbox = std::make_unique<PostBox<EntityDiedEvent>>(messenger, [target_id = target.getId(), this](const auto& events){
+    m_listeners.emplace_back(std::make_unique<PostBox<EntityDiedEvent>>(messenger, [target_id = target.getId(), this](const auto &events)
+                                                           {
         for(const auto& e : events)
         {
             if(e.id == target_id)
             {
                 complete();
             }
-        }
-    });
-
+        } }));
 }
 
 void DestroyEntityTask::draw(Renderer &window, const TextureHolder &textures)
@@ -326,13 +325,13 @@ DestroyNOfTypeTask::DestroyNOfTypeTask(ObjectType type, std::string name, int de
     : m_type(type), m_destroyed_target(destroyed_target_count), m_entity_name(name), Task(messenger, parent)
 {
     m_font = &font;
-    m_on_entity_destroyed = std::make_unique<PostBox<EntityDiedEvent>>(messenger,
+    m_listeners.emplace_back(std::make_unique<PostBox<EntityDiedEvent>>(messenger,
                                                                        [this](const auto &event_queue)
                                                                        {
             for(const auto& event : event_queue)
             {
                 entityDestroyed(event.type, event.id);
-            } });
+            } }));
 }
 
 void DestroyNOfTypeTask::entityDestroyed(ObjectType type, int id)
@@ -352,12 +351,6 @@ void DestroyNOfTypeTask::entityDestroyed(ObjectType type, int id)
 ObjectiveSystem::ObjectiveSystem(PostOffice &messanger)
     : p_messanger(&messanger)
 {
-    post_box = std::make_unique<PostBox<EntityDiedEvent>>(messanger, [](const auto &events)
-                                                          {
-        for(const EntityDiedEvent& event : events)
-        {
-            std::cout << "Entity: " << event.id << " DIED!" << std::endl; 
-        } });
 
     m_objectives_postbox = std::make_unique<PostBox<QuestCompletedEvent>>(messanger, [this](const auto &events)
                                                                           {
@@ -375,14 +368,21 @@ void Task::activate()
 void Task::complete()
 {
     assert(m_active);
-    m_is_finished = true;
+
+    m_listeners.clear();
+
     m_on_completion_callback();
+    m_is_finished = true;
+    m_active = false;
     m_parent->onTaskCompletion(this);
 };
 void Task::fail()
 {
+    m_listeners.clear();
+
     // m_parent->onTaskCompletion(this);
     m_on_failure_callback();
+    m_active = false;
 };
 
 // for convenience
@@ -396,4 +396,22 @@ void ObjectiveSystem::registerQuest(std::filesystem::path json_path)
     assert(quest_data.is_array());
 
     // while()
+}
+
+SurviveTask::SurviveTask(GameObject &entity, PostOffice &messenger, Quest *parent)
+    : Task(messenger, parent)
+{
+    m_listeners.emplace_back(std::make_unique<PostBox<EntityDiedEvent>>(messenger, [this, id = entity.getId()](const auto &events)
+                                                                        {
+            for(const EntityDiedEvent& event : events)
+            {
+                if(event.id == id)
+                {
+                    fail();
+                }
+            } }));
+}
+
+void SurviveTask::draw(Renderer &window, const TextureHolder &textures)
+{
 }
