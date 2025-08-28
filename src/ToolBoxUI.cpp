@@ -352,7 +352,7 @@ void ToolBoxUI::drawEntityDesigner()
                                                 auto path = tex_filename;
                                                 m_textures.add(tex_filename.replace_extension("").string(), path);
                                         }
-                                        m_selected_texture_name = tex_filename.replace_extension("");
+                                        m_selected_texture_name = tex_filename.replace_extension("").string();
 
                                         redrawImage();
                                         m_selecting_texture = false;
