@@ -40,7 +40,7 @@ namespace Collisions
         void removeObject(GameObject &object);
 
         virtual void preUpdate(float dt, EntityRegistryT &entities) override;
-        void update(float dt) override {}
+        virtual void update(float dt) override {}
         virtual void postUpdate(float dt, EntityRegistryT &entities) override {}
 
         void draw(Renderer &canvas);
