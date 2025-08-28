@@ -26,7 +26,7 @@ void Camera::resizeToTarget(float dt)
     m_move_view_time += dt;
 
     utils::Vector2f dr_to_target = m_view_target_size - m_view.getSize();
-    float dist_to_target = utils::norm(dr_to_target);
+    float dist_to_target = std::max(utils::norm(dr_to_target), 0.001f);
     float view_speed = 50.;
 
     if (dist_to_target < 10)
