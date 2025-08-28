@@ -8,6 +8,7 @@
 
 #include <unordered_set>
 #include <imgui.h>
+#include <queue>
 
 class GameWorld;
 
