@@ -22,13 +22,13 @@ namespace Collisions
     {
         inline std::size_t operator()(const std::pair<int, int> &v) const
         {
-            return ((std::size_t)v.first << 32) + v.second;
+            return (((std::size_t)v.first) << 32) + v.second;
         }
     };
 
+    using CollisionCallbackT = std::function<void(GameObject &, GameObject &, CollisionData)>;
     class CollisionSystem : public SystemI
     {
-        using CollisionCallbackT = std::function<void(GameObject &, GameObject &, CollisionData)>;
 
         std::unordered_map<int, std::weak_ptr<GameObject>> m_objects;
         std::unordered_map<ObjectType, BoundingVolumeTree> m_object_type2tree;
@@ -49,17 +49,19 @@ namespace Collisions
 
         std::vector<int> findNearestObjectInds(ObjectType type, utils::Vector2f center, float radius) const;
         std::vector<CollisionComponent *> findNearestObjects(ObjectType type, utils::Vector2f center, float radius) const;
-        std::vector<CollisionComponent *> findIntersections(ObjectType type, Polygon collision_body); 
-        std::vector<int> findIntersectingObjectInds(ObjectType type, Polygon collision_body); 
+        std::vector<CollisionComponent *> findIntersections(ObjectType type, Polygon collision_body);
+        std::vector<int> findIntersectingObjectInds(ObjectType type, Polygon collision_body);
 
         utils::Vector2f findClosestIntesection(ObjectType type, utils::Vector2f at, utils::Vector2f dir, float length);
 
     private:
+        void shapesCollide(const std::vector<Polygon> &shape1, const std::vector<Polygon> &shape2,
+                           GameObject &obj1, GameObject &obj2, CollisionCallbackT &callback);
         void narrowPhase2(const std::vector<std::pair<int, int>> &colliding_pairs,
                           EntityRegistryT &entities,
                           CollisionCallbackT &callback);
 
-        CollisionData getCollisionData(Polygon &pa, Polygon &pb) const;
+        CollisionData getCollisionData(const Polygon &pa, const  Polygon &pb) const;
 
     private:
         PostOffice *p_post_office;
