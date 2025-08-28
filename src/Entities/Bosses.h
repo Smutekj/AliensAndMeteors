@@ -50,35 +50,16 @@ private:
 
     State m_state = State::ShootingLasers;
 
-    utils::Vector2f m_acc;
-
     Collisions::CollisionSystem *m_collision_system;
 
     float m_motion_time = 0.f;
     float m_motion_period = 6.f;
 
-    float m_bombing_cooldown = 0.5f;
-    float m_lasering_cooldown = 3.f;
-
-    int m_bomb_count = 0;
-    float m_shooting_timer = 0.f;
-    float m_shooting_timer2 = 0.f;
-
-    bool m_is_recharging = false;
     float m_recharge_time = 7.;
 
     ProjectileFactory m_projectile_factory;
     LaserFactory m_laser_factory;
     EnemyFactory m_enemy_factory;
-
-public:
-    float m_orig_max_vel = 90.f;
-    float m_vision_radius = 70.f;
-
-    float m_health = 50;
-    float m_max_health = 50;
-    utils::Vector2f m_impulse = {0, 0};
-    utils::Vector2f m_target_pos;
 };
 
 
@@ -86,6 +67,7 @@ template <class StateId>
 class StateMachine
 {
 
+    public:
     void registerTransition(StateId target_state, std::function<void()> callback)
     {
         m_on_state_change[target_state] = callback;
@@ -114,10 +96,14 @@ class StateMachine
             changeState(m_history.front());
             m_history.pop_front();
         }
+    }    
+
+    StateId getCurrentState() const
+    {
+        return m_current_state;
     }
 
-
-    
+private:
     std::unordered_map<StateId, std::function<void()>> m_on_state_change;
     std::unordered_map<StateId, std::unordered_set<StateId>> m_transitions;
     std::deque<StateId> m_history;
@@ -150,11 +136,64 @@ public:
     virtual void draw(LayersHolder &target) override;
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
 
-    private:
-
-    
+    private:    
     StateMachine<AState> m_state_machine;
 
 };
 
 
+
+
+
+class Boss2 : public GameObject
+{
+    enum class FightStage
+    {   
+        ThrowingMeteors,
+        ShootingBigLaser,
+        ShootingGuns,
+        Exposed
+    };
+    
+public:
+    Boss2() = default;
+    Boss2(GameWorld *world, TextureHolder &textures, PlayerEntity *player);
+    Boss2(const Boss2 &e) = default;
+    Boss2 &operator=(Boss2 &e) = default;
+    Boss2 &operator=(Boss2 &&e) = default;
+    virtual ~Boss2() override = default;
+
+    virtual void update(float dt) override;
+    virtual void onCreation() override;
+    virtual void onDestruction() override;
+    virtual void draw(LayersHolder &target) override;
+    virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
+
+private:
+    void aiWhenRecharged(float dt);
+    void shootAtPlayer();
+    void throwBombsAtPlayer();
+    void shootLasers();
+    void shootLaserAtPlayer();
+    void activateShield();
+    void deActivateShield();
+
+    void changeState(FightStage target_state);
+
+private:
+
+    StateMachine<FightStage> m_states;
+    
+    int shield_id = -1;
+
+    PlayerEntity *p_player;
+
+    float m_motion_time = 0.f;
+    float m_motion_period = 6.f;
+
+    ProjectileFactory m_projectile_factory;
+    LaserFactory m_laser_factory;
+    EnemyFactory m_enemy_factory;
+
+public:
+};

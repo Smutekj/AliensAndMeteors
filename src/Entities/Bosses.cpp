@@ -16,9 +16,9 @@ Boss1::Boss1(GameWorld *world, TextureHolder &textures, PlayerEntity *player)
 void Boss1::update(float dt)
 {
 
+    //! periodic up-down motion
     if (m_state == State::ShootingLasers)
     {
-        //! periodic up-down motion
         m_motion_time += dt;
         float motion_frequency = 2.f * 3.14f / m_motion_period;
         float motion_amplitude = (m_size.y * 0.1f);
@@ -26,6 +26,7 @@ void Boss1::update(float dt)
     }
     else if (m_state == State::ShootingBigLaser)
     {
+        m_motion_time += dt;
         float motion_frequency = 2.f * 3.14f / m_motion_period;
         float motion_amplitude = (m_size.y * 0.5f);
         m_pos.y += dt * motion_amplitude * motion_frequency * std::cos(m_motion_time * motion_frequency);
@@ -130,7 +131,7 @@ void Boss1::onCreation()
 
     auto shoot_gun_at = [this](ProjectileType type, utils::Vector2f target, utils::Vector2f from, float speed, float size)
     {
-        auto &bullet = m_projectile_factory.create2(type, from);
+        auto &bullet = m_projectile_factory.create2(type, from, ColorByte{});
         bullet.setSize(size);
         auto dr = target - from;
         bullet.m_vel = dr / utils::norm(dr) * speed;
@@ -235,23 +236,22 @@ void Boss1::onCreation()
             // auto &enemy = m_enemy_factory.create2(EnemyType::ShooterEnemy, m_pos + utils::Vector2f(-150.f, 0.f));
             // utils::Vector2f dr_to_target = p_player->getPosition() - enemy.getPosition();
             // enemy.m_vel = dr_to_target / utils::norm(dr_to_target) * enemy.m_max_vel;
-            
         };
         auto spawn_laser_enemy = [this](float t, int count)
         {
             auto &enemy = m_enemy_factory.create2(EnemyType::LaserEnemyNoTarget, m_pos + utils::Vector2f(-55.f, 0.f));
-            TargetComponent t_comp = {.p_target = nullptr, .target_pos = m_pos + utils::Vector2f(-300.f, 100.*(count - 2))};
-            
+            TargetComponent t_comp = {.p_target = nullptr, .target_pos = m_pos + utils::Vector2f(-300.f, 100. * (count - 2))};
+
             utils::Vector2f dr_to_target = t_comp.target_pos - enemy.getPosition();
             enemy.m_vel = dr_to_target / utils::norm(dr_to_target) * enemy.m_max_vel;
             TimedEventComponent timed_comp;
-            t_comp.on_reaching_target =  [this, id = enemy.getId()]()
-                                           {
-                                               auto &t_comp = m_world->m_systems.get<TargetComponent>(id);
-                                               t_comp.p_target = p_player;
-                                               m_world->get(id)->m_max_vel *= 0.01f;
-                                               m_world->m_systems.addEntity(id, LaserAIComponent{});
-                                           };
+            t_comp.on_reaching_target = [this, id = enemy.getId()]()
+            {
+                auto &t_comp = m_world->m_systems.get<TargetComponent>(id);
+                t_comp.p_target = p_player;
+                m_world->get(id)->m_max_vel *= 0.01f;
+                m_world->m_systems.addEntity(id, LaserAIComponent{});
+            };
 
             m_world->m_systems.addEntityDelayed(enemy.getId(), timed_comp, t_comp);
         };
@@ -325,5 +325,255 @@ void Weapon::draw(LayersHolder &target)
 {
 }
 void Weapon::onCollisionWith(GameObject &obj, CollisionData &c_data)
+{
+}
+
+Boss2::Boss2(GameWorld *world, TextureHolder &textures, PlayerEntity *player)
+    : p_player(player),
+      m_projectile_factory(*world, textures),
+      m_laser_factory(*world, textures),
+      m_enemy_factory(*world, textures),
+      GameObject(world, textures, ObjectType::Boss)
+{
+    m_size = {230 / 2, 390 / 2};
+}
+
+void Boss2::update(float dt)
+{
+
+    //! periodic up-down motion
+    if (m_states.getCurrentState() == FightStage::ThrowingMeteors)
+    {
+        m_motion_time += dt;
+        float motion_frequency = 2.f * 3.14f / m_motion_period;
+        float motion_amplitude = (m_size.y * 0.1f);
+        m_pos.y += dt * motion_amplitude * motion_frequency * std::cos(m_motion_time * motion_frequency);
+    }
+    else if (m_states.getCurrentState() == FightStage::ShootingBigLaser)
+    {
+        m_motion_time += dt;
+        float motion_frequency = 2.f * 3.14f / m_motion_period;
+        float motion_amplitude = (m_size.y * 0.1f);
+        m_angle = -180 + m_motion_time / 8.f * 180 ;
+    }
+}
+
+void Boss2::changeState(FightStage target_state)
+{
+    m_states.changeState(target_state);
+    m_motion_time = 0.f;
+}
+
+void Boss2::deActivateShield()
+{
+    assert(shield_id != -1);
+    m_world->get(shield_id)->kill();
+    shield_id = -1;
+}
+
+void Boss2::activateShield()
+{
+    auto &shield = m_world->addObject3(ObjectType::Shield);
+    Polygon shield_collider = {32};
+    CollisionComponent c_comp;
+    c_comp.type = ObjectType::Shield;
+    c_comp.shape.convex_shapes = {shield_collider};
+    m_world->m_systems.addEntity(shield.getId(), c_comp);
+
+    shield.setSize(m_size * 0.69f);
+    shield.setAngle(-90);
+    addChild(&shield);
+    shield_id = shield.getId();
+}
+
+void Boss2::onCreation()
+{
+    Polygon left_wing;
+    left_wing.points = {{0.2, -0.3}, {0.5, 0.16}, {0.2, 0.14}};
+    left_wing.setScale(m_size / 2.);
+    Polygon right_wing;
+    right_wing.points = {{-0.2, -0.3}, {-0.5, 0.16}, {-0.2, 0.14}};
+    right_wing.setScale(m_size / 2.);
+    CollisionComponent l_comp;
+    CollisionComponent r_comp;
+    l_comp.type = ObjectType::Boss;
+    r_comp.type = ObjectType::Boss;
+    l_comp.shape.convex_shapes = {left_wing};
+    r_comp.shape.convex_shapes = {right_wing};
+    auto &left_weapon = m_world->addObject2<Weapon>();
+    auto &right_weapon = m_world->addObject2<Weapon>();
+    m_world->m_systems.addEntity(left_weapon.getId(), l_comp);
+    m_world->m_systems.addEntity(right_weapon.getId(), r_comp);
+    left_weapon.setSize(m_size);
+    right_weapon.setSize(m_size);
+    left_weapon.setAngle(90);
+    right_weapon.setAngle(90);
+    addChild(&left_weapon);
+    addChild(&right_weapon);
+
+
+    setAngle(-90);
+
+    Polygon hull = {4};
+    hull.points = {{0.2, 0.5}, {0.2, -0.5}, {-0.2, -0.5}, {-0.2, 0.5}};
+    hull.setScale(m_size / 2.);
+    CollisionComponent c_comp;
+    c_comp.type = ObjectType::Boss;
+    c_comp.shape.convex_shapes = {hull};
+
+    HealthComponent health = {.max_hp = 100};
+
+    AnimationComponent anim;
+    anim.id = AnimationId::Shield;
+    anim.cycle_duration = 0.69;
+
+    TimedEventComponent timer;
+    m_world->m_systems.addEntity(getId(), timer, c_comp, health, anim);
+
+    auto shoot_laser_at = [this](utils::Vector2f pos, utils::Vector2f target,
+                                 utils::Vector2f offset, float width)
+    {
+        auto &laser = m_laser_factory.create2(LaserType::Basic, pos, {255, 10, 23});
+        // laser.setAngle(utils::dir2angle(target - pos - offset));
+        addChild(&laser);
+
+        laser.m_rotates_with_owner = true;
+        laser.m_offset = offset;
+        laser.m_max_width = width;
+        laser.m_max_length = 1000.;
+        laser.m_life_time = 8.;
+        laser.m_max_dmg = 0.5f;
+    };
+
+    auto shoot_meteor_at = [this](utils::Vector2f target, utils::Vector2f from, float speed, float size)
+    {
+        auto &meteor = m_world->addObject2<Meteor>();
+        meteor.setPosition(from);
+        meteor.setSize(size);
+        meteor.m_max_vel = speed;
+        meteor.m_vel = speed * (target - from) / utils::norm(target - from);
+    };
+
+    auto shoot_gun_at = [this](ProjectileType type, utils::Vector2f target, utils::Vector2f from, float speed, float size)
+    {
+        auto &bullet = m_projectile_factory.create2(type, from, ColorByte{255,20,20,255});
+        // bullet.setSize(size);
+        auto dr = target - from;
+        bullet.m_vel = dr / utils::norm(dr) * speed;
+        bullet.m_collision_resolvers[ObjectType::Boss] = [id = getId()](auto &obj, auto &c_data)
+        {
+            if (id == obj.getId())
+            {
+                return; //! no collisions with boss
+            }
+        };
+    };
+
+    auto init_meteor_thrower = [this, shoot_meteor_at]()
+    {
+        float stage_time = 6.f;
+        int meteor_count = 5;
+        auto &timer = m_world->m_systems.get<TimedEventComponent>(getId());
+        timer.addEvent({stage_time / meteor_count, [this, shoot_meteor_at](float t, int count)
+                        {
+                            float angle = -150 + count / 6. * (120);
+                            utils::Vector2f from = m_pos + 20.f * utils::angle2dir(angle);
+                            utils::Vector2f target = m_pos + 30.f * utils::angle2dir(angle);
+                            shoot_meteor_at(target, from, 30.f, 30.f);
+                        },
+                        meteor_count});
+
+        timer.addEvent({stage_time, [this](float t, int count)
+                        { changeState(FightStage::ShootingBigLaser); }, 1});
+    };
+
+
+    auto init_big_laser = [this, shoot_laser_at]()
+    {
+        auto shoot_laser_middle = [this, shoot_laser_at](float t, int count)
+        {
+            auto target_pos = p_player->getPosition() + p_player->m_vel * 0.2;
+            shoot_laser_at(m_pos, target_pos, {0, 0}, 20.);
+        };
+
+        m_vel = {-2, 0};
+        auto &timer = m_world->m_systems.get<TimedEventComponent>(getId());
+        timer.addEvent({0.f, shoot_laser_middle, 2});
+        timer.addEvent({7.f, [this](float t, int count)
+                        { changeState(FightStage::ShootingGuns); }, 1});
+    };
+    auto init_gun_shooting = [this, shoot_gun_at]()
+    {
+        auto shoot_middle_gun = [this, shoot_gun_at](float t, int count)
+        {
+            auto target_pos = p_player->getPosition();
+            shoot_gun_at(ProjectileType::HomingFireBullet, target_pos, m_pos + utils::Vector2f{0.f, m_size.y*0.3f}, 90, 10);
+        };
+        auto shoot_side_gun = [this, shoot_gun_at](float t, int count)
+        {
+            auto target_pos = p_player->getPosition();
+            shoot_gun_at(ProjectileType::LaserBullet, target_pos, m_pos + utils::Vector2f{-m_size.x * 0.2f, 0.f}, 180, 5);
+        };
+        auto shoot_side_gun2 = [this, shoot_gun_at](float t, int count)
+        {
+            auto target_pos = p_player->getPosition();
+            shoot_gun_at(ProjectileType::LaserBullet, target_pos, m_pos + utils::Vector2f{+m_size.x * 0.2f, 0.f}, 180, 5);
+        };
+
+        m_vel = {0, 0};
+        auto &timer = m_world->m_systems.get<TimedEventComponent>(getId());
+        timer.addEvent({1.0, shoot_middle_gun, 10});
+        timer.addEvent({0.25, shoot_side_gun, 20});
+        timer.addEvent({0.25, shoot_side_gun2, 20});
+        timer.addEvent({10., [this](float t, int count)
+                        { changeState(FightStage::Exposed); }, 1});
+    };
+    auto init_exposed = [this]()
+    {
+        deActivateShield();
+
+        auto &timer = m_world->m_systems.get<TimedEventComponent>(getId());
+        timer.addEvent({10.f, [this](float t, int count)
+                        { 
+                            activateShield();
+                            changeState(FightStage::ThrowingMeteors); }, 1});
+    };
+
+    m_states.registerTransition(FightStage::Exposed, init_exposed);
+    m_states.registerTransition(FightStage::ThrowingMeteors, init_meteor_thrower);
+    m_states.registerTransition(FightStage::ShootingBigLaser, init_big_laser);
+    m_states.registerTransition(FightStage::ShootingGuns, init_gun_shooting);
+
+    activateShield();
+    changeState(FightStage::ThrowingMeteors);
+}
+void Boss2::onDestruction()
+{
+}
+void Boss2::draw(LayersHolder &target)
+{
+    Sprite ship;
+    ship.setPosition(m_pos);
+    ship.setScale(m_size / 2.f);
+    ship.setRotation(utils::to_radains * (m_angle) );
+    ship.setTexture(*m_textures->get("Boss2"));
+
+    if (m_states.getCurrentState() != FightStage::Exposed)
+    {
+        auto &anim_comp = m_world->m_systems.get<AnimationComponent>(getId());
+
+        Sprite shield;
+        shield.setTexture(anim_comp.texture_id);
+        shield.setPosition(m_pos);
+        shield.setRotation(ship.getRotation());
+        shield.setScale(m_size / 1.95);
+        shield.m_tex_rect = anim_comp.tex_rect;
+        shield.m_tex_size = anim_comp.texture_size;
+        target.getCanvas("Shields").drawSprite(shield);
+    }
+
+    target.getCanvas("Unit").drawSprite(ship);
+}
+void Boss2::onCollisionWith(GameObject &obj, CollisionData &c_data)
 {
 }
