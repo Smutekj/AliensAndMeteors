@@ -38,20 +38,11 @@ public:
     float getHp() const;
     float getHpRatio() const;
 
-    void onBoostDown()
-    {
-        if (m_fuel > 0. && booster != BoosterState::CoolingDown && booster != BoosterState::Disabled)
-        {
-            booster = BoosterState::Boosting;
-        }
-    }
-    void onBoostUp()
-    {
-        if (booster != BoosterState::CoolingDown && booster != BoosterState::Disabled)
-        {
-            booster = BoosterState::Ready;
-        }
-    }
+    void activateShield();
+    void deactivateShield();
+
+    void onBoostDown();
+    void onBoostUp();
 
 private:
     void fixAngle();
@@ -89,6 +80,11 @@ public:
     float health = 100;
     float max_health = 100;
 
+    float shield_lifetime = 5.;
+    float max_shield_hp = 10;
+    float shield_timeleft = shield_lifetime;
+    bool shield_active = false;
+
     float m_deactivated_time = -1.f;
 
     Sprite m_player_shape;
@@ -96,5 +92,7 @@ public:
     std::shared_ptr<Particles> m_particles_right;
 
     private:
+
+    int m_shield_id = -1;
     Polygon meteor_detector;
 };
