@@ -46,14 +46,16 @@ public:
     }
 
     template <class ComponentType>
-    void addDelayed(ComponentType comp, int entity_id)
+    void addDelayed(ComponentType&& comp, int entity_id)
     {
-        std::get<ComponentHolder<ComponentType>>(m_components).addToQueue(comp, entity_id);
+        using Decayed = std::decay_t<ComponentType>;  // strips & and const
+        std::get<ComponentHolder<Decayed>>(m_components).addToQueue(std::move(comp), entity_id);
     }
     template <class ComponentType>
-    void add(ComponentType comp, int entity_id)
+    void add(ComponentType&& comp, int entity_id)
     {
-        std::get<ComponentHolder<ComponentType>>(m_components).add(comp, entity_id);
+        using Decayed = std::decay_t<ComponentType>;  // strips & and const
+        std::get<ComponentHolder<Decayed>>(m_components).add(std::move(comp), entity_id);
     }
 
     template <class ComponentType>
@@ -122,5 +124,6 @@ using GameSystems = ComponentWorld<BoidComponent,
                                    TimedEventComponent,
                                    ShootPlayerAIComponent,
                                    LaserAIComponent,
-                                   SpriteComponent
+                                   SpriteComponent,
+                                   ParticleComponent
                                    >;
