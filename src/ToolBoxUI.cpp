@@ -350,7 +350,7 @@ void ToolBoxUI::drawEntityDesigner()
                                         if (!m_textures.get(tex_filename))
                                         {
                                                 auto path = tex_filename;
-                                                m_textures.add(tex_filename.replace_extension(""), path);
+                                                m_textures.add(tex_filename.replace_extension("").string(), path);
                                         }
                                         m_selected_texture_name = tex_filename.replace_extension("");
 
