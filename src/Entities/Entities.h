@@ -24,11 +24,6 @@ class Explosion : public GameObject
 {
 
 public:
-    float m_explosion_radius = 5.f;
-    float m_max_explosion_radius = 25.f;
-
-    void setType(AnimationId texture_id);
-    // explicit Explosion(GameWorld *world, TextureHolder &textures);
     Explosion() = default;
     Explosion(GameWorld *world, TextureHolder &textures, PlayerEntity *player = nullptr);
     Explosion(const Explosion &e) = default;
@@ -49,16 +44,15 @@ public:
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
 
 public:
-    bool m_is_expanding = true;
+    bool m_is_expanding = false;
+    float m_explosion_radius = 5.f;
+    float m_max_explosion_radius = 25.f;
 
 private:
     std::shared_ptr<Animation> m_animation;
 
     float m_min_dmg = 0.f;
     float m_max_dmg = 5.f;
-
-    float max_vel = 100.f;
-    float max_acc = 20.f;
 
     float m_time = 0.f;
     float m_life_time = 5.;

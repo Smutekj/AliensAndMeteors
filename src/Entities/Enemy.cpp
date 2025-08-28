@@ -3,7 +3,7 @@
 #include "../DrawLayer.h"
 #include "../CollisionSystem.h"
 #include "../GridNeighbourSearcher.h"
-// #include "../ResourceManager.h"
+#include "../SoundSystem.h"
 #include "../Utils/RandomTools.h"
 #include "../GameWorld.h"
 #include "../Animation.h"
@@ -140,11 +140,11 @@ void Enemy::onDestruction()
     new_explosion.setPosition(m_pos);
     new_explosion.m_max_explosion_radius = 4.f;
     // new_explosion.setType(AnimationId::BlueExplosion);
-
+    
     m_world->m_systems.addEntity(new_explosion.getId(), anim, timer);
-
+    
     GameObject::onDestruction();
-    // SoundManager::play(0);
+    SoundSystem::play(SoundID::Explosion1);
 }
 
 void Enemy::draw(LayersHolder &layers)
@@ -669,7 +669,7 @@ void Turret::onCreation()
         float dist_to_player = utils::norm(dr_to_player);
         if (dist_to_player < m_shooting_range)
         {
-            auto& bullet = m_factory->create2(ProjectileType::ElectroBullet, m_pos);
+            auto& bullet = m_factory->create2(ProjectileType::ElectroBullet, m_pos, ColorByte{});
             bullet.m_vel = dr_to_player/utils::norm(dr_to_player) * bullet.m_max_vel;
         }        
     }, TimedEventType::Infinite});

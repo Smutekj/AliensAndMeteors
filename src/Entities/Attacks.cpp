@@ -86,15 +86,7 @@ void Bullet::onCollisionWith(GameObject &obj, CollisionData &c_data)
 
 void Bullet::onCreation()
 {
-    CollisionComponent c_comp;
-    c_comp.type = ObjectType::Bullet;
-    c_comp.shape.convex_shapes.emplace_back(8);
-    
-    TimedEvent die_on_timeout = {10.f, [this](float t, int count){kill();}, 1};
-    TimedEventComponent time_comp;
-    time_comp.addEvent(die_on_timeout);
 
-    m_world->m_systems.addEntity(getId(), c_comp, time_comp);
 }
 
 void Bullet::onDestruction()
@@ -110,17 +102,17 @@ void Bullet::setBulletType(BulletType type)
 void Bullet::draw(LayersHolder &layers)
 {
 
-    auto &target = layers.getCanvas("Unit");
+    // auto &target = layers.getCanvas("Unit");
 
-    m_sprite.setTexture(*m_textures->get("Bomb"));
-    m_sprite.setPosition(m_pos);
-    m_sprite.setRotation(glm::radians(dir2angle(m_vel)));
-    m_sprite.setScale(m_size / 2.f);
-    m_sprite.m_color = {255, 0, 0, 255};
+    // m_sprite.setTexture(*m_textures->get("Bomb"));
+    // m_sprite.setPosition(m_pos);
+    // m_sprite.setRotation(glm::radians(dir2angle(m_vel)));
+    // m_sprite.setScale(m_size / 2.f);
+    // m_sprite.m_color = {255, 0, 0, 255};
 
-    assert(m_type2shader_id.count(m_type) > 0);
-    auto shader_id = m_type2shader_id.at(m_type);
-    target.drawSprite(m_sprite, shader_id);
+    // assert(m_type2shader_id.count(m_type) > 0);
+    // auto shader_id = m_type2shader_id.at(m_type);
+    // target.drawSprite(m_sprite, shader_id);
 
 
     // int alpha = 255;

@@ -18,20 +18,7 @@ Explosion::Explosion(GameWorld *world, TextureHolder &textures, PlayerEntity *pl
 
 Explosion::~Explosion() {}
 
-void Explosion::setType(AnimationId id)
-{
-    if (!m_world->m_systems.has<AnimationComponent>(getId()))
-    {
-        AnimationComponent anim;
-        anim.id = id;
-        anim.cycle_duration = 2.;
-        m_world->m_systems.add<AnimationComponent>(anim, getId());
-    }
-    else
-    {
-        m_world->m_systems.get<AnimationComponent>(getId()).id = id;
-    }
-}
+
 
 void Explosion::update(float dt)
 {
@@ -302,18 +289,18 @@ void Heart::onCollisionWith(GameObject &obj, CollisionData &c_data)
 
 void Heart::draw(LayersHolder &layers)
 {
-    auto &target = layers.getCanvas("Unit");
+    // auto &target = layers.getCanvas("Unit");
 
-    Sprite rect;
-    if (m_pickup_type == Pickup::Heart)
-    {
-        rect.setTexture(*m_textures->get("Heart"));
-    }
-    else if (m_pickup_type == Pickup::Fuel)
-    {
-        rect.setTexture(*m_textures->get("Fuel"));
-    }
-    rect.setPosition(m_pos);
-    rect.setScale(m_size / 2.f);
-    target.drawSprite(rect);
+    // Sprite rect;
+    // // if (m_pickup_type == Pickup::Heart)
+    // // {
+    // //     rect.setTexture(*m_textures->get("Heart"));
+    // // }
+    // // else if (m_pickup_type == Pickup::Fuel)
+    // // {
+    // //     rect.setTexture(*m_textures->get("Fuel"));
+    // // }
+    // rect.setPosition(m_pos);
+    // rect.setScale(m_size / 2.f);
+    // target.drawSprite(rect);
 }
