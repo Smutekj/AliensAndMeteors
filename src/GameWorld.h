@@ -31,46 +31,6 @@ class ToolBoxUI;
 
 struct PlayerEntity;
 
-// // Poor man's MPL vector.
-// template <class... Ts>
-// struct TypeList
-// {
-//     static const int size = sizeof...(Ts);
-// };
-
-// template <class TList, class Element>
-// struct push_back_impl;
-
-// template <template <class...> class TList, class... Ts, class Element>
-// struct push_back_impl<TList<Ts...>, Element>
-// {
-//     using type = TList<Ts..., Element>;
-// };
-// template <class TList, class Element>
-// using push_back_t = typename push_back_impl<TList, Element>::type;
-
-// template <class A, template <class...> class B, template <class> class Outer>
-// struct rebind_;
-
-// template <template <class...> class A, class... T, template <class...> class B, template <class> class Outer>
-// struct rebind_<A<T...>, B, Outer>
-// {
-//     using type = B<Outer<T>...>;
-// };
-// template <class A, template <class...> class B, template <class> class Outer>
-// using rebind = typename rebind_<A, B, Outer>::type;
-
-// #include <tuple>
-// #include <typeinfo>
-// #include "Utils/Colony.h"
-
-// using EntityTypes = TypeList<Enemy, Turret, Meteor, SpaceStation, Boss, Bullet,
-//                              Laser, Bomb, Explosion, PlayerEntity, Heart, EMP>;
-// using EntityTypes = TypeList<Enemy>;
-
-// using EntityTuple = rebind<EntityTypes, std::tuple, ComponentBlock>;
-// using EntityQueue = rebind<EntityTypes, std::tuple, std::queue>;
-
 class GameWorld
 {
 
@@ -101,25 +61,10 @@ public:
     template <class EntityType>
     EntityType &addObject2();
     template <class EntityType>
-    EntityType createEntity();
-    template <class EntityType>
     std::shared_ptr<EntityType> createEntity2();
     template <class EntityType>
     EntityType &addObjectForced();
-    // template <class EntityType>
-    // void addX(std::queue<EntityType> &to_add);
-    // template <class EntityType>
-    // void updateX(ComponentBlock<EntityType> &entity_block, float dt);
-    // template <class EntityType>
-    // void removeX(std::queue<EntityType> &to_remove);
-    // template <class EntityType>
-    // void drawX(ComponentBlock<EntityType> &entity_block, LayersHolder &layers, View camera_view);
-    
-    // void addQueuedEntities2();
-    // void removeQueuedEntities2();
-    // void update2(float dt);
-    // void draw2(LayersHolder &layers, View camera_view);
-    
+
     ///!!!
     void destroyObject(int entity_id);
     GameObject &addObject(ObjectType type);
@@ -137,7 +82,7 @@ public:
     // }
 
     void update(float dt);
-    void draw(LayersHolder &window);
+    void draw(LayersHolder &window, const View& camera_view);
 
     void removeParent(GameObject& child);
 
@@ -157,9 +102,6 @@ public:
 private:
     std::unordered_map<EffectType, std::function<std::shared_ptr<VisualEffect>()>> m_effect_factories;
 
-    // EntityTuple m_entities2;
-    // EntityQueue m_entities_to_add;
-    // EntityQueue m_entities_to_remove;
 
     EntityRegistryT m_entities;
     DynamicObjectPool2<int> m_root_entities;
@@ -169,6 +111,7 @@ private:
     std::deque<std::shared_ptr<GameObject>> m_to_add;
     std::deque<std::shared_ptr<GameObject>> m_to_destroy;
 
+    friend ToolBoxUI;
 
 };
 
@@ -186,36 +129,11 @@ EntityType &GameWorld::addObject2()
 {
     
     static_assert(std::is_base_of_v<GameObject, EntityType> || std::is_same_v<GameObject, EntityType>);
-    // auto &queue = std::get<std::queue<EntityType>>(m_entities_to_add);
-    // auto new_entity = createEntity<EntityType>();
-    // queue.push(new_entity);
-    // EntityType &thing = queue.back();
-    // return thing;
-
-    if constexpr (std::is_same_v<GameObject, EntityType>)
-    {
-
-    }else{
-
-    }
 
     auto new_entity = createEntity2<EntityType>();
     new_entity->m_id = m_entities.reserveIndexForInsertion();
     m_to_add.push_back(new_entity);
     return *new_entity;
-}
-
-template <class EntityType>
-EntityType GameWorld::createEntity()
-{
-    if constexpr (std::is_same_v<EntityType, Enemy>)
-    {
-        return {this, m_textures, &m_collision_system, m_player, m_systems};
-    }
-    else
-    {
-        return {this, m_textures, &m_collision_system, m_player};
-    }
 }
 
 template <class EntityType>
@@ -234,12 +152,9 @@ std::shared_ptr<EntityType> GameWorld::createEntity2()
 template <class EntityType>
 EntityType &GameWorld::addObjectForced()
 {
-    // auto &block = std::get<ComponentBlock<EntityType>>(m_entities2);
-    // int new_id = block.insert(createEntity<EntityType>());
+
+    int new_id = m_entities.reserveIndexForInsertion();
     auto new_entity = createEntity2<EntityType>();
-    int new_id = m_entities.insert(new_entity);
-    // EntityType &new_entity = block.get(new_id);
-    // new_entity.m_block_id = new_id;
     new_entity->m_id = new_id;
 
     new_entity->onCreation();
@@ -248,53 +163,11 @@ EntityType &GameWorld::addObjectForced()
         m_collision_system.insertObject(*new_entity);
     }
     m_root_entities.insertAt(new_id, new_id);
-    return *new_entity;
+    m_entities.insertAt(new_id, new_entity);
+    
+    return static_cast<EntityType&>(*m_entities.at(new_id));
 }
 
-// template <class EntityType>
-// void GameWorld::addX(std::queue<EntityType> &to_add)
-// {
-//     while (!to_add.empty())
-//     {
-//         auto &entity_block = std::get<ComponentBlock<EntityType>>(m_entities2);
-//         int block_id = entity_block.insert(to_add.front());
-//         auto &new_entity = entity_block.get(block_id);
-
-//         std::shared_ptr<EntityType> entity_p(&new_entity);
-//         m_entities.insertAt(entity_p->getId(), entity_p);
-
-//         // new_entity.m_id = id;
-
-//         if (new_entity.collides())
-//         {
-//             m_collision_system.insertObject(new_entity);
-//         }
-//         new_entity.onCreation();
-//         to_add.pop();
-//     }
-// }
-// template <class EntityType>
-// void GameWorld::removeX(std::queue<EntityType> &to_remove)
-// {
-//     auto &entity_block = std::get<ComponentBlock<EntityType>>(m_entities2);
-//     while (!to_remove.empty())
-//     {
-//         assert(false); //! DO NOT USe THIs!!!
-//         auto &entity = to_remove.front();
-//         entity.onDestruction();
-
-//         p_messenger->send(EntityDiedEvent{entity.getType(), entity.getId(), entity.getPosition()});
-
-//         if (entity.collides())
-//         {
-//             m_collision_system.removeObject(entity);
-//         }
-
-//         entity_block.deactivate(entity.getId());
-//         m_entities.remove(entity.getId());
-//         to_remove.pop();
-//     }
-// }
 
 struct EntityTreeNode
 {
@@ -365,7 +238,6 @@ public:
 
 private:
 
-    friend ToolBoxUI;
 
     utils::DynamicObjectPool<EntityTreeNode, MAX_ENTITY_COUNT> m_scene;
     
