@@ -2,7 +2,10 @@
 
 precision highp float;    
 
+// #include "../../external/lygia/generative/pnoise.glsl"
+
 uniform sampler2D u_noise_texture;
+
 
 in vec2 v_tex_coord;                          
 in vec4 v_color;       
@@ -51,9 +54,12 @@ void main()
     float y_gradient = 1.-smoothstep(0.05, 0.95, v_tex_coord.y);
 
     vec4 res = vec4(0.);
-    res = res + vec4(result_r*vec3(0.5, 0.7, 0.),  0.);
-    res = res + vec4(vec3(result_r*100., result_l*0.3, 0.),  10.0);
+    res = res + y_gradient * circle_in*vec4(result_r*vec3(0.5, 0.7, 0.),  result_r);
+    res = res + y_gradient * circle_out*vec4(vec3(result_r*6., result_l*0.3, 0.),  4.*result_r * result_l);
+    // if(rect_shape_bar > 0.4 && v_tex_coord.x < u_booster_ratio){
     FragColor = res;
+    //     FragColor = vec4(u_color, 1.);
+    // }       
 }                                   
 
 
