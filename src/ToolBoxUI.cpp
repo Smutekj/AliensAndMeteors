@@ -75,6 +75,13 @@ ToolBoxUI::ToolBoxUI(Window &window, TextureHolder &textures)
         m_textures.setBaseDirectory(m_texture_directory);
 }
 
+ToolBoxUI::~ToolBoxUI()
+{
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplSDL2_Shutdown();
+        ImGui::DestroyContext();
+}
+
 namespace fs = std::filesystem;
 using json = nlohmann::json;
 
@@ -263,11 +270,13 @@ void ToolBoxUI::redrawImage()
         float aspect_ratio = tex_size.y / tex_size.x;
         float element_aspect_ratio = m_image_size.y / m_image_size.x;
 
-        utils::Vector2f image_size = {m_image_size.x , m_image_size.y * aspect_ratio};
-        if(aspect_ratio > 1. )
+        utils::Vector2f image_size = {m_image_size.x, m_image_size.y * aspect_ratio};
+        if (aspect_ratio > 1.)
         {
-                image_size = {m_image_size.y / aspect_ratio , m_image_size.y};
-        }else{
+                image_size = {m_image_size.y / aspect_ratio, m_image_size.y};
+        }
+        else
+        {
                 image_size = {m_image_size.y, m_image_size.y * aspect_ratio};
         }
 

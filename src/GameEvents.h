@@ -18,6 +18,12 @@ struct EntityDiedEvent
     utils::Vector2f where;
 };
 
+struct EntityLeftViewEvent
+{
+    int id;
+    View view;
+};
+
 struct EntityCreatedEvent
 {
     // EntityType type;

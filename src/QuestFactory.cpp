@@ -226,7 +226,7 @@ std::shared_ptr<Quest> QuestFactory::createBossAndQuest(utils::Vector2f boss_off
 
             m_camera.startMovingTo(player.getPosition(), 1., [](auto &camera)
                                    {
-                    camera.m_view_state = Camera::MoveState::Fixed;
+                    camera.m_move_state = Camera::MoveState::Fixed;
                     camera.startChangingSize({410, 310}, 2., [](auto& camera){camera.m_view_size_state = Camera::SizeState::Fixed;}); });
 
             m_messanger.send(StartedBossFightEvent{boss.getId()});

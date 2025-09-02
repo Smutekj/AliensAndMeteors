@@ -16,7 +16,8 @@ class ToolBoxUI
 {
 public:
         ToolBoxUI(Window &window, TextureHolder &textures);
-
+        ~ToolBoxUI();
+        
         void draw();
         void initWorld(GameWorld &world);
 

@@ -67,11 +67,11 @@ void Game::initializeLayersAndTextures()
     auto &shiny_layer = m_layers.addLayer("Bloom", 2, options, width, height);
     shiny_layer.m_canvas.setShadersPath(shaders_directory);
     shiny_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
-    shiny_layer.addEffect(std::make_unique<Bloom>(width/2, height/2));
-    // auto &laser_layer = m_layers.addLayer("LaserBloom",1, options, width, height);
-    // laser_layer.m_canvas.setShadersPath(shaders_directory);
-    // laser_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
-    // laser_layer.addEffect(std::make_unique<Bloom>(width, height));
+    shiny_layer.addEffect(std::make_unique<Bloom>(width / 2, height / 2));
+    auto &laser_layer = m_layers.addLayer("Bloom2",5, options, width, height);
+    laser_layer.m_canvas.setShadersPath(shaders_directory);
+    laser_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
+    laser_layer.addEffect(std::make_unique<BloomFinal>(width, height));
 
     auto &base_layer = m_ui_layers.addLayer("Base", -1, options, width, height);
     base_layer.m_canvas.setShadersPath(shaders_directory);
@@ -131,7 +131,7 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     : m_window(window), m_key_binding(bindings),
       m_scene_pixels(window.getTargetSize().x, window.getTargetSize().y),
       m_scene_canvas(m_scene_pixels),
-      m_camera(PLAYER_START_POS, {START_VIEW_SIZE, START_VIEW_SIZE * window.getTargetSize().y / window.getTargetSize().x}),
+      m_camera(PLAYER_START_POS, {START_VIEW_SIZE, START_VIEW_SIZE * window.getTargetSize().y / window.getTargetSize().x}, messanger),
       m_ui(static_cast<Window &>(window.getTarget()), m_textures)
 {
     messanger.registerEvents<EntityDiedEvent,
@@ -140,7 +140,8 @@ Game::Game(Renderer &window, KeyBindings &bindings)
                              DamageReceivedEvent,
                              HealthChangedEvent,
                              StartedBossFightEvent,
-                             StartedTimerEvent>();
+                             StartedTimerEvent,
+                             EntityLeftViewEvent>();
 
     initializeSounds();
     initializeLayersAndTextures();
@@ -179,7 +180,8 @@ Game::Game(Renderer &window, KeyBindings &bindings)
         m_enemy_factory->create2(EnemyType::ShooterEnemy, spawn_pos);
     }
 
-    // auto& bul = m_bullet_factory->create2(ProjectileType::LaserBullet, m_window.getMouseInWorld(), {255,0,0,255}); 
+    m_camera.setSpeed(10);
+    // auto& bul = m_bullet_factory->create2(ProjectileType::LaserBullet, m_window.getMouseInWorld(), {255,0,0,255});
     // b = &bul;
 
     // spawnNextObjective();
@@ -228,8 +230,6 @@ void Game::addDestroyNObjective(ObjectType type, int count)
     auto &qg = createQuestGiver(quest);
     qg.setPosition(m_player->getPosition() + utils::Vector2f{500, 0});
 }
-
-
 
 void Game::startBossFight()
 {
@@ -285,7 +285,7 @@ void Game::startBossFight()
 
     m_camera.startMovingTo(player_pos, 1., [](auto &camera)
                            {
-        camera.m_view_state = Camera::MoveState::Fixed;
+        camera.m_move_state = Camera::MoveState::Fixed;
         
         camera.startChangingSize({410, 310}, 2., [](auto& camera){camera.m_view_size_state = Camera::SizeState::Fixed;}); });
 
@@ -293,18 +293,18 @@ void Game::startBossFight()
     // auto kill_task = std::make_shared<DestroyEntityTask>(boss, *m_font, messanger, &q);
     // q.addTask(kill_task);
 
-    auto& entities = m_world->getEntities();
-    for(auto obj : entities.data())
+    auto &entities = m_world->getEntities();
+    for (auto obj : entities.data())
     {
-        if(obj->getType() == ObjectType::Meteor)
+        if (obj->getType() == ObjectType::Meteor)
         {
             obj->kill();
         }
     }
-//    auto& quest_giver = createQuestGiver(m_quest_factory->create(QuestType::BossFight1));
-//    quest_giver.setPosition(m_player->getPosition() + utils::Vector2f{300, 0});
-//    auto& quest_giver = createQuestGiver(m_quest_factory->create(QuestType::BossFight2));
-//    quest_giver.setPosition(m_player->getPosition() + utils::Vector2f{0, 300});
+    //    auto& quest_giver = createQuestGiver(m_quest_factory->create(QuestType::BossFight1));
+    //    quest_giver.setPosition(m_player->getPosition() + utils::Vector2f{300, 0});
+    //    auto& quest_giver = createQuestGiver(m_quest_factory->create(QuestType::BossFight2));
+    //    quest_giver.setPosition(m_player->getPosition() + utils::Vector2f{0, 300});
 }
 
 void Game::startTimer()
@@ -313,8 +313,120 @@ void Game::startTimer()
 
 void Game::startSurvival()
 {
-    auto &quest_giver = createQuestGiver(m_quest_factory->create(QuestType::Survival1));
-    quest_giver.setPosition(m_player->getPosition() + Vec2{500, 0});
+
+    auto build_boundaryx = [this](utils::Vector2f start, utils::Vector2f finish, float width)
+    {
+        float length = utils::norm(finish - start);
+        utils::Vector2f dir = (finish - start) / length;
+        float angle = utils::dir2angle(dir);
+        utils::Vector2f center = (start + finish) / 2.f;
+
+        auto &wall_left = m_world->addObject3(ObjectType::Wall);
+        CollisionComponent c_comp_left;
+        c_comp_left.type = ObjectType::Wall;
+        c_comp_left.shape.convex_shapes = {4};
+
+        wall_left.setPosition(center);
+        wall_left.setAngle(angle);
+        wall_left.setSize({length, 20});
+        SpriteComponent s_compl = {.layer_id = "Bloom2", .shader_id = "fireEffect", .sprite = Sprite(*m_textures.get("FireNoise"))};
+        m_world->m_systems.addEntityDelayed(wall_left.getId(), c_comp_left, s_compl);
+    };
+    auto build_boundary = [this](utils::Vector2f start, utils::Vector2f finish, float width)
+    {
+        float length = utils::norm(finish - start);
+        utils::Vector2f dir = (finish - start) / length;
+        utils::Vector2f perp_dir = {dir.y, -dir.x};
+        float angle = utils::dir2angle(dir);
+        utils::Vector2f center_l = (start + finish) / 2.f - perp_dir * width / 2.f;
+        utils::Vector2f center_r = (start + finish) / 2.f + perp_dir * width / 2.f;
+
+        auto &wall_left = m_world->addObject3(ObjectType::Wall);
+        auto &wall_right = m_world->addObject3(ObjectType::Wall);
+
+        CollisionComponent c_comp_left;
+        CollisionComponent c_comp_right;
+        c_comp_left.type = ObjectType::Wall;
+        c_comp_right.type = ObjectType::Wall;
+
+        c_comp_left.shape.convex_shapes = {4};
+        c_comp_right.shape.convex_shapes = {4};
+
+        wall_right.setPosition(center_l);
+        wall_right.setAngle(angle);
+        wall_right.setSize({length, 20});
+        wall_left.setPosition(center_r);
+        wall_left.setAngle(angle);
+        wall_left.setSize({length, 20});
+
+        SpriteComponent s_compl = {.layer_id = "Unit", .shader_id = "fuelBar", .sprite = Sprite(*m_textures.get("FireNoise"))};
+        SpriteComponent s_compr = {.layer_id = "Unit", .shader_id = "fuelBar", .sprite = Sprite(*m_textures.get("FireNoise"))};
+
+        m_world->m_systems.addEntityDelayed(wall_right.getId(), c_comp_right, s_compr);
+        m_world->m_systems.addEntityDelayed(wall_left.getId(), c_comp_left, s_compl);
+    };
+
+    //! generate path
+    std::deque<utils::Vector2f> path = {m_player->getPosition() + utils::Vector2f{100, 0}};
+    int direction = 1;
+    path.push_back(m_player->getPosition() + utils::Vector2f{200, 0});
+    for (int i = 1; i < 200; ++i)
+    {
+        auto prev_point = path.at(i);
+        auto prev_dir = prev_point - path.at(i - 1);
+        float prev_angle = utils::dir2angle(prev_dir);
+        auto next_point = prev_point + utils::angle2dir(prev_angle + direction * randf(5, 10)) * 100.f;
+        // build_boundary(prev_point, next_point, 300.f);
+        path.push_back(next_point);
+        
+        if (randi(5) == 0)
+        {
+            direction *= -1;
+        }
+    }
+    
+    auto get_intersection = [](utils::Vector2f r0, utils::Vector2f v0, utils::Vector2f r1, utils::Vector2f v1)
+    {
+        utils::Vector2f dr = r0 - r1;
+        utils::Vector2f n0 = {v0.y, -v0.x};
+        float beta = utils::dot(dr, n0) / utils::dot(v1, n0);
+        return r1 + beta * v1;
+    } ;
+
+    float width = 100.f;
+    auto start_l = path.at(1) + utils::Vector2f{0, width};
+    auto start_r = path.at(1) - utils::Vector2f{0, width};
+    for (int i = 1; i < path.size() - 1; ++i)
+    {
+        auto prev_point = path.at(i-1);
+        auto curr_point = path.at(i);
+        auto next_point = path.at(i+1);
+        auto prev_dir = curr_point - prev_point;
+        auto next_dir = next_point - curr_point;
+        prev_dir /= utils::norm(prev_dir);
+        next_dir /= utils::norm(next_dir);
+        utils::Vector2f prev_perp_dir = {prev_dir.y, -prev_dir.x};
+        utils::Vector2f next_perp_dir = {next_dir.y, -next_dir.x};
+        
+        utils::Vector2f end_l = get_intersection(start_l, prev_dir, curr_point, next_perp_dir); 
+        utils::Vector2f end_r = get_intersection(start_r, prev_dir, curr_point, next_perp_dir); 
+        build_boundaryx(start_l, end_l, 300.f);
+        build_boundaryx(start_r, end_r, 300.f);
+        start_l = end_l;
+        start_r = end_r;
+    }
+
+
+    m_timers.addInfiniteEvent(1.f, [this](float t, int c)
+                              {
+        m_enemy_factory->create2(EnemyType::ShooterEnemy, m_player->getPosition() + utils::Vector2f{-100.f, 0.f});
+        m_enemy_factory->create2(EnemyType::EnergyShooter, m_player->getPosition() + utils::Vector2f{-100.f, 0.f}); });
+    m_timers.addInfiniteEvent(3.f, [this](float t, int c)
+                              { m_enemy_factory->create2(EnemyType::LaserEnemy, m_player->getPosition() + utils::Vector2f{+100.f, 0.f}); });
+    m_camera.setSpeed(75);
+    m_camera.startFollowingPath(path, 1.f);
+    // auto &quest_giver = createQuestGiver(m_quest_factory->create(QuestType::Survival1));
+    // quest_giver.setPosition(m_player->getPosition() + Vec2{500, 0});
 }
 void Game::startTimeRace()
 {
@@ -451,18 +563,18 @@ void Game::handleEvent(const SDL_Event &event)
         auto dir = utils::angle2dir(m_player->getAngle());
         if (event.key.keysym.sym == SDL_KeyCode::SDLK_r)
         {
-            if(!m_player->shield_active)
+            if (!m_player->shield_active)
             {
                 m_player->activateShield();
             }
         }
         if (event.key.keysym.sym == m_key_binding[PlayerControl::SHOOT_LASER])
         {
-            auto& bullet = m_bullet_factory->create2(ProjectileType::Rocket, m_player->getPosition(), ColorByte{});
+            auto &bullet = m_bullet_factory->create2(ProjectileType::Rocket, m_player->getPosition(), ColorByte{});
             bullet.m_max_vel = m_player->speed;
             bullet.m_vel = utils::angle2dir(m_player->getAngle()) * bullet.m_max_vel;
             bullet.setAngle(utils::dir2angle(bullet.m_vel));
-            bullet.m_collision_resolvers[ObjectType::Player] = [](auto& obj, auto& c_data)
+            bullet.m_collision_resolvers[ObjectType::Player] = [](auto &obj, auto &c_data)
             {
                 return;
             };
@@ -599,7 +711,7 @@ void Game::draw(Renderer &window)
     Sprite fire_sprite(*m_textures.get("FireNoise"));
     fire_sprite.setPosition(m_player->getPosition());
     fire_sprite.setScale(utils::Vector2f{m_player->getSize().x});
-    test_canvas.drawSprite(fire_sprite, "fireEffect");
+    test_canvas.drawSprite(fire_sprite, "fireShield");
 
     //! clear and draw into scene
     // m_scene_canvas.clear({0, 0, 0, 0});
@@ -710,7 +822,7 @@ void Game::registerSystems()
     systems.registerSystem(std::make_shared<SpriteSystem>(systems.getComponents<SpriteComponent>(),
                                                           m_layers));
     systems.registerSystem(std::make_shared<ParticleSystem>(systems.getComponents<ParticleComponent>(),
-                                                          m_layers));
+                                                            m_layers));
 
     std::filesystem::path animation_directory = {RESOURCES_DIR};
     animation_directory /= "Textures/Animations/";

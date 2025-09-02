@@ -3,8 +3,10 @@
 #include "View.h"
 
 #include "Utils/Vector2.h"
+#include <queue>
 
 struct PlayerEntity;
+class PostOffice;
 
 struct Camera
 {
@@ -13,6 +15,7 @@ struct Camera
     FollowingPlayer,
     Fixed,
     MovingToPosition,
+    FollowingPath,
   };
   enum class SizeState
   {
@@ -21,27 +24,25 @@ struct Camera
     Resizing,
   };
 
-  Camera(utils::Vector2f center, utils::Vector2f size)
-  {
-    m_view.setCenter(center);
-    m_view.setSize(size);
-    m_default_view = m_view;
-  }
+  Camera(utils::Vector2f center, utils::Vector2f size, PostOffice &messanger);
 
   void update(float dt, PlayerEntity *player);
   void startMovingTo(utils::Vector2f target, float duration, std::function<void(Camera &)> callback = [](Camera &) {});
   void setPostition(utils::Vector2f pos);
   void setSize(utils::Vector2f size);
+  void setSpeed(float speed);
+  void startFollowingPath(std::deque<utils::Vector2f> path, float duration, std::function<void(Camera&)> callback = [](Camera&){});
+  void followPath(float dt);
   void startChangingSize(utils::Vector2f size, float duration, std::function<void(Camera &)> callback = [](Camera &) {});
   View getView() const;
 
 private:
-  void moveToTarget(float dt);
+  bool moveToTarget(float dt);
   void resizeToTarget(float dt);
   void followPlayer(float dt, PlayerEntity *p_player);
 
 public:
-  MoveState m_view_state = MoveState::FollowingPlayer;
+  MoveState m_move_state = MoveState::FollowingPlayer;
   SizeState m_view_size_state = SizeState::FollowingPlayer;
 
 private:
@@ -59,5 +60,10 @@ private:
   View m_default_view;
   View m_view;
 
+  PostOffice& m_messanger;
+
   std::function<void(Camera &)> m_on_reaching_target_callback = [](Camera &) {};
+
+
+  std::deque<utils::Vector2f> m_path;
 };
