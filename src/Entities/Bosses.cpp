@@ -112,7 +112,7 @@ void Boss1::onCreation()
     auto shoot_laser_at = [this](utils::Vector2f pos, utils::Vector2f target,
                                  utils::Vector2f offset, float width)
     {
-        auto &laser = m_laser_factory.create2(LaserType::Basic, pos, {255, 10, 23});
+        auto &laser = static_cast<Laser&>(m_laser_factory.create2(LaserType::Basic, pos, {255, 10, 23}));
         laser.setAngle(utils::dir2angle(target - pos - offset));
         addChild(&laser);
 
@@ -333,6 +333,7 @@ Boss2::Boss2(GameWorld *world, TextureHolder &textures, PlayerEntity *player)
       m_projectile_factory(*world, textures),
       m_laser_factory(*world, textures),
       m_enemy_factory(*world, textures),
+      m_meteor_factory(*world, textures),
       GameObject(world, textures, ObjectType::Boss)
 {
     m_size = {230 / 2, 390 / 2};
@@ -433,7 +434,7 @@ void Boss2::onCreation()
     auto shoot_laser_at = [this](utils::Vector2f pos, utils::Vector2f target,
                                  utils::Vector2f offset, float width)
     {
-        auto &laser = m_laser_factory.create2(LaserType::Basic, pos, {255, 10, 23});
+        auto &laser = static_cast<Laser&>(m_laser_factory.create2(LaserType::Basic, {100.f,0.f}, {255, 10, 23}));
         // laser.setAngle(utils::dir2angle(target - pos - offset));
         addChild(&laser);
 
@@ -447,7 +448,7 @@ void Boss2::onCreation()
 
     auto shoot_meteor_at = [this](utils::Vector2f target, utils::Vector2f from, float speed, float size)
     {
-        auto &meteor = m_world->addObject2<Meteor>();
+        auto &meteor = m_meteor_factory.create2(MeteorType::Hard, from);
         meteor.setPosition(from);
         meteor.setSize(size);
         meteor.m_max_vel = speed;

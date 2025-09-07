@@ -60,6 +60,8 @@ private:
   View m_default_view;
   View m_view;
 
+  bool m_player_near_edge = false;
+
   PostOffice& m_messanger;
 
   std::function<void(Camera &)> m_on_reaching_target_callback = [](Camera &) {};

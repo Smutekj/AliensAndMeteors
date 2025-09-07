@@ -221,9 +221,10 @@ Laser::~Laser()
 void Laser::stopAgainst(ObjectType type)
 {
     auto dir = utils::angle2dir(m_angle);
-    auto hit = m_world->getCollisionSystem().findClosestIntesection(type, m_pos, utils::angle2dir(m_angle), m_length);
+    auto start_pos = getPosition() - dir * m_length/2.f;
+    auto hit = m_world->getCollisionSystem().findClosestIntesection(type, start_pos, dir, m_length);
 
-    m_length = dist(hit, m_pos);
+    m_length = dist(hit, start_pos);
     setSize({m_length, m_width});
     //! m_pos of laser is special, it is starting position not center so we set it manually
     // setPosition(m_pos + m_length / 2.f * utils::angle2dir(m_angle));
@@ -247,8 +248,9 @@ void Laser::update(float dt)
         {
             m_angle = m_parent->getAngle();
         }
-        m_pos = m_parent->getPosition() + m_offset + utils::angle2dir(m_angle) * m_length / 2.;
+        // m_pos = m_parent->getPosition() + m_offset + utils::angle2dir(m_angle) * m_length / 2.;
     }
+    m_pos.x = m_length / 2.f;
     setSize({m_length, m_width});
 
     if (m_time > m_life_time)
@@ -281,8 +283,8 @@ void Laser::onDestruction()
 void Laser::draw(LayersHolder &layers)
 {
 
-    auto &shiny_target = layers.getCanvas("Bloom");
-    auto &target = layers.getCanvas("Bloom");
+    auto &shiny_target = layers.getCanvas("Bloom2");
+    auto &target = layers.getCanvas("Bloom2");
 
     Sprite rect;
     rect.setTexture(*m_textures->get("BoosterPurple"));

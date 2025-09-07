@@ -19,10 +19,10 @@ public:
     virtual void draw(LayersHolder &target) override;
     virtual void onCollisionWith(GameObject &obj, CollisionData &c_data) override;
 
+    void initializeRandomMeteor(float radius);
     public:
     utils::Vector2f m_impulse_vel = {0.f};
 private:
-    void initializeRandomMeteor();
 
     Polygon generateRandomConvexPolygon(int n) const;
 

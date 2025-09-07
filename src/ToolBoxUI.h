@@ -11,11 +11,13 @@
 #include <queue>
 
 class GameWorld;
+class Game;
+class PlayerEntity;
 
 class ToolBoxUI
 {
 public:
-        ToolBoxUI(Window &window, TextureHolder &textures);
+        ToolBoxUI(Window &window, TextureHolder &textures, Game* p_game);
         ~ToolBoxUI();
         
         void draw();
@@ -25,18 +27,20 @@ public:
 
 private:
         void drawEntityDesigner();
+        void drawPlayer();
 
         void redrawImage();
 
         bool isInImage(ImVec2 point);
 
 private:
+        PlayerEntity* p_player = nullptr;
         GameWorld *p_world = nullptr;
+        Game* p_game = nullptr;
         bool show_demo_window = true;
 
         bool m_selecting_texture = false;
 
-        
         int m_selected_tex_id = -1;
         std::string m_selected_texture_name = "";
         std::vector<std::filesystem::path> m_texture_paths; 

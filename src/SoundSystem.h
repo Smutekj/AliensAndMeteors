@@ -19,6 +19,8 @@ enum class SoundID
     Rocket2,
     Rocket3,
     Rocket4,
+    SpeedDown,
+    SpeedUp,
 };
 enum class MusicID
 {

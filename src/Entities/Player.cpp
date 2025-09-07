@@ -11,6 +11,8 @@ PlayerEntity::PlayerEntity(GameWorld *world, TextureHolder &textures, PlayerEnti
     : GameObject(world, textures, ObjectType::Player, player)
 {
     meteor_detector.points = {{0., 0.}, {1., -0.7}, {1., 0.7}};
+    m_max_acc = 35.f;
+    m_max_vel = 70.f;
 }
 
 void PlayerEntity::update(float dt)
@@ -44,9 +46,26 @@ void PlayerEntity::update(float dt)
         }
     }
 
+    
     bool is_boosting = booster == BoosterState::Boosting;
-    auto acc = acceleration + 2 * acceleration * is_boosting;
+    
+    float max_vel = (m_max_vel + is_boosting*(m_boost_max_speed - m_max_vel) )* (1.f - (m_shocked) * 0.5f);                 //! if shocked max speed is halved
+    
+    bool below_max_speed = (speed <= max_vel);
+    acceleration = (m_accelerating && below_max_speed) * m_max_acc - m_deccelerating * m_max_acc;
+    auto acc = acceleration + m_boost_factor * acceleration * is_boosting;
+    
     speed += acc * dt;
+
+    if (speed > max_vel)
+    {
+        speed -= (speed - max_vel) * m_slow_factor * dt;
+    }
+    // if (is_boosting&& speed > m_boost_max_speed)
+    // {
+    //     speed -= speed * 0.5 * m_slow_boost_factor * dt;
+    // }
+
     m_vel = (speed)*utils::angle2dir(m_angle);
     // utilss::truncate(m_vel, (!is_boosting) * max_speed + is_boosting * boost_max_speed);
     if (m_deactivated_time > 0)
@@ -57,19 +76,6 @@ void PlayerEntity::update(float dt)
     }
     m_pos += m_vel * dt;
     //! speed fallout
-    if (booster != BoosterState::Boosting && speed > max_speed)
-    {
-        speed -= speed * 1.1 * slowing_factor * dt;
-    }
-    if (booster == BoosterState::Boosting && speed > boost_max_speed)
-    {
-        speed -= speed * 0.5 * slowing_factor * dt;
-    }
-    else
-    {
-        // speed -=  10. * slowing_factor * dt;
-        // speed = std::max(0.f, speed);
-    }
 
     m_particles_left->setSpawnPos(m_pos - m_size.x / 2. * utils::angle2dir(m_angle + 40));
     m_particles_left->update(dt);
@@ -83,13 +89,6 @@ void PlayerEntity::onCollisionWith(GameObject &obj, CollisionData &c_data)
     {
     case ObjectType::Meteor:
     {
-        auto mvt = c_data.separation_axis;
-        if (dot(mvt, m_vel) > 0.f)
-        {
-            m_vel -= 2.f * dot(mvt, m_vel) * mvt;
-            m_angle = utils::dir2angle(m_vel);
-            health -= 1;
-        }
         break;
     }
     case ObjectType::Explosion:
@@ -176,21 +175,25 @@ void PlayerEntity::activateShield()
     {
         //! bounce the meteor away
         utils::Vector2f rel_vel = shield_obj.m_parent->m_vel - meteor.m_vel;
-        if(utils::dot(rel_vel, c_data.separation_axis) > 0.f) //! if moving into meteor
+        if (utils::dot(rel_vel, c_data.separation_axis) > 0.f) //! if moving into meteor
         {
-            static_cast<Meteor&>(meteor).m_impulse_vel = 2. * c_data.separation_axis * utils::norm(shield_obj.m_parent->m_vel);
+            static_cast<Meteor &>(meteor).m_impulse_vel = 2. * c_data.separation_axis * utils::norm(shield_obj.m_parent->m_vel);
         }
     };
-    
+
     m_shield_id = shield_obj.getId();
 
     TimedEventComponent time_comp;
-    time_comp.addEvent({0.1f, [this](float t, int n){
-        shield_timeleft = shield_lifetime - t;
-    }, (int)(shield_lifetime  / 0.1f)});
-    time_comp.addEvent({shield_lifetime, [this](float t, int n){
-        deactivateShield();
-    },1});
+    time_comp.addEvent({0.1f, [this](float t, int n)
+                        {
+                            shield_timeleft = shield_lifetime - t;
+                        },
+                        (int)(shield_lifetime / 0.1f)});
+    time_comp.addEvent({shield_lifetime, [this](float t, int n)
+                        {
+                            deactivateShield();
+                        },
+                        1});
 
     m_world->m_systems.addEntityDelayed(shield_obj.getId(), shield_comp, time_comp);
     shield_active = true;
@@ -198,7 +201,7 @@ void PlayerEntity::activateShield()
 
 void PlayerEntity::deactivateShield()
 {
-    if(m_shield_id != -1)
+    if (m_shield_id != -1)
     {
         shield_active = false;
         m_world->get(m_shield_id)->kill();

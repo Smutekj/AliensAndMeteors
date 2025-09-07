@@ -30,6 +30,8 @@ void Game::initializeSounds()
     SoundSystem::registerSound(SoundID::Rocket2, sounds_path / "Rockets/Rocket_2.wav");
     SoundSystem::registerSound(SoundID::Rocket3, sounds_path / "Rockets/Rocket_3.wav");
     SoundSystem::registerSound(SoundID::Rocket4, sounds_path / "Rockets/Rocket_4.wav");
+    SoundSystem::registerSound(SoundID::SpeedUp, sounds_path / "SpeedGate.wav");
+    SoundSystem::registerSound(SoundID::SpeedDown, sounds_path / "SlowGate.wav");
 };
 void Game::initializeLayersAndTextures()
 {
@@ -68,7 +70,7 @@ void Game::initializeLayersAndTextures()
     shiny_layer.m_canvas.setShadersPath(shaders_directory);
     shiny_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
     shiny_layer.addEffect(std::make_unique<Bloom>(width / 2, height / 2));
-    auto &laser_layer = m_layers.addLayer("Bloom2",5, options, width, height);
+    auto &laser_layer = m_layers.addLayer("Bloom2", 5, options, width, height);
     laser_layer.m_canvas.setShadersPath(shaders_directory);
     laser_layer.m_canvas.addShader("Instanced", "basicinstanced.vert", "texture.frag");
     laser_layer.addEffect(std::make_unique<BloomFinal>(width, height));
@@ -132,7 +134,7 @@ Game::Game(Renderer &window, KeyBindings &bindings)
       m_scene_pixels(window.getTargetSize().x, window.getTargetSize().y),
       m_scene_canvas(m_scene_pixels),
       m_camera(PLAYER_START_POS, {START_VIEW_SIZE, START_VIEW_SIZE * window.getTargetSize().y / window.getTargetSize().x}, messanger),
-      m_ui(static_cast<Window &>(window.getTarget()), m_textures)
+      m_ui(static_cast<Window &>(window.getTarget()), m_textures, this)
 {
     messanger.registerEvents<EntityDiedEvent,
                              QuestCompletedEvent,
@@ -156,6 +158,7 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     m_ui_system = std::make_unique<UISystem>(window, m_textures, messanger, m_player, *m_font, *m_world);
     m_ui.initWorld(*m_world);
 
+    m_wall_factory = std::make_unique<WallFactory>(*m_world, m_textures);
     m_enemy_factory = std::make_unique<EnemyFactory>(*m_world, m_textures);
     m_pickup_factory = std::make_unique<PickupFactory>(*m_world, m_textures);
     m_laser_factory = std::make_unique<LaserFactory>(*m_world, m_textures);
@@ -170,9 +173,10 @@ Game::Game(Renderer &window, KeyBindings &bindings)
 
     for (int i = 0; i < 300; ++i)
     {
-        auto &meteor = m_world->addObject2<Meteor>();
-        auto spawn_pos = m_player->getPosition() + randf(200, 3000) * angle2dir(randf(0, 360));
-        meteor.setPosition(spawn_pos);
+        // auto &meteor = m_world->addObject2<Meteor>();
+        // meteor.initializeRandomMeteor(randf(5.f, 10.f));
+        // auto spawn_pos = m_player->getPosition() + randf(200, 3000) * angle2dir(randf(0, 360));
+        // meteor.setPosition(spawn_pos);
     }
     for (int i = 0; i < 0; ++i)
     {
@@ -187,13 +191,11 @@ Game::Game(Renderer &window, KeyBindings &bindings)
     // spawnNextObjective();
     // addDestroyNObjective(ObjectType::SpaceStation, 2);
 
-    auto &heart_spawner = m_world->addTrigger<Timer>();
-    heart_spawner.setCallback(
-        [this]()
-        {
-            auto spawn_pos = m_player->getPosition() + randf(20, 200) * angle2dir(randf(0, 360));
-            auto &heart = m_pickup_factory->create2(Pickup::Shield, spawn_pos);
-        });
+    // auto &heart_spawner = m_world->addTrigger<Timer>();
+    // m_timers.addInfiniteEvent(0.5f, [this](float t, int c)
+    //                           {
+    //     auto spawn_pos = m_player->getPosition() + randf(20, 200) * angle2dir(randf(0, 360));
+    //     auto &heart = m_pickup_factory->create2(Pickup::Boost, spawn_pos); });
 
     // auto &enemy_spawner = m_world->addTrigger<Timer>();
     // enemy_spawner.m_cooldown = 5.f;
@@ -332,6 +334,7 @@ void Game::startSurvival()
         SpriteComponent s_compl = {.layer_id = "Bloom2", .shader_id = "fireEffect", .sprite = Sprite(*m_textures.get("FireNoise"))};
         m_world->m_systems.addEntityDelayed(wall_left.getId(), c_comp_left, s_compl);
     };
+
     auto build_boundary = [this](utils::Vector2f start, utils::Vector2f finish, float width)
     {
         float length = utils::norm(finish - start);
@@ -375,56 +378,109 @@ void Game::startSurvival()
         auto prev_point = path.at(i);
         auto prev_dir = prev_point - path.at(i - 1);
         float prev_angle = utils::dir2angle(prev_dir);
-        auto next_point = prev_point + utils::angle2dir(prev_angle + direction * randf(5, 10)) * 100.f;
+        float next_angle = prev_angle + direction * randf(5, 10);
+        auto next_point = prev_point + utils::angle2dir(next_angle) * 100.f;
         // build_boundary(prev_point, next_point, 300.f);
         path.push_back(next_point);
-        
-        if (randi(5) == 0)
+
+        if (randi(5) == 0 || std::abs(next_angle) > 25)
         {
             direction *= -1;
         }
     }
-    
+
     auto get_intersection = [](utils::Vector2f r0, utils::Vector2f v0, utils::Vector2f r1, utils::Vector2f v1)
     {
         utils::Vector2f dr = r0 - r1;
         utils::Vector2f n0 = {v0.y, -v0.x};
         float beta = utils::dot(dr, n0) / utils::dot(v1, n0);
         return r1 + beta * v1;
-    } ;
+    };
 
     float width = 100.f;
     auto start_l = path.at(1) + utils::Vector2f{0, width};
     auto start_r = path.at(1) - utils::Vector2f{0, width};
     for (int i = 1; i < path.size() - 1; ++i)
     {
-        auto prev_point = path.at(i-1);
+        auto prev_point = path.at(i - 1);
         auto curr_point = path.at(i);
-        auto next_point = path.at(i+1);
+        auto next_point = path.at(i + 1);
         auto prev_dir = curr_point - prev_point;
         auto next_dir = next_point - curr_point;
         prev_dir /= utils::norm(prev_dir);
         next_dir /= utils::norm(next_dir);
         utils::Vector2f prev_perp_dir = {prev_dir.y, -prev_dir.x};
         utils::Vector2f next_perp_dir = {next_dir.y, -next_dir.x};
-        
-        utils::Vector2f end_l = get_intersection(start_l, prev_dir, curr_point, next_perp_dir); 
-        utils::Vector2f end_r = get_intersection(start_r, prev_dir, curr_point, next_perp_dir); 
+
+        utils::Vector2f end_l = start_l + prev_dir * 100.f; // get_intersection(start_l, prev_dir, curr_point, next_perp_dir);
+        utils::Vector2f end_r = start_r + prev_dir * 100.f; // get_intersection(start_r, prev_dir, curr_point, next_perp_dir);
         build_boundaryx(start_l, end_l, 300.f);
         build_boundaryx(start_r, end_r, 300.f);
         start_l = end_l;
         start_r = end_r;
+        if (rand() % 10 == 0)
+        {
+            auto &wall = m_wall_factory->create2(WallType::ElectroWall, curr_point, utils::dir2angle(prev_perp_dir), {width / 4.f, 10.f});
+        }
+        if (rand() % 10 == 0)
+        {
+            auto &wall = m_wall_factory->create2(WallType::SpeedWall, curr_point, utils::dir2angle(prev_perp_dir), {width / 4.f, 10.f});
+        }
     }
 
+    // m_timers.addInfiniteEvent(1.f, [this](float t, int c)
+    //                           {
+    //     m_enemy_factory->create2(EnemyType::ShooterEnemy, m_player->getPosition() + utils::Vector2f{-100.f, 0.f});
+    //     m_enemy_factory->create2(EnemyType::EnergyShooter, m_player->getPosition() + utils::Vector2f{-100.f, 0.f}); });
+    // m_timers.addInfiniteEvent(3.f, [this](float t, int c)
+    //                           { m_enemy_factory->create2(EnemyType::LaserEnemy, m_player->getPosition() + utils::Vector2f{+100.f, 0.f}); });
 
-    m_timers.addInfiniteEvent(1.f, [this](float t, int c)
-                              {
-        m_enemy_factory->create2(EnemyType::ShooterEnemy, m_player->getPosition() + utils::Vector2f{-100.f, 0.f});
-        m_enemy_factory->create2(EnemyType::EnergyShooter, m_player->getPosition() + utils::Vector2f{-100.f, 0.f}); });
-    m_timers.addInfiniteEvent(3.f, [this](float t, int c)
-                              { m_enemy_factory->create2(EnemyType::LaserEnemy, m_player->getPosition() + utils::Vector2f{+100.f, 0.f}); });
     m_camera.setSpeed(75);
-    m_camera.startFollowingPath(path, 1.f);
+
+    GameLevel level_one(*m_world, m_textures);
+
+    auto pos_generator_behind_player = [this]() -> utils::Vector2f
+    {
+        auto ppos = m_player->getPosition();
+        auto camera_pos = m_camera.getView().getCenter();
+        auto camera_size = m_camera.getView().getSize();
+        return utils::Vector2f{ppos.x - camera_size.x / 3.f, camera_pos.y};
+    };
+    auto pos_generator_front = [this]() -> utils::Vector2f
+    {
+        auto ppos = m_player->getPosition();
+        auto camera_pos = m_camera.getView().getCenter();
+        auto camera_size = m_camera.getView().getSize();
+        return utils::Vector2f{ppos.x + camera_size.x, camera_pos.y};
+    };
+    EnemySpec en_spec = {.avg_hp = 10.f, .avg_speed = 90.f, .avg_acc = 100.f, .avg_shoot_cd = 2.f};
+    auto spawner1 = std::make_shared<EnemySpawner>(*m_world, m_textures, EnemyType::ShooterEnemy,
+                                                   en_spec, pos_generator_behind_player, 2.f);
+    auto spawner2 = std::make_shared<PickupSpawner>(*m_world, m_textures, Pickup::Boost,
+                                                    pos_generator_front, 0.5f);
+    level_one.m_spawners.emplace_back(spawner1);
+    level_one.m_spawners.emplace_back(spawner2);
+    level_one.m_spawners.emplace_back(std::make_shared<MeteorSpawner>(*m_world, m_textures, MeteorType::Soft,
+                                                                      pos_generator_front, 0.5f));
+
+    m_levels.emplace_back(level_one);
+    en_spec.avg_speed += 10.f;
+    GameLevel level_two(*m_world, m_textures);
+    level_two.m_spawners.emplace_back(std::make_shared<EnemySpawner>(*m_world, m_textures, EnemyType::ShooterEnemy,
+                                                                     en_spec, pos_generator_behind_player, 1.f));
+    level_two.m_spawners.emplace_back(std::make_shared<EnemySpawner>(*m_world, m_textures, EnemyType::LaserEnemy,
+                                                                     en_spec, pos_generator_behind_player, 3.f));
+    level_two.m_spawners.emplace_back(std::make_shared<PickupSpawner>(*m_world, m_textures, Pickup::Boost,
+                                                                      pos_generator_front, 1.f));
+    level_two.m_spawners.emplace_back(std::make_shared<PickupSpawner>(*m_world, m_textures, Pickup::Heart,
+                                                                      pos_generator_front, 1.f));
+    level_two.m_spawners.emplace_back(std::make_shared<PickupSpawner>(*m_world, m_textures, Pickup::Fuel,
+                                                                      pos_generator_front, 1.f));
+
+    m_levels.emplace_back(level_two);
+
+    m_timers.addTimedEvent(30.f, [this](float t, int c)
+                           { m_levels.pop_front(); });
     // auto &quest_giver = createQuestGiver(m_quest_factory->create(QuestType::Survival1));
     // quest_giver.setPosition(m_player->getPosition() + Vec2{500, 0});
 }
@@ -570,24 +626,24 @@ void Game::handleEvent(const SDL_Event &event)
         }
         if (event.key.keysym.sym == m_key_binding[PlayerControl::SHOOT_LASER])
         {
-            auto &bullet = m_bullet_factory->create2(ProjectileType::Rocket, m_player->getPosition(), ColorByte{});
-            bullet.m_max_vel = m_player->speed;
-            bullet.m_vel = utils::angle2dir(m_player->getAngle()) * bullet.m_max_vel;
-            bullet.setAngle(utils::dir2angle(bullet.m_vel));
-            bullet.m_collision_resolvers[ObjectType::Player] = [](auto &obj, auto &c_data)
-            {
-                return;
-            };
-            // auto &laser = m_laser_factory->create2(LaserType::Basic, m_player->getPosition(), {0, 125, 255, 255});
-            // m_player->addChild(&laser);
-            // laser.m_stopping_types.push_back(ObjectType::Shield);
-            // laser.m_stopping_types.push_back(ObjectType::Boss);
-            // laser.m_rotates_with_owner = true;
-            // laser.m_max_dmg = 0.2;
-            // laser.m_life_time = 3.;
-            // laser.m_max_length = 400.;
-            // m_player->m_is_shooting_laser = true;
-            // m_player->m_laser_timer = laser.m_life_time;
+            // auto &bullet = m_bullet_factory->create2(ProjectileType::Rocket, m_player->getPosition(), ColorByte{});
+            // bullet.m_max_vel = m_player->speed + 200.f;
+            // bullet.m_vel = utils::angle2dir(m_player->getAngle()) * bullet.m_max_vel;
+            // bullet.setAngle(utils::dir2angle(bullet.m_vel));
+            // bullet.m_collision_resolvers[ObjectType::Player] = [](auto &obj, auto &c_data)
+            // {
+            //     return;
+            // };
+            auto &laser = static_cast<Laser&>(m_laser_factory->create2(LaserType::Basic, {0.f, 0.f}, {0, 125, 255, 255}));
+            m_player->addChild(&laser);
+            laser.m_stopping_types.push_back(ObjectType::Shield);
+            laser.m_stopping_types.push_back(ObjectType::Boss);
+            laser.m_rotates_with_owner = true;
+            laser.m_max_dmg = 0.2;
+            laser.m_life_time = 3.;
+            laser.m_max_length = 400.;
+            m_player->m_is_shooting_laser = true;
+            m_player->m_laser_timer = laser.m_life_time;
         }
         if (event.key.keysym.sym == m_key_binding[PlayerControl::THROW_BOMB])
         {
@@ -625,7 +681,7 @@ void Game::handleEvent(const SDL_Event &event)
         }
         else if (event.button.button == SDL_BUTTON_LEFT)
         {
-            startSurvival();
+            // startSurvival();
             // startTimeRace();
             // startBossFight();
         }
@@ -650,19 +706,8 @@ void Game::handleEvent(const SDL_Event &event)
 //! \note  right now this is just a placeholder code until I make a nice OOP solution with bindings and stuff
 void Game::parseInput(Renderer &window, float dt)
 {
-
-    if (isKeyPressed(m_key_binding[PlayerControl::MOVE_FORWARD]))
-    {
-        m_player->acceleration = 15.f;
-    }
-    else if (isKeyPressed(m_key_binding[PlayerControl::MOVE_BACK]))
-    {
-        m_player->acceleration = -35.f;
-    }
-    else
-    {
-        m_player->acceleration = 0.;
-    }
+    m_player->m_accelerating = isKeyPressed(m_key_binding[PlayerControl::MOVE_FORWARD]);
+    m_player->m_deccelerating = isKeyPressed(m_key_binding[PlayerControl::MOVE_BACK]);
 }
 
 void Game::update(const float dt, Renderer &window)
@@ -674,6 +719,10 @@ void Game::update(const float dt, Renderer &window)
     parseInput(window, dt);
 
     m_world->update(dt);
+    if (!m_levels.empty())
+    {
+        m_levels.front().update(dt);
+    }
 
     m_timers.update(dt);
 
@@ -773,6 +822,7 @@ void Game::registerCollisions()
                                 {
                                     obj1.m_vel -= 2.f * dot(mvt, obj1.m_vel) * mvt;
                                 } });
+
     colllider.registerResolver(ObjectType::Player, ObjectType::Wall, [](GameObject &obj1, GameObject &obj2, CollisionData c_data)
                                { 
                                 //! bounce meteor off the wall
@@ -780,9 +830,11 @@ void Game::registerCollisions()
                                 if (dot(mvt, obj1.m_vel) < 0.f)
                                 {
                                     obj1.m_vel -= 2.f * dot(mvt, obj1.m_vel) * mvt;
+                                    static_cast<PlayerEntity&>(obj1).speed *= 0.9f; 
                                     obj1.setAngle(utils::dir2angle(obj1.m_vel));
 
                                 } });
+    colllider.registerResolver(ObjectType::Player, ObjectType::EMP);
 
     colllider.registerResolver(ObjectType::Shield, ObjectType::Meteor);
     colllider.registerResolver(ObjectType::Shield, ObjectType::Bullet);

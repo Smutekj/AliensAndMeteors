@@ -44,6 +44,7 @@ public:
     void onBoostDown();
     void onBoostUp();
 
+
 private:
     void fixAngle();
     void boost(float dt);
@@ -51,9 +52,8 @@ private:
     
 public:
     float speed = 0.f;
-    float boost_max_speed = 150.f;
-    float max_speed = 100.f;
     BoosterState booster = BoosterState::Ready;
+    bool m_shocked = false;
 
     int m_money = 100;
 
@@ -63,10 +63,17 @@ public:
     bool m_is_turning_left = false;
     bool m_is_turning_right = false;
 
-    float boost_factor = 2.6f;
-    float slowing_factor = 0.3f;
+    bool m_passed_speed_gate = false;
+    bool m_accelerating = false;
+    bool m_deccelerating = false;
+
+    float m_boost_max_speed = 150.f;
+    float m_boost_factor = 2.f;
+    float m_slow_boost_factor = 0.3f;
+    float m_slow_factor = 1.5f;
     float acceleration = 1.5f;
-    float m_angle_vel = 270.69f;
+
+    float m_angle_vel = 180.69f;
 
     float m_max_fuel = 100.;
     float m_fuel = 100.;

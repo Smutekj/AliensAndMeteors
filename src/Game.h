@@ -1,5 +1,4 @@
-#ifndef BOIDS_GAME_H
-#define BOIDS_GAME_H
+#pragma once
 
 #include "Commands.h"
 #include "GameWorld.h"
@@ -16,8 +15,126 @@
 #include "ToolBoxUI.h"
 #include "QuestFactory.h"
 
-
 class GameWorld;
+
+class Spawner
+{
+public:
+  Spawner(std::function<utils::Vector2f()> pos_generator) : m_pos_generator(pos_generator) {}
+
+  virtual ~Spawner() = default;
+  virtual void update(float dt) = 0;
+
+protected:
+  TimedEventManager m_events;
+  std::function<utils::Vector2f()> m_pos_generator;
+};
+
+class EnemySpawner : public Spawner
+{
+
+public:
+  EnemySpawner(GameWorld &world, TextureHolder &textures, EnemyType type,
+               EnemySpec spec, std::function<utils::Vector2f()> pos_generator, float interval)
+      : Spawner(pos_generator), m_type(type), m_spawner(world, textures)
+  {
+    m_events.addInfiniteEvent(interval, [this, spec, pos_generator](float t, int c)
+                              {
+                                auto &obj = m_spawner.create2(m_type, pos_generator(), spec);
+                                m_spawned_ids.push_back(obj.getId());
+                              });
+  }
+
+  virtual ~EnemySpawner() override = default;
+  EnemySpawner(const EnemySpawner &other) = default;
+  EnemySpawner(EnemySpawner &&other) = default;
+  EnemySpawner &operator=(const EnemySpawner &other) = default;
+  EnemySpawner &operator=(EnemySpawner &&other) = default;
+
+  virtual void update(float dt) override
+  {
+    m_events.update(dt);
+  };
+
+private:
+  EnemyType m_type;
+  std::vector<std::size_t> m_spawned_ids;
+  EnemyFactory2 m_spawner;
+};
+
+class PickupSpawner : public Spawner
+{
+
+public:
+  PickupSpawner(GameWorld &world, TextureHolder &textures, Pickup type,
+                std::function<utils::Vector2f()> pos_generator, float interval)
+      : Spawner(pos_generator), m_type(type), m_spawner(world, textures) 
+  {
+    m_events.addInfiniteEvent(interval, [this, pos_generator](float t, int c)
+                              { m_spawner.create2(m_type, pos_generator()); });
+  }
+
+  virtual ~PickupSpawner() override = default;
+  PickupSpawner(const PickupSpawner &other) = default;
+  PickupSpawner(PickupSpawner &&other) = default;
+  PickupSpawner &operator=(const PickupSpawner &other) = default;
+  PickupSpawner &operator=(PickupSpawner &&other) = default;
+
+  virtual void update(float dt) override
+  {
+    m_events.update(dt);
+  };
+
+private:
+  Pickup m_type;
+
+  PickupFactory m_spawner;
+};
+class MeteorSpawner : public Spawner
+{
+
+public:
+MeteorSpawner(GameWorld &world, TextureHolder &textures, MeteorType type,
+                std::function<utils::Vector2f()> pos_generator, float interval)
+      : Spawner(pos_generator), m_type(type), m_spawner(world, textures) 
+  {
+    m_events.addInfiniteEvent(interval, [this, pos_generator](float t, int c)
+                              { m_spawner.create2(m_type, pos_generator()); });
+  }
+
+  virtual ~MeteorSpawner() override = default;
+
+  virtual void update(float dt) override
+  {
+    m_events.update(dt);
+  };
+
+private:
+  MeteorType m_type;
+
+  MeteorFactory m_spawner;
+};
+
+class GameLevel
+{
+
+public:
+  GameLevel(GameWorld &world, TextureHolder &textures) {}
+
+  void update(float dt)
+  {
+    for (auto &spawner : m_spawners)
+    {
+      spawner->update(dt);
+    }
+  }
+
+  // private:
+
+  std::vector<std::shared_ptr<Spawner>> m_spawners;
+  std::function<void()> m_on_stage_start = []() {};
+  std::function<void()> m_on_stage_end = []() {};
+};
 
 class BossFight : public GameObject
 {
@@ -59,27 +176,27 @@ public:
   void handleEvent(const SDL_Event &event);
   void parseInput(Renderer &window, float dt);
   void draw(Renderer &window);
-  
+
   PlayerEntity *getPlayer();
-  
+
   static bool isKeyPressed(SDL_Keycode key)
   {
     auto *keystate = SDL_GetKeyboardState(NULL);
     return keystate[SDL_GetScancodeFromKey(key)];
   }
-  
+
   int getScore() const;
 
   void changeStage(GameStage to);
   GameState getState() const;
-  
+
   void initializeLayersAndTextures();
   void initializeSounds();
   void loadTextures();
   void registerCollisions();
   void registerSystems();
 
-  GameObject& createQuestGiver(std::shared_ptr<Quest> quest);
+  GameObject &createQuestGiver(std::shared_ptr<Quest> quest);
 
   void spawnNextObjective();
   void spawnBossObjective();
@@ -91,22 +208,21 @@ public:
 
   float m_timerace_timer;
 
-
   GameStage m_stage = GameStage::Free;
   Camera m_camera;
 
   std::unique_ptr<ObjectiveSystem> m_objective_system;
-  
+
   int m_score = 0;
-  
+
   GameState m_state = GameState::RUNNING;
-  
+
   Renderer &m_window;
-  
+
   KeyBindings &m_key_binding;
-  
+
   PlayerEntity *m_player;
-  
+
   FrameBuffer m_scene_pixels;
   Renderer m_scene_canvas;
 
@@ -121,23 +237,21 @@ public:
   std::unique_ptr<Texture> m_background;
   LayersHolder m_layers;
   LayersHolder m_ui_layers;
-  
+
   std::unique_ptr<UISystem> m_ui_system;
 
   std::unique_ptr<PostBox<EntityDiedEvent>> m_player_died_postbox;
-  
+
   std::unique_ptr<EnemyFactory> m_enemy_factory;
   std::unique_ptr<PickupFactory> m_pickup_factory;
   std::unique_ptr<LaserFactory> m_laser_factory;
   std::unique_ptr<ProjectileFactory> m_bullet_factory;
+  std::unique_ptr<WallFactory> m_wall_factory;
   std::unique_ptr<QuestFactory> m_quest_factory;
 
   TimedEventManager m_timers;
 
-  // Bullet* b;
-
   ToolBoxUI m_ui;
 
+  std::deque<GameLevel> m_levels;
 };
-
-#endif // BOIDS_GAME_H

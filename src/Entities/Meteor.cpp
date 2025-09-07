@@ -9,7 +9,6 @@ Meteor::Meteor(GameWorld *world, TextureHolder &textures, PlayerEntity *player)
     : p_player(player), GameObject(world, textures, ObjectType::Meteor)
 {
     m_rigid_body = std::make_unique<RigidBody>();
-    initializeRandomMeteor();
     m_max_vel = 200.f;
 }
 
@@ -55,7 +54,7 @@ void Meteor::onDestruction()
 
 void Meteor::onCollisionWith(GameObject &obj, CollisionData &c_data)
 {
-
+    GameObject::onCollisionWith(obj, c_data);
 }
 
 void Meteor::draw(LayersHolder &layers)
@@ -205,10 +204,9 @@ Polygon Meteor::generateRandomConvexPolygon(int n) const
     return p;
 }
 
-void Meteor::initializeRandomMeteor()
+void Meteor::initializeRandomMeteor(float radius)
 {
     auto polygon = generateRandomConvexPolygon(12 + rand() % 3);
-    auto radius = randf(5, 20);
     m_size = {radius*2};
     polygon.setScale(radius, radius);
     auto rand_pos = randomPosInBox(utils::Vector2f{0, 0}, utils::Vector2f{500, 500});

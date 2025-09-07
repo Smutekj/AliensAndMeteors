@@ -239,15 +239,6 @@ void Heart::onCreation()
     c_comp.shape.convex_shapes.push_back(shape);
     c_comp.type = ObjectType::Heart;
     m_world->m_systems.add(c_comp, getId());
-
-    if (rand() % 2 == 0)
-    {
-        setPickupType(Pickup::Heart);
-    }
-    else
-    {
-        setPickupType(Pickup::Fuel);
-    }
 }
 
 void Heart::onDestruction()
@@ -281,6 +272,8 @@ void Heart::setPickupType(Pickup type)
 }
 void Heart::onCollisionWith(GameObject &obj, CollisionData &c_data)
 {
+    GameObject::onCollisionWith(obj, c_data);
+    
     if (obj.getType() == ObjectType::Player)
     {
         kill();

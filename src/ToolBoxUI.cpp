@@ -3,18 +3,23 @@
 #include <imgui_impl_opengl3.h>
 #include <imgui_impl_sdl2.h>
 
+#include "../external/magic_enum/magic_enum.hpp"
+#include "../external/magic_enum/magic_enum_utility.hpp"
+
 #include <unordered_map>
 
 #include <Window.h>
 #include <Texture.h>
 
+#include "Game.h"
 #include "GameWorld.h"
+#include "Entities/Player.h"
 
 #include "nlohmann/json.hpp"
 
-ToolBoxUI::ToolBoxUI(Window &window, TextureHolder &textures)
+ToolBoxUI::ToolBoxUI(Window &window, TextureHolder &textures, Game *game)
     : m_sprite_pixels(400, 300, TextureOptions{.internal_format = TextureFormat::RGBA, .data_type = TextureDataTypes::UByte}),
-      m_sprite_canvas(m_sprite_pixels)
+      m_sprite_canvas(m_sprite_pixels), p_game(game)
 {
 
         m_sprite_canvas.m_view.setCenter(m_sprite_pixels.getSize() / 2.f);
@@ -287,6 +292,46 @@ void ToolBoxUI::redrawImage()
         m_sprite_canvas.drawAll();
 }
 
+void ToolBoxUI::drawPlayer()
+{
+        auto &entities = p_world->getEntities();
+
+        ImGui::Begin("Player", nullptr, ImGuiWindowFlags_NoTitleBar);
+
+        ImGui::InputFloat("Max Vel", &p_player->m_max_vel);
+        ImGui::InputFloat("Max Boost Vel", &p_player->m_boost_max_speed);
+        ImGui::InputFloat("Max Acc", &p_player->m_max_acc);
+        ImGui::InputFloat("Angle Vel", &p_player->m_angle_vel);
+        ImGui::InputFloat("Slow Boost", &p_player->m_slow_boost_factor);
+        ImGui::InputFloat("Slow", &p_player->m_slow_factor);
+        if (ImGui::Button("Toggle Shock"))
+        {
+                p_player->m_shocked = !p_player->m_shocked;
+        }
+        ImGui::InputFloat("Boost factor", &p_player->m_boost_factor);
+
+        ImGui::TextColored(ImVec4{0., 1., 0., 1.}, ("Speed:" + std::to_string(p_player->speed)).c_str());
+        ImGui::End();
+
+        ImGui::Begin("Game", nullptr, ImGuiWindowFlags_NoTitleBar);
+
+        if (ImGui::Button("Start Survival")&& p_game->m_stage == Game::GameStage::Free)
+        {
+                p_game->startSurvival();
+        }
+        if (ImGui::Button("Start Time Race") && p_game->m_stage == Game::GameStage::Free)
+        {
+                p_game->startTimeRace();
+        }
+        if (ImGui::Button("Start Boss Fight") && p_game->m_stage == Game::GameStage::Free)
+        {
+                p_game->startBossFight();
+        }
+        auto stage_name =  static_cast<std::string>(magic_enum::enum_name(p_game->m_stage));
+        ImGui::TextColored(ImVec4{0., 1., 1., 1.}, ("Stage:" + stage_name).c_str());
+        ImGui::End();
+}
+
 void ToolBoxUI::drawEntityDesigner()
 {
         auto &entities = p_world->getEntities();
@@ -389,7 +434,8 @@ void ToolBoxUI::draw()
         // if (show_demo_window)
         //         ImGui::ShowDemoWindow(&show_demo_window);
 
-        drawEntityDesigner();
+        // drawEntityDesigner();
+        drawPlayer();
 
         // Rendering
         ImGui::Render();
@@ -401,4 +447,5 @@ void ToolBoxUI::draw()
 void ToolBoxUI::initWorld(GameWorld &world)
 {
         p_world = &world;
+        p_player = world.m_player;
 }

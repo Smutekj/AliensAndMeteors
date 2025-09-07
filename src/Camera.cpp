@@ -21,13 +21,12 @@ void Camera::startFollowingPath(std::deque<utils::Vector2f> path, float duration
 {
     m_path = path;
     m_on_reaching_target_callback = callback;
-    
+
     m_move_state = MoveState::FollowingPath;
     m_move_view_duration = duration;
     m_move_view_time = 0.f;
     m_view_target = path.at(0);
     path.pop_front();
-
 }
 void Camera::startMovingTo(utils::Vector2f target, float duration, std::function<void(Camera &)> callback)
 {
@@ -54,7 +53,7 @@ void Camera::resizeToTarget(float dt)
 
     utils::Vector2f dr_to_target = m_view_target_size - m_view.getSize();
     float dist_to_target = std::max(utils::norm(dr_to_target), 0.001f);
-    float view_speed = 50.;
+    float view_speed = 100.;
 
     if (dist_to_target < 10)
     {
@@ -64,9 +63,8 @@ void Camera::resizeToTarget(float dt)
         m_view_velocity = {0};
     }
 
-    m_view_velocity = dr_to_target / dist_to_target * view_speed;
-    utils::truncate(m_view_velocity, m_max_view_speed);
 
+    m_view_velocity = dr_to_target / dist_to_target * view_speed;
     m_view.setSize(m_view.getSize() + m_view_velocity * dt);
 }
 
@@ -77,14 +75,14 @@ bool Camera::moveToTarget(float dt)
     utils::Vector2f dr_to_target = m_view_target - m_view.getCenter();
     float dist_to_target = utils::norm(dr_to_target);
     float speed = m_max_view_speed;
-    if(dist_to_target < 20)
+    if (dist_to_target < 20)
     {
         m_view_velocity = {0};
         return true;
     }
-    
-    m_view_velocity = dr_to_target / dist_to_target * m_max_view_speed;
-    utils::truncate(m_view_velocity, m_max_view_speed);
+
+    m_view_velocity = dr_to_target / dist_to_target * (m_max_view_speed + m_player_near_edge * m_max_view_speed);
+    // utils::truncate(m_view_velocity, m_max_view_speed);
     m_view.setCenter(m_view.getCenter() + m_view_velocity * dt);
     return false;
 }
@@ -94,10 +92,11 @@ void Camera::update(float dt, PlayerEntity *player)
     if (m_move_state == MoveState::FollowingPlayer && m_view_size_state == SizeState::FollowingPlayer)
     {
         followPlayer(dt, player);
+        resizeToTarget(dt);
     }
     else if (m_move_state == MoveState::MovingToPosition)
     {
-        if(moveToTarget(dt))
+        if (moveToTarget(dt))
         {
             m_move_state = MoveState::FollowingPlayer; //! by default start Following Player if neede can be overriden in callback
             m_on_reaching_target_callback(*this);
@@ -105,6 +104,28 @@ void Camera::update(float dt, PlayerEntity *player)
     }
     else if (m_move_state == MoveState::FollowingPath)
     {
+        auto threshold = m_view.getSize()/2.f - m_view.getSize() / 3.f;
+        auto dx = player->getPosition().x - m_view.getCenter().x;
+        auto dy = player->getPosition().y - m_view.getCenter().y;
+        auto center = m_view.getCenter();
+        m_player_near_edge = false;
+        if (dx > threshold.x)
+        {
+            m_view.setCenter(center.x + dx - threshold.x, center.y);
+        }
+        else if (dx < -threshold.x)
+        {
+            m_view.setCenter(center.x + dx + threshold.x, center.y);
+        }
+        if (dy > threshold.y)
+        {
+            m_view.setCenter(center.x, center.y + dy - threshold.y);
+        }
+        else if (dy < -threshold.y)
+        {
+            m_view.setCenter(center.x, center.y + dy + threshold.y);
+        }
+
         followPath(dt);
     }
     if (m_view_size_state == SizeState::Resizing)
@@ -124,11 +145,10 @@ View Camera::getView() const
 
 void Camera::followPath(float dt)
 {
-    
     bool reached_next_spot = moveToTarget(dt);
-    if(reached_next_spot) //! reached target spot and there is more
+    if (reached_next_spot) //! reached target spot and there is more
     {
-        if(m_path.empty())
+        if (m_path.empty())
         {
             m_move_state = MoveState::FollowingPlayer;
             m_on_reaching_target_callback(*this);
@@ -144,8 +164,9 @@ void Camera::followPlayer(float dt, PlayerEntity *m_player)
     const utils::Vector2f view_size = m_view.getSize();
 
     //! look from higher distance when boosting
-    float booster_ratio = m_player->speed / m_player->max_speed;
-    m_view.setSize(m_default_view.getSize() * (1.f + booster_ratio));
+    float booster_ratio = m_player->speed / 200.f;
+    
+    m_view_target_size = m_default_view.getSize() * (1.f + booster_ratio);
 
     auto threshold = m_view.getSize() / 2.f - m_view.getSize() / 3.f;
     auto dx = m_player->getPosition().x - m_view.getCenter().x;
@@ -172,8 +193,7 @@ void Camera::followPlayer(float dt, PlayerEntity *m_player)
         m_view_acc.y = dy + threshold.y;
     }
 
-    m_view_acc *= 200;
-    m_view_velocity += m_view_acc * dt;
+    // m_view_velocity += m_view_acc * dt;
     utils::truncate(m_view_velocity, m_max_view_speed);
-    m_view.setCenter(m_view.getCenter() + m_view_velocity * dt);
+    m_view.setCenter(m_view.getCenter() + m_view_acc);
 }

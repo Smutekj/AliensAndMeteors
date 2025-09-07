@@ -12,7 +12,7 @@ void GameObject::updateAll(float dt)
 
     if(m_parent)
     {
-        m_pos = m_parent->getPosition();
+        // m_pos = m_parent->getPosition();
         m_angle = m_parent->getAngle(); 
         m_vel = m_parent->m_vel; 
     }
@@ -38,11 +38,11 @@ bool GameObject::collides() const
     return m_collision_shape != nullptr;
 }
 
-const utils::Vector2f &GameObject::getPosition() const
+const utils::Vector2f GameObject::getPosition() const
 {
     if(m_parent)
     {
-        // return m_pos + m_parent->m_pos;
+        return m_parent->getPosition() + utils::rotate(m_pos, m_parent->getAngle());
     }
     return m_pos;
 }

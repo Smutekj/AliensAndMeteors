@@ -166,12 +166,5 @@ public:
 
 private:
     PlayerEntity *p_player;
-
     Pickup m_pickup_type = Pickup::Heart;
-
-    utils::Vector2f m_acc;
-    float max_vel = 100.f;
-    float max_acc = 20.f;
-    float m_time = 0.f;
-    float m_life_time = 10.;
 };

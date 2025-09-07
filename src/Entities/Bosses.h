@@ -194,6 +194,8 @@ private:
     ProjectileFactory m_projectile_factory;
     LaserFactory m_laser_factory;
     EnemyFactory m_enemy_factory;
+    MeteorFactory m_meteor_factory;
+
 
 public:
 };

@@ -225,7 +225,7 @@ void GameWorld::draw(LayersHolder &layers, const View& camera_view)
 #ifdef DEBUG
     checkComponentsConsistency();
     // m_ts->draw(layers.getCanvas("Unit"));
-    m_collision_system.draw(layers.getCanvas("Unit"));
+    // m_collision_system.draw(layers.getCanvas("Unit"));
 #endif
 }
 

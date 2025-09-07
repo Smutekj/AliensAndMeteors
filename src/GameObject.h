@@ -92,7 +92,7 @@ public:
 
     void updateAll(float dt);
 
-    const utils::Vector2f &getPosition() const;
+    const utils::Vector2f getPosition() const;
     void setPosition(utils::Vector2f new_position);
     void move(utils::Vector2f by);
 

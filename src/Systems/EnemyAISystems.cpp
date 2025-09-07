@@ -68,7 +68,7 @@ void AISystem::initializeLaserShooterAI()
         auto shoot_laser = [this, id](float t, int count)
         {
             auto &comp = m_world.m_systems.get<LaserAIComponent>(id);
-            auto &laser = m_laser_factory.create2(comp.laser_type, comp.pos, {255, 25, 0, 255});
+            auto &laser = static_cast<Laser&>(m_laser_factory.create2(comp.laser_type, comp.pos, {255, 25, 0, 255}));
             auto dr_to_player = m_world.m_player->getPosition() - comp.pos;
             auto shooter_entity = m_world.get(id);
 
@@ -77,7 +77,7 @@ void AISystem::initializeLaserShooterAI()
             auto old_max_vel = shooter_entity->m_max_vel;
             auto old_max_acc = shooter_entity->m_max_acc;
             shooter_entity->m_max_vel *= 0.5;
-            shooter_entity->m_max_acc *= 0.01;
+            shooter_entity->m_max_acc *= 0.1;
             laser.setDestructionCallback([shooter_entity, id, old_max_vel, old_max_acc](int laser_id, ObjectType t)
                                          {
             shooter_entity->m_max_vel = old_max_vel;
@@ -126,7 +126,7 @@ void AISystem::initializeShooterAI()
             {
                                    std::vector<ColorByte> proj_colors = {ColorByte{255,20,0,255}, ColorByte{20,255,0,255}, ColorByte{255,0,255,255}, ColorByte{20,20,255,255}};
                                    auto &comp = m_world.m_systems.get<ShootPlayerAIComponent>(id);
-                                   auto &bullet = m_bullet_factory.create2(comp.projectile_type, comp.pos, proj_colors.at(rand()%proj_colors.size()));
+                                   auto &bullet = static_cast<Bullet&>(m_bullet_factory.create2(comp.projectile_type, comp.pos, proj_colors.at(rand()%proj_colors.size())));
                                    bullet.setTarget(m_world.m_player);
                                    bullet.m_collision_resolvers[ObjectType::Enemy] =
                                        [&bullet, this, id](GameObject &obj, CollisionData &c_data)

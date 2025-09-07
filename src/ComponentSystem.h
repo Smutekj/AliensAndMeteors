@@ -12,9 +12,13 @@
 
 #include "Components.h"
 
+#include <EntityWorld.h>
+
 template <class... ComponentTypes>
 class ComponentWorld
 {
+
+    ecs::EntityWorld m_ecs;
 
 public:
     ComponentWorld(EntityRegistryT &entity_registry)
@@ -61,10 +65,12 @@ public:
     template <class ComponentType>
     void remove(int entity_id)
     {
+        // m_ecs.removeComponent<ComponentType>(entity_id);
         std::get<ComponentHolder<ComponentType>>(m_components).erase(entity_id);
     }
     void removeEntity(int entity_id)
     {
+        // m_ecs.removeEntity(entity_id);        
         std::apply([entity_id](auto &&...comp_holder)
                    { (comp_holder.erase(entity_id), ...); }, m_components);
     }
